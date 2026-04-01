@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Phase 2 Verification Log</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0f0f10;
+      color: #e4e4e7;
+      padding: 40px;
+      line-height: 1.6;
+    }
+    h1 {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: #fff;
+    }
+    .summary {
+      background: #18181b;
+      border-radius: 8px;
+      padding: 20px 24px;
+      margin-bottom: 32px;
+      display: flex;
+      gap: 32px;
+    }
+    .summary-item {
+      text-align: center;
+    }
+    .summary-item .value {
+      font-size: 36px;
+      font-weight: 700;
+    }
+    .summary-item .label {
+      font-size: 14px;
+      color: #71717a;
+      text-transform: uppercase;
+    }
+    .summary-item.pass .value { color: #22c55e; }
+    .summary-item.fail .value { color: #ef4444; }
+    .summary-item.total .value { color: #3b82f6; }
+    .task {
+      background: #18181b;
+      border-radius: 12px;
+      margin-bottom: 24px;
+      overflow: hidden;
+    }
+    .task-header {
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid #27272a;
+    }
+    .task-header h2 {
+      font-size: 18px;
+      font-weight: 600;
+      flex: 1;
+    }
+    .badge {
+      padding: 4px 12px;
+      border-radius: 9999px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    .badge.pass { background: #166534; color: #86efac; }
+    .badge.fail { background: #7f1d1d; color: #fca5a5; }
+    .task-body {
+      padding: 20px;
+    }
+    .task-body p {
+      margin-bottom: 12px;
+      color: #a1a1aa;
+    }
+    .task-body p strong {
+      color: #e4e4e7;
+    }
+    .checklist {
+      list-style: none;
+      margin: 16px 0;
+    }
+    .checklist li {
+      padding: 6px 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .checklist li.yes::before {
+      content: "✓";
+      color: #22c55e;
+      font-weight: bold;
+    }
+    .checklist li.no::before {
+      content: "✗";
+      color: #ef4444;
+      font-weight: bold;
+    }
+    .screenshot {
+      margin-top: 16px;
+    }
+    .screenshot img {
+      max-width: 100%;
+      border-radius: 8px;
+      border: 1px solid #27272a;
+    }
+    .screenshot-label {
+      font-size: 12px;
+      color: #71717a;
+      margin-top: 8px;
+    }
+    .error-box {
+      background: #450a0a;
+      border: 1px solid #7f1d1d;
+      border-radius: 8px;
+      padding: 16px;
+      margin-top: 16px;
+    }
+    .error-box h4 {
+      color: #fca5a5;
+      font-size: 14px;
+      margin-bottom: 8px;
+    }
+    .error-box p {
+      color: #fecaca;
+      font-size: 14px;
+      margin: 0;
+    }
+    .console-log {
+      background: #0c0c0d;
+      border-radius: 6px;
+      padding: 12px 16px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      color: #a1a1aa;
+      margin-top: 12px;
+    }
+    .console-log.clean { color: #22c55e; }
+    .timestamp {
+      color: #52525b;
+      font-size: 14px;
+      margin-top: 40px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <h1>PRD-Renderer-System: Phase 2 Verification Log</h1>
+  <p style="color: #71717a; margin-bottom: 24px;">Content Blocks — header-bar, leaderboard-table, athlete-grid</p>
+
+  <div class="summary">
+    <div class="summary-item total">
+      <div class="value">4</div>
+      <div class="label">Tasks</div>
+    </div>
+    <div class="summary-item pass">
+      <div class="value">3</div>
+      <div class="label">Pass</div>
+    </div>
+    <div class="summary-item fail">
+      <div class="value">1</div>
+      <div class="label">Fail</div>
+    </div>
+  </div>
+
+  <!-- Task 1: header-bar -->
+  <div class="task">
+    <div class="task-header">
+      <h2>Task 1: header-bar Block</h2>
+      <span class="badge pass">Pass</span>
+    </div>
+    <div class="task-body">
+      <p><strong>URL:</strong> <code>stage.html?preview=full&skeleton=full-screen-card&block=header-bar</code></p>
+      <p><strong>Description:</strong> Card frame with gray (#d4d4d8) header bar showing "VAULT" in 42px bold uppercase text. Header bar is flush to top of card with no gap. Below the header bar is a white content area (empty since only header-bar block loaded).</p>
+
+      <ul class="checklist">
+        <li class="yes">Card frame with gray header bar showing "VAULT" in bold uppercase text</li>
+        <li class="yes">Header bar is flush to top of card, no gap</li>
+        <li class="yes">Header bar does not stretch vertically (flex-shrink: 0)</li>
+        <li class="yes">No console errors (favicon.ico 404 is harmless)</li>
+      </ul>
+
+      <div class="console-log clean">No console errors</div>
+
+      <div class="screenshot">
+        <img src="screenshots/verify-task-1.png" alt="Task 1 Screenshot">
+        <div class="screenshot-label">verify-task-1.png</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Task 2: leaderboard-table -->
+  <div class="task">
+    <div class="task-header">
+      <h2>Task 2: leaderboard-table Block</h2>
+      <span class="badge pass">Pass</span>
+    </div>
+    <div class="task-body">
+      <p><strong>URL:</strong> <code>stage.html?preview=full&skeleton=full-screen-card&block=header-bar,leaderboard-table</code></p>
+      <p><strong>Description:</strong> Card frame with gray header bar + dark table showing 10 rows of VT scores. Table has 5 columns: #, Name, Team, Event, Score. Tied ranks show superscript "T" (2T, 5T). Ranks 1-3 have colored medal circles (gold for rank 1, silver for tied rank 2). Alternating row backgrounds visible. Scores right-aligned.</p>
+
+      <ul class="checklist">
+        <li class="yes">Card with gray header + dark table showing 10 rows of VT scores</li>
+        <li class="yes">Table shows 5 columns: #, Name, Team, Apparatus, Score (no Diff/Exec/SB for women's)</li>
+        <li class="yes">Tied ranks (2T, 5T) show superscript "T"</li>
+        <li class="yes">Ranks 1-3 have colored medal circles (gold, silver — no bronze needed as ranks 2-3 are tied)</li>
+        <li class="yes">Alternating row backgrounds (dark/darker)</li>
+        <li class="yes">Scores right-aligned with tabular numerals</li>
+        <li class="yes">No console errors</li>
+      </ul>
+
+      <div class="console-log clean">No console errors</div>
+
+      <div class="screenshot">
+        <img src="screenshots/verify-task-2.png" alt="Task 2 Screenshot">
+        <div class="screenshot-label">verify-task-2.png</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Task 3: athlete-grid -->
+  <div class="task">
+    <div class="task-header">
+      <h2>Task 3: athlete-grid Block</h2>
+      <span class="badge pass">Pass</span>
+    </div>
+    <div class="task-body">
+      <p><strong>URL:</strong> <code>stage.html?preview=full&skeleton=full-screen-card&block=header-bar,athlete-grid</code></p>
+      <p><strong>Description:</strong> Card frame with gray header bar + grid of 10 athlete cards. Each card shows circular initials placeholder (AS, BJ, CW, etc.) with gradient background + uppercase name below. Grid is 2 rows x 5 columns, centered in the dark content area.</p>
+
+      <ul class="checklist">
+        <li class="yes">Card with gray header + grid of 10 athlete cards with initials</li>
+        <li class="yes">Grid shows 5 columns (10 athletes uses 5-column layout)</li>
+        <li class="yes">Each card: circular initials placeholder + uppercase name below</li>
+        <li class="yes">Initials show gradient background (#3f3f46 → #27272a)</li>
+        <li class="yes">Names are uppercase</li>
+        <li class="yes">Grid is centered in the dark content area</li>
+        <li class="yes">No console errors</li>
+      </ul>
+
+      <div class="console-log clean">No console errors</div>
+
+      <div class="screenshot">
+        <img src="screenshots/verify-task-3.png" alt="Task 3 Screenshot">
+        <div class="screenshot-label">verify-task-3.png</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Task 4: Deploy + Visual Parity -->
+  <div class="task">
+    <div class="task-header">
+      <h2>Task 4: Deploy + Visual Parity Verification</h2>
+      <span class="badge fail">Fail</span>
+    </div>
+    <div class="task-body">
+      <p><strong>Description:</strong> Deploy blocks to production and verify visual parity + theme preview functionality.</p>
+
+      <ul class="checklist">
+        <li class="yes">Production URL loads: leaderboard preview</li>
+        <li class="yes">Leaderboard header bar matches: gray bg, bold uppercase title</li>
+        <li class="yes">Leaderboard table matches: dark alternating rows, right-aligned scores, medal indicators</li>
+        <li class="yes">Leaderboard card frame matches: rounded corners, shadow, proper margins</li>
+        <li class="yes">Production URL loads: roster preview</li>
+        <li class="yes">Roster header bar matches leaderboard header bar</li>
+        <li class="yes">Roster grid shows centered athlete cards with initials</li>
+        <li class="no">Theme preview works: &theme={validThemeId} applies colors to both blocks</li>
+        <li class="yes">No console errors on any URL</li>
+        <li class="yes">Existing graphics unaffected: output.html?graphic=logos still works</li>
+      </ul>
+
+      <div class="error-box">
+        <h4>Issue: Theme Preview Not Applying Colors</h4>
+        <p>When <code>&theme=pink-meet-2026</code> is added to the URL, the header bar remains gray (#d4d4d8) instead of changing to pink (#ea018c). The <code>applyTheme()</code> function in stage.html reads <code>theme.headerBg</code> but Firebase stores colors at <code>theme.colors.headerBar</code> — the function needs to extract from the <code>theme.colors</code> object.</p>
+      </div>
+
+      <div class="screenshot">
+        <img src="screenshots/verify-task-4-theme.png" alt="Task 4 Theme Screenshot">
+        <div class="screenshot-label">verify-task-4-theme.png — Theme not applied (header still gray)</div>
+      </div>
+
+      <div class="screenshot">
+        <img src="screenshots/verify-task-4-roster.png" alt="Task 4 Roster Screenshot">
+        <div class="screenshot-label">verify-task-4-roster.png — Roster preview loads correctly</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Critical Renderer Checks -->
+  <div class="task">
+    <div class="task-header">
+      <h2>Critical Renderer Checks</h2>
+      <span class="badge pass">Pass</span>
+    </div>
+    <div class="task-body">
+      <ul class="checklist">
+        <li class="yes">Transparent body: Body has <code>rgba(0, 0, 0, 0)</code> background</li>
+        <li class="yes">No React SPA interception: Stage URLs show stage renderer content, not React app</li>
+        <li class="yes">Block CSS isolation: Blocks render without visual bleeding</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- PRD Status -->
+  <div class="task">
+    <div class="task-header">
+      <h2>PRD Documentation Status</h2>
+      <span class="badge pass">Pass</span>
+    </div>
+    <div class="task-body">
+      <p>All Phase 2 blocks are marked as FIXED in the PRD Block Catalog:</p>
+      <ul class="checklist">
+        <li class="yes">Block #1 header-bar: FIXED 2026-03-31</li>
+        <li class="yes">Block #2 leaderboard-table: FIXED 2026-03-31</li>
+        <li class="yes">Block #3 athlete-grid: FIXED 2026-03-31</li>
+      </ul>
+    </div>
+  </div>
+
+  <p class="timestamp">Verification completed: 2026-03-31</p>
+</body>
+</html>
