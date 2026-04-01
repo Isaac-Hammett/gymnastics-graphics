@@ -340,13 +340,13 @@ Phase 4 connects the stage engine (built in Phases 1-3) to all producer tools. T
 
 ---
 
-### Task 19: Add renderer badges to Web Graphics Panel — NOT STARTED
+### Task 19: Add renderer badges to Web Graphics Panel — COMPLETE
 **Files:** `show-controller/src/components/GraphicsControl.jsx`
 **Resolves:** PRD lines 1024-1025
 **Verify:**
-- [ ] Same badge pattern as URL Generator
-- [ ] Badges appear next to graphic names in panel
-- [ ] Colors match URL Generator
+- [x] Same badge pattern as URL Generator
+- [x] Badges appear next to graphic names in panel
+- [x] Colors match URL Generator
 
 **Notes:**
 - Reuse badge component from Task 18 if extracted
@@ -661,3 +661,13 @@ This avoids bundler complexity while keeping single source of truth.
 - **Added `opacity-80` when active** — badge is slightly dimmed when button is selected (blue background) to maintain visual hierarchy
 - **Added `flex-1 truncate` to label span** — ensures label doesn't push badge off-screen for long graphic names
 - **Conditional number display** — added `{number && ...}` guard since most graphics don't use the number prop (it was unused legacy)
+
+### Task 19 Learnings
+
+- **GraphicsControl buttons are in a compact 3-column grid** — used smaller badge sizing (`text-[8px] px-1`) vs URL Generator's `text-[9px] px-1.5` to fit
+- **Badge text uses abbreviations:** `stg` for stage, `ovl` for overlay, `out` for output — shorter text works better in compact grid
+- **graphicButtons already include `renderer` field** — the `getGraphicsForCompetition()` function spreads all manifest fields including `renderer`
+- **Button structure changed to flex:** Added `flex items-center gap-1` to button className, wrapped label in `<span className="flex-1 truncate text-left">`
+- **Badge color matches URL Generator:** Teal (`bg-teal-500/20 text-teal-400`) for stage, gray (`bg-zinc-600 text-zinc-400`) for overlay/output
+- **No shared component extracted** — inline badge implementation is simple enough; extracting a shared RendererBadge component would be overkill for 2 usages
+- **Local verification limited:** Producer view requires auth, so verification was done via build pass + code review. Visual testing would require valid Firebase auth credentials
