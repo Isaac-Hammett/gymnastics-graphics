@@ -287,14 +287,14 @@ Phase 4 connects the stage engine (built in Phases 1-3) to all producer tools. T
 
 ---
 
-### Task 16: Verify output.html renderer check (already implemented) — NOT STARTED
+### Task 16: Verify output.html renderer check (already implemented) — COMPLETE
 **Files:** `output.html`
 **Resolves:** PRD lines 85-86
 **Verify:**
-- [ ] Lines 14246-14255 contain renderer check
-- [ ] Check: `if (renderer === 'stage')` → clears output and returns
-- [ ] Check handles `renderer: undefined` (backwards compat — renders normally)
-- [ ] No changes needed (verification only)
+- [x] Lines 14246-14255 contain renderer check
+- [x] Check: `if (renderer === 'stage')` → clears output and returns
+- [x] Check handles `renderer: undefined` (backwards compat — renders normally)
+- [x] No changes needed (verification only)
 
 **Notes:**
 - Per output-html-renderer-check.md, this was implemented in Phase 1
@@ -630,3 +630,10 @@ This avoids bundler complexity while keeping single source of truth.
 - **Block data from registry:** Uses `registryEntry.defaultData?.blocks` to get block data with default values, or falls back to `registryEntry.blocks?.map(type => ({ type, data: {} }))`
 - **meetTheme extraction:** The `meetTheme` is already part of the `data` object (extracted from `config.meetTheme` earlier in the function)
 - **Theme resolution error handling:** Wrapped in try/catch — if theme resolution fails, continues without theme (stage engine uses fallback colors)
+
+### Task 16 Learnings
+
+- **Verification only — no code changes needed.** The renderer check was implemented in Phase 1, Task 6.
+- **Renderer check at lines 14246-14255:** Checks `if (renderer === 'stage')`, then clears `output.innerHTML`, hides animated background, clears theme overrides, and returns early
+- **Backwards compatibility confirmed:** When `renderer` is undefined (old graphics without the field), destructuring produces `undefined`, which fails the strict equality check `renderer === 'stage'` and falls through to normal rendering
+- **Additional cleanup in check:** Also clears theme overrides via `window.themeClearOverrides(lastLiveGraphicId)` to prevent theme bleed when switching from an output.html graphic to a stage.html graphic
