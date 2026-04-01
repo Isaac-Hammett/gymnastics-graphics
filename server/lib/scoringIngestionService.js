@@ -35,6 +35,52 @@ const MAX_EVENT_LOG_ENTRIES = 50;
 // Default poll interval (seconds)
 const DEFAULT_POLL_INTERVAL = 15;
 
+// API timeout (ms)
+const API_TIMEOUT_MS = 15000;
+
+// Virtius API base URL
+const VIRTIUS_API_BASE = 'https://api.virti.us';
+
+// Apparatus code normalization map
+const APPARATUS_MAP = {
+  // Full names
+  'Floor Exercise': 'FX',
+  'Pommel Horse': 'PH',
+  'Still Rings': 'SR',
+  'Vault': 'VT',
+  'Parallel Bars': 'PB',
+  'High Bar': 'HB',
+  'Uneven Bars': 'UB',
+  'Balance Beam': 'BB',
+  'All Around': 'AA',
+  // API short names
+  'FLOOR': 'FX',
+  'HORSE': 'PH',
+  'RINGS': 'SR',
+  'VAULT': 'VT',
+  'PBARS': 'PB',
+  'BAR': 'HB',
+  'UBARS': 'UB',
+  'BARS': 'UB',
+  'BEAM': 'BB',
+  // Already normalized
+  'FX': 'FX',
+  'PH': 'PH',
+  'SR': 'SR',
+  'VT': 'VT',
+  'PB': 'PB',
+  'HB': 'HB',
+  'UB': 'UB',
+  'BB': 'BB',
+  'AA': 'AA'
+};
+
+// Men's apparatus list (Olympic order)
+const MENS_APPARATUS = ['FX', 'PH', 'SR', 'VT', 'PB', 'HB'];
+
+// Women's apparatus list (Olympic order)
+const WOMENS_APPARATUS = ['VT', 'UB', 'BB', 'FX'];
+
 // ============================================================================
 // ScoringIngestionService Class
 // ============================================================================
@@ -148,6 +194,511 @@ export class ScoringIngestionService extends EventEmitter {
    */
   getEventLog() {
     return [...this._eventLog];
+  }
+
+  // ============================================================================
+  // API Fetching
+  // ============================================================================
+
+  /**
+   * Fetch data from Virtius API with timeout
+   * @param {string} sessionId - Virtius session ID
+   * @returns {Promise<Object>} Virtius API response
+   * @throws {Error} On network error or timeout
+   */
+  async _fetchVirtiusData(sessionId) {
+    const url = `${VIRTIUS_API_BASE}/session/${sessionId}/json`;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
+
+    try {
+      this._log('fetch', `Fetching Virtius data from ${url}`);
+
+      const response = await fetch(url, {
+        signal: controller.signal,
+        headers: {
+          'Accept': 'application/json'
+        }
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      this._log('fetch', `Received ${JSON.stringify(data).length} bytes`);
+      return data;
+
+    } catch (error) {
+      clearTimeout(timeoutId);
+
+      if (error.name === 'AbortError') {
+        throw new Error(`API timeout after ${API_TIMEOUT_MS}ms`);
+      }
+      throw error;
+    }
+  }
+
+  // ============================================================================
+  // Data Processing
+  // ============================================================================
+
+  /**
+   * Normalize apparatus name to short code
+   * @param {string} name - Apparatus name (any format)
+   * @returns {string} Short code (FX, PH, etc.)
+   */
+  _normalizeApparatus(name) {
+    if (!name) return '';
+    return APPARATUS_MAP[name] || APPARATUS_MAP[name.toUpperCase()] || name;
+  }
+
+  /**
+   * Get team logo URL, checking local cache first then Firebase
+   * @param {string} teamKey - Team key for Firebase lookup
+   * @param {string} fallbackLogo - Fallback logo from Virtius API
+   * @returns {Promise<string>} Logo URL
+   */
+  async _getTeamLogo(teamKey, fallbackLogo) {
+    // Check cache first
+    if (this._teamLogoCache.has(teamKey)) {
+      return this._teamLogoCache.get(teamKey);
+    }
+
+    // Try Firebase lookup
+    if (this._firebase && teamKey) {
+      try {
+        const snapshot = await this._firebase
+          .ref(`teamsDatabase/teams/${teamKey}/logo`)
+          .once('value');
+        const logo = snapshot.val();
+        if (logo) {
+          this._teamLogoCache.set(teamKey, logo);
+          return logo;
+        }
+      } catch (err) {
+        // Firebase lookup failed, use fallback
+        console.warn(`Team logo lookup failed for ${teamKey}:`, err.message);
+      }
+    }
+
+    // Cache and return fallback
+    const logo = fallbackLogo || '';
+    if (teamKey) {
+      this._teamLogoCache.set(teamKey, logo);
+    }
+    return logo;
+  }
+
+  /**
+   * Process raw Virtius API data into graphic-ready structures
+   * @param {Object} raw - Raw Virtius API response
+   * @param {string} gender - 'mens' or 'womens'
+   * @returns {Promise<Object>} Processed data: { leaderboards, teamTotals, rotationState, allAround }
+   */
+  async processVirtiusData(raw, gender) {
+    const isWomens = gender === 'womens';
+    const meet = raw?.meet;
+
+    if (!meet) {
+      throw new Error('Invalid API response: missing meet object');
+    }
+
+    // Build team info maps from API data
+    const teamLogos = {};
+    const teamNames = {};
+    const gymnastToTeam = {};
+
+    if (meet.teams) {
+      for (const team of meet.teams) {
+        const teamName = team.name || team.short_name || team.tricode || '';
+        const teamLogo = team.logo || '';
+
+        // Map various identifiers to logo and name
+        if (team.tricode) {
+          teamLogos[team.tricode] = teamLogo;
+          teamNames[team.tricode] = teamName;
+        }
+        if (team.name) {
+          teamLogos[team.name] = teamLogo;
+          teamNames[team.name] = teamName;
+        }
+        if (team.short_name) {
+          teamLogos[team.short_name] = teamLogo;
+          teamNames[team.short_name] = teamName;
+        }
+
+        // Build gymnast -> team map from events
+        if (team.events) {
+          for (const event of team.events) {
+            if (event.gymnasts) {
+              for (const g of event.gymnasts) {
+                const teamInfo = { name: teamName, logo: teamLogo };
+                if (g.gymnast_id) {
+                  gymnastToTeam[g.gymnast_id] = teamInfo;
+                }
+                // Also map by name for AA
+                const fullName = g.full_name || `${g.first_name || ''} ${g.last_name || ''}`.trim();
+                if (fullName) {
+                  gymnastToTeam[fullName] = teamInfo;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Process leaderboards for each apparatus
+    const apparatusList = isWomens ? WOMENS_APPARATUS : MENS_APPARATUS;
+    const leaderboards = {};
+
+    for (const apparatus of apparatusList) {
+      const leaderboard = await this._processApparatusLeaderboard(
+        meet,
+        apparatus,
+        isWomens,
+        gymnastToTeam,
+        teamLogos,
+        teamNames
+      );
+      if (leaderboard && leaderboard.length > 0) {
+        leaderboards[apparatus] = leaderboard;
+      }
+    }
+
+    // Process All-Around
+    const allAround = await this._processAllAround(
+      meet,
+      isWomens,
+      gymnastToTeam,
+      teamLogos,
+      teamNames
+    );
+    if (allAround && allAround.length > 0) {
+      leaderboards.AA = allAround;
+    }
+
+    // Compute team totals
+    const teamTotals = this._computeTeamTotals(meet);
+
+    // Compute rotation state
+    const rotationState = this._computeRotationState(meet, isWomens);
+
+    return {
+      leaderboards,
+      teamTotals,
+      rotationState,
+      allAround
+    };
+  }
+
+  /**
+   * Process leaderboard for a single apparatus
+   * @private
+   */
+  async _processApparatusLeaderboard(meet, apparatusCode, isWomens, gymnastToTeam, teamLogos, teamNames) {
+    // Collect all scores for this apparatus across all teams
+    const gymnasts = [];
+
+    if (meet.teams) {
+      for (const team of meet.teams) {
+        if (team.events) {
+          for (const event of team.events) {
+            const eventCode = this._normalizeApparatus(event.event_name);
+            if (eventCode !== apparatusCode) continue;
+
+            if (event.gymnasts) {
+              for (const g of event.gymnasts) {
+                const score = parseFloat(g.final_score) || 0;
+                if (score <= 0) continue; // Skip zero/scratched scores
+
+                // Get team info
+                const teamKey = team.tricode || team.short_name || '';
+                const teamInfo = gymnastToTeam[g.gymnast_id] || gymnastToTeam[g.full_name] || {};
+                const teamName = teamInfo.name || teamNames[teamKey] || team.name || '';
+                const teamLogo = teamInfo.logo || teamLogos[teamKey] || team.logo || '';
+
+                // Get detailed scores
+                const diff = g.scores && g.scores.length > 0
+                  ? parseFloat(g.scores[0].start) || 0
+                  : 0;
+                const exec = parseFloat(g.e_score) || 0;
+                const nd = parseFloat(g.neutral) || 0;
+                const bonus = parseFloat(g.bonus) || 0;
+                const stickBonus = bonus > 0;
+
+                const fullName = g.full_name || `${g.first_name || ''} ${g.last_name || ''}`.trim();
+
+                gymnasts.push({
+                  name: fullName,
+                  team: teamName,
+                  teamLogo,
+                  score,
+                  diff: isWomens ? null : diff,
+                  exec: isWomens ? null : exec,
+                  stickBonus: isWomens ? null : stickBonus,
+                  gymnastId: g.gymnast_id,
+                  apparatus: apparatusCode
+                });
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Sort by score descending
+    gymnasts.sort((a, b) => b.score - a.score);
+
+    // Apply gap ranking
+    let currentRank = 1;
+    for (let i = 0; i < gymnasts.length; i++) {
+      if (i > 0 && gymnasts[i].score < gymnasts[i - 1].score) {
+        currentRank = i + 1; // Skip tied positions
+      }
+      gymnasts[i].rank = currentRank;
+    }
+
+    // Compute isTied for each gymnast
+    const rankCounts = {};
+    for (const g of gymnasts) {
+      rankCounts[g.rank] = (rankCounts[g.rank] || 0) + 1;
+    }
+    for (const g of gymnasts) {
+      g.isTied = rankCounts[g.rank] > 1;
+    }
+
+    // Return top 10
+    return gymnasts.slice(0, 10);
+  }
+
+  /**
+   * Process All-Around leaderboard
+   * @private
+   */
+  async _processAllAround(meet, isWomens, gymnastToTeam, teamLogos, teamNames) {
+    const requiredEventCount = isWomens ? 4 : 6;
+    const requiredEvents = isWomens
+      ? ['VAULT', 'UBARS', 'BARS', 'BEAM', 'FLOOR', 'UB', 'VT', 'BB', 'FX']
+      : ['FLOOR', 'HORSE', 'RINGS', 'VAULT', 'PBARS', 'BAR', 'FX', 'PH', 'SR', 'VT', 'PB', 'HB'];
+
+    // First try to use pre-aggregated event_results
+    const aaResults = meet.event_results?.find(e =>
+      e.event_name === 'All Around' || e.event_name === 'AA'
+    );
+
+    if (aaResults?.gymnasts?.length >= 5) {
+      // Use pre-aggregated results
+      const gymnasts = [];
+      for (const g of aaResults.gymnasts) {
+        const score = parseFloat(g.final_score) || 0;
+        if (score <= 0) continue;
+
+        const fullName = g.full_name || `${g.first_name || ''} ${g.last_name || ''}`.trim();
+        const teamInfo = gymnastToTeam[g.gymnast_id] || gymnastToTeam[fullName] || {};
+        const teamKey = g.tricode || g.short_name || '';
+        const teamName = teamInfo.name || teamNames[teamKey] || g.team_name || '';
+        const teamLogo = teamInfo.logo || teamLogos[teamKey] || '';
+
+        gymnasts.push({
+          name: fullName,
+          team: teamName,
+          teamLogo,
+          score,
+          rank: g.place || 0,
+          gymnastId: g.gymnast_id,
+          apparatus: 'AA'
+        });
+      }
+
+      // Re-apply gap ranking and isTied
+      gymnasts.sort((a, b) => b.score - a.score);
+      let currentRank = 1;
+      for (let i = 0; i < gymnasts.length; i++) {
+        if (i > 0 && gymnasts[i].score < gymnasts[i - 1].score) {
+          currentRank = i + 1;
+        }
+        gymnasts[i].rank = currentRank;
+      }
+
+      const rankCounts = {};
+      for (const g of gymnasts) {
+        rankCounts[g.rank] = (rankCounts[g.rank] || 0) + 1;
+      }
+      for (const g of gymnasts) {
+        g.isTied = rankCounts[g.rank] > 1;
+      }
+
+      return gymnasts.slice(0, 10);
+    }
+
+    // Fall back to manual aggregation
+    const gymnastAA = {}; // name -> { scores: {event: score}, total, count, team, logo }
+
+    if (meet.teams) {
+      for (const team of meet.teams) {
+        const teamName = team.name || team.short_name || team.tricode || '';
+        const teamLogo = team.logo || '';
+
+        if (team.events) {
+          for (const event of team.events) {
+            const rawName = event.event_name;
+            const normalizedName = rawName?.toUpperCase() || '';
+            if (!requiredEvents.includes(normalizedName) && !requiredEvents.includes(rawName)) {
+              continue;
+            }
+
+            const eventCode = this._normalizeApparatus(rawName);
+
+            if (event.gymnasts) {
+              for (const g of event.gymnasts) {
+                const fullName = g.full_name || `${g.first_name || ''} ${g.last_name || ''}`.trim();
+                if (!fullName) continue;
+
+                const score = parseFloat(g.final_score) || 0;
+                if (score <= 0) continue;
+
+                if (!gymnastAA[fullName]) {
+                  gymnastAA[fullName] = {
+                    name: fullName,
+                    team: teamName,
+                    teamLogo,
+                    scores: {},
+                    eventCount: 0,
+                    total: 0,
+                    gymnastId: g.gymnast_id
+                  };
+                }
+
+                // Only count each event once
+                if (!gymnastAA[fullName].scores[eventCode]) {
+                  gymnastAA[fullName].scores[eventCode] = score;
+                  gymnastAA[fullName].eventCount++;
+                  gymnastAA[fullName].total += score;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Filter to gymnasts with all required events
+    const completeGymnasts = Object.values(gymnastAA)
+      .filter(g => g.eventCount >= requiredEventCount)
+      .sort((a, b) => b.total - a.total);
+
+    // Apply gap ranking
+    let currentRank = 1;
+    for (let i = 0; i < completeGymnasts.length; i++) {
+      if (i > 0 && completeGymnasts[i].total < completeGymnasts[i - 1].total) {
+        currentRank = i + 1;
+      }
+      completeGymnasts[i].rank = currentRank;
+    }
+
+    // Compute isTied
+    const rankCounts = {};
+    for (const g of completeGymnasts) {
+      rankCounts[g.rank] = (rankCounts[g.rank] || 0) + 1;
+    }
+
+    const result = completeGymnasts.slice(0, 10).map(g => ({
+      name: g.name,
+      team: g.team,
+      teamLogo: g.teamLogo,
+      score: g.total,
+      rank: g.rank,
+      isTied: rankCounts[g.rank] > 1,
+      gymnastId: g.gymnastId,
+      apparatus: 'AA'
+    }));
+
+    return result;
+  }
+
+  /**
+   * Compute team totals from meet data
+   * @private
+   */
+  _computeTeamTotals(meet) {
+    const totals = {};
+
+    if (meet.teams) {
+      for (const team of meet.teams) {
+        const teamKey = team.tricode || team.short_name || team.name || '';
+        if (!teamKey) continue;
+
+        let teamTotal = 0;
+        const eventTotals = {};
+
+        if (team.events) {
+          for (const event of team.events) {
+            const eventCode = this._normalizeApparatus(event.event_name);
+            const eventScore = parseFloat(event.event_score) || 0;
+            eventTotals[eventCode] = eventScore;
+            teamTotal += eventScore;
+          }
+        }
+
+        totals[teamKey] = {
+          name: team.name || teamKey,
+          logo: team.logo || '',
+          total: teamTotal,
+          events: eventTotals
+        };
+      }
+    }
+
+    return totals;
+  }
+
+  /**
+   * Compute current rotation state from meet data
+   * @private
+   */
+  _computeRotationState(meet, isWomens) {
+    // Rotation state indicates which apparatus each team is currently on
+    const state = {
+      currentRotation: 0,
+      teamPositions: {}
+    };
+
+    // Look at which events have scores to determine current rotation
+    if (meet.teams) {
+      let maxRotation = 0;
+
+      for (const team of meet.teams) {
+        const teamKey = team.tricode || team.short_name || team.name || '';
+        if (!teamKey) continue;
+
+        const completedEvents = [];
+        if (team.events) {
+          for (const event of team.events) {
+            const hasScores = event.gymnasts?.some(g => parseFloat(g.final_score) > 0);
+            if (hasScores) {
+              completedEvents.push(this._normalizeApparatus(event.event_name));
+            }
+          }
+        }
+
+        state.teamPositions[teamKey] = {
+          completedEvents,
+          completedCount: completedEvents.length
+        };
+
+        if (completedEvents.length > maxRotation) {
+          maxRotation = completedEvents.length;
+        }
+      }
+
+      state.currentRotation = maxRotation;
+    }
+
+    return state;
   }
 }
 

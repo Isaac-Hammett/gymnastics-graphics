@@ -39,7 +39,7 @@ Create the core service module following the PlayoutEngine singleton pattern. Th
 
 ---
 
-### Task 2: Implement Virtius API fetch with processVirtiusData — NOT STARTED
+### Task 2: Implement Virtius API fetch with processVirtiusData — COMPLETE
 
 **Files:** `server/lib/scoringIngestionService.js`
 
@@ -372,3 +372,9 @@ Test the complete data flow from Virtius API to Firebase to renderer blocks.
 - Task 1 verified via `node --input-type=module -e "import { getScoringService }..."` — ES module syntax works
 - ScoringIngestionService class structure follows PlayoutEngine exactly — EventEmitter extension, constructor with options, getState() method, singleton manager exports
 - The service uses ES module syntax (`import`/`export`) matching playoutEngine.js pattern
+- Task 2 adds `_fetchVirtiusData()` with AbortController timeout (15s) and `processVirtiusData()` that returns `{ leaderboards, teamTotals, rotationState, allAround }`
+- Gap ranking: scores [14.2, 14.1, 14.1, 13.8] → ranks [1, 2, 2, 4] — verified working
+- `isTied` correctly identifies tied positions (rank 2) while marking non-tied positions as false
+- Men's events include `diff`, `exec`, `stickBonus`; women's events have these as `null`
+- `stickBonus` is derived from `bonus > 0` in the API response
+- Team logo caching via `_teamLogoCache` Map reduces Firebase reads for repeated lookups
