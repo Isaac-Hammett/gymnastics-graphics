@@ -59,6 +59,25 @@ function loadJSON(filePath) {
 }
 
 /**
+ * Check if a skeleton file exists (HTML or CSS)
+ * Returns true if either .html or .css exists
+ */
+function skeletonExists(skeletonName) {
+  const htmlPath = path.join(SKELETONS_DIR, `${skeletonName}.html`);
+  const cssPath = path.join(SKELETONS_DIR, `${skeletonName}.css`);
+  return fs.existsSync(htmlPath) || fs.existsSync(cssPath);
+}
+
+/**
+ * Check if a block file exists (.js file required)
+ * Returns true if .js file exists
+ */
+function blockExists(blockName) {
+  const jsPath = path.join(BLOCKS_DIR, `${blockName}.js`);
+  return fs.existsSync(jsPath);
+}
+
+/**
  * Validate a single manifest against requirements
  * Returns array of error messages (empty = valid)
  */
@@ -94,9 +113,18 @@ function validateManifest(manifest, categories, filePath) {
     // Stage engine manifests require skeleton and blocks
     if (!manifest.skeleton) {
       errors.push(`${relPath}: Stage renderer requires 'skeleton' field`);
+    } else if (!skeletonExists(manifest.skeleton)) {
+      errors.push(`${relPath}: Skeleton '${manifest.skeleton}' not found. Expected: stage/skeletons/${manifest.skeleton}.html (or .css)`);
     }
     if (!manifest.blocks || !Array.isArray(manifest.blocks) || manifest.blocks.length === 0) {
       errors.push(`${relPath}: Stage renderer requires non-empty 'blocks' array`);
+    } else {
+      // Validate each block exists
+      for (const blockName of manifest.blocks) {
+        if (!blockExists(blockName)) {
+          errors.push(`${relPath}: Block '${blockName}' not found. Expected: stage/blocks/${blockName}.js`);
+        }
+      }
     }
   } else if (manifest.renderer === 'overlay' || manifest.renderer === 'output') {
     // Legacy manifests require file

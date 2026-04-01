@@ -123,13 +123,13 @@ Phase 4 connects the stage engine (built in Phases 1-3) to all producer tools. T
 
 ---
 
-### Task 7: Add skeleton/block existence validation — NOT STARTED
+### Task 7: Add skeleton/block existence validation — COMPLETE
 **Files:** `scripts/buildGraphicsRegistry.js`
 **Resolves:** PRD lines 517-518
 **Verify:**
-- [ ] Build fails if stage manifest references skeleton that doesn't exist in `stage/skeletons/`
-- [ ] Build fails if stage manifest references block that doesn't exist in `stage/blocks/`
-- [ ] Error message shows missing file path
+- [x] Build fails if stage manifest references skeleton that doesn't exist in `stage/skeletons/`
+- [x] Build fails if stage manifest references block that doesn't exist in `stage/blocks/`
+- [x] Error message shows missing file path
 
 **Notes:**
 - Check for `stage/skeletons/{skeleton}.html` (or .css)
@@ -546,3 +546,11 @@ This avoids bundler complexity while keeping single source of truth.
   6. No duplicate IDs across all manifests
 - **Error messages include relative file paths** and list valid options (e.g., "Valid categories: full-screen-cards, lower-thirds, ...")
 - **Validation runs before summary output** — if validation fails, no summary is printed
+
+### Task 7 Learnings
+
+- **Two new helper functions:** `skeletonExists(name)` checks for `.html` OR `.css` file, `blockExists(name)` checks for `.js` file only
+- **Skeleton validation is OR-based** — either `{name}.html` or `{name}.css` satisfies the check (some skeletons may be CSS-only)
+- **Block validation is JS-only** — blocks must have a `.js` file (the JS file loads its own CSS via `<link>`)
+- **Validation order matters** — skeleton/block existence checks come AFTER the required field checks to avoid confusing errors when `skeleton` or `blocks` is missing entirely
+- **All 11 stage manifests pass** — they all reference `full-screen-card` skeleton and existing blocks (header-bar, leaderboard-table, athlete-grid)
