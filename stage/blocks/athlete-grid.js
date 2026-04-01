@@ -9,29 +9,14 @@ window.BlockAthleteGrid = {
   themeVars: ['--meet-overlay-bg', '--meet-overlay-text', '--meet-border-color'],
 
   sampleData: {
+    // 6 athletes, all without headshots to verify initials fallback
     athletes: [
       { name: 'Alexandra Smith' },
       { name: 'Brianna Johnson' },
       { name: 'Caroline Williams' },
       { name: 'Diana Brown' },
       { name: 'Elizabeth Davis' },
-      { name: 'Francesca Miller' },
-      { name: 'Grace Anderson' },
-      { name: 'Hannah Martinez' },
-      { name: 'Isabella Thompson' },
-      { name: 'Julia Garcia' },
-      { name: 'Katherine Lee' },
-      { name: 'Lauren Wilson' },
-      { name: 'Madison Taylor' },
-      { name: 'Natalie Moore' },
-      { name: 'Olivia Jackson' },
-      { name: 'Paige White' },
-      { name: 'Quinn Harris' },
-      { name: 'Rachel Clark' },
-      { name: 'Samantha Lewis' },
-      { name: 'Taylor Robinson' },
-      { name: 'Uma Walker' },
-      { name: 'Victoria Hall' }
+      { name: 'Francesca Miller' }
     ]
   },
 

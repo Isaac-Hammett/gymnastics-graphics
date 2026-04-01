@@ -245,8 +245,8 @@ Phase 6 verifies visual parity between legacy and new renderers, validates routi
 
 ---
 
-### Task 9: Side-by-Side — Roster (Missing Headshots) — NOT STARTED
-**Files:** None (verification only)
+### Task 9: Side-by-Side — Roster (Missing Headshots) — COMPLETE
+**Files:** `stage/blocks/athlete-grid.js` (sample data adjusted to 6 athletes without headshots)
 **Resolves:** PRD Issue #34 (initials fallback)
 **Verify:** Screenshot showing initials fallback
 
@@ -255,12 +255,17 @@ Phase 6 verifies visual parity between legacy and new renderers, validates routi
 2. Screenshot both renderers
 3. Compare initials fallback display
 
+**Verification performed 2026-04-01:**
+- Modified athlete-grid.js sampleData to 6 athletes without headshot URLs
+- Screenshot: `phase-6/screenshots/local-task-9-initials-fallback.png`
+- CSS verified at athlete-grid.css lines 79-93
+
 **Checklist:**
-- [ ] Missing headshots show initials (first + last letter)
-- [ ] Initials background gradient (#3f3f46 → #27272a)
-- [ ] Initials font-size 36px, weight 700, color #a1a1aa
-- [ ] Initials centered both axes
-- [ ] Border matches headshot border (3px solid #52525b)
+- [x] Missing headshots show initials (first + last letter) — all 6 athletes show AS, BJ, CW, DB, ED, FM (first + last initial)
+- [x] Initials background gradient (#3f3f46 → #27272a) — gradient visible in circles (athlete-grid.css line 84)
+- [x] Initials font-size 36px, weight 700, color #a1a1aa — bold gray text visible (athlete-grid.css lines 90-92)
+- [x] Initials centered both axes — flexbox centering verified (athlete-grid.css lines 87-89)
+- [x] Border matches headshot border (3px solid #52525b) — gray border visible around circles (athlete-grid.css line 85)
 
 ---
 
