@@ -87,7 +87,7 @@ Phase 4 connects the stage engine (built in Phases 1-3) to all producer tools. T
 
 ---
 
-### Task 5: Create buildGraphicsRegistry.js script (scaffolding) — NOT STARTED
+### Task 5: Create buildGraphicsRegistry.js script (scaffolding) — COMPLETE
 **Files:** `scripts/buildGraphicsRegistry.js` (new)
 **Resolves:** PRD Architecture Decision 12 (lines 426-437)
 **Verify:**
@@ -526,3 +526,10 @@ This avoids bundler complexity while keeping single source of truth.
 - **Rotation params vs apparatus params:** Rotation summaries use `summaryMode: "rotation"` + `summaryRotation: N`; apparatus summaries use `summaryMode: "apparatus"` + `summaryApparatus: "xx"` + `summaryFormat: "head-to-head"`
 - **now-competing is NOT in graphicsRegistry.js** — it's dynamically triggered by GraphicsControl.jsx's sendNowCompeting() function, but still needs a manifest for the build script to recognize it
 - **Total manifest count after Task 4: 44 files** in `stage/graphics/legacy/` (29 overlays from Task 3 + 15 output.html graphics from Task 4)
+
+### Task 5 Learnings
+
+- **Build script location:** `scripts/buildGraphicsRegistry.js` — uses only Node.js built-in modules (fs, path), no external deps
+- **Recursive file finding:** Use `fs.readdirSync` with `withFileTypes: true` to distinguish files from directories
+- **Manifest counts verified:** 11 stage + 29 overlay + 15 output = 55 total manifests
+- **Script structure:** Separate functions for `findManifestFiles()`, `loadJSON()`, and `build()` — makes adding validation straightforward in Task 6
