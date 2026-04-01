@@ -1,0 +1,18 @@
+{
+  "id": "summary-r4",
+  "label": "R4",
+  "category": "event-summary",
+  "subcategory": "rotations",
+  "renderer": "output",
+  "file": "event-summary",
+  "transparent": false,
+  "gender": "both",
+  "keywords": ["summary", "rotation", "r4", "4", "scores", "event"],
+  "params": {
+    "summaryMode": { "type": "string", "default": "rotation" },
+    "summaryRotation": { "type": "number", "default": 4 },
+    "summaryFormat": { "type": "string", "source": "competition" },
+    "summaryTheme": { "type": "string", "default": "default" },
+    "comp": { "type": "string", "source": "competition", "required": true }
+  }
+}

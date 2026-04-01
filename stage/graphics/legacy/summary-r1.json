@@ -1,0 +1,18 @@
+{
+  "id": "summary-r1",
+  "label": "R1",
+  "category": "event-summary",
+  "subcategory": "rotations",
+  "renderer": "output",
+  "file": "event-summary",
+  "transparent": false,
+  "gender": "both",
+  "keywords": ["summary", "rotation", "r1", "1", "scores", "event"],
+  "params": {
+    "summaryMode": { "type": "string", "default": "rotation" },
+    "summaryRotation": { "type": "number", "default": 1 },
+    "summaryFormat": { "type": "string", "source": "competition" },
+    "summaryTheme": { "type": "string", "default": "default" },
+    "comp": { "type": "string", "source": "competition", "required": true }
+  }
+}

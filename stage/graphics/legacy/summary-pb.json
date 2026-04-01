@@ -1,0 +1,18 @@
+{
+  "id": "summary-pb",
+  "label": "PB",
+  "category": "event-summary",
+  "subcategory": "apparatus",
+  "renderer": "output",
+  "file": "event-summary",
+  "transparent": false,
+  "gender": "mens",
+  "keywords": ["summary", "apparatus", "parallel", "bars", "pbars", "pb", "scores", "event"],
+  "params": {
+    "summaryMode": { "type": "string", "default": "apparatus" },
+    "summaryApparatus": { "type": "string", "default": "pb" },
+    "summaryFormat": { "type": "string", "default": "head-to-head" },
+    "summaryTheme": { "type": "string", "default": "default" },
+    "comp": { "type": "string", "source": "competition", "required": true }
+  }
+}
