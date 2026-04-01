@@ -225,3 +225,197 @@ Phase 1 already configured the `/stage/` nginx location block. Phase 2 only adds
 ### Block `ready()` Lifecycle
 
 `ready()` is called by `waitForReady()` inside `loadBlocks()` — this happens BEFORE `render()` is called. It also receives NO arguments (not even `container`). So `ready()` cannot inspect DOM elements created by `render()`. For blocks with no async setup (no Firebase listeners), just `return Promise.resolve()`. If a block needs to signal when async rendering is done (e.g., images loaded), it must manage that internally after `render()` is called — `ready()` is not the right place.
+
+## Phase 3 Findings
+
+### Service Architecture Pattern
+
+Follow PlayoutEngine's singleton pattern exactly:
+- `const scoringServices = new Map()` — per-competition instances
+- `getScoringService(compId, options)` — get or create
+- `removeScoringService(compId)` — stop + cleanup + delete
+- `getAllScoringServices()` — for health checks
+
+### Service Class Structure
+
+Extend `EventEmitter`:
+```javascript
+class ScoringIngestionService extends EventEmitter {
+  constructor(options) {
+    super();
+    this.compId = options.compId;
+    this._firebase = options.firebase;
+    this._io = options.io;
+    // ... state init
+  }
+}
+```
+
+### Polling Loop Pattern
+
+Always use the start/stop guard pattern:
+```javascript
+_startPolling() {
+  this._stopPolling();  // Guard against double-start
+  this._pollTimer = setInterval(async () => {
+    await this._poll();  // Errors caught inside
+  }, this._pollInterval * 1000);
+}
+
+_stopPolling() {
+  if (this._pollTimer) {
+    clearInterval(this._pollTimer);
+    this._pollTimer = null;
+  }
+}
+```
+
+### Firebase Write Strategy — CRITICAL
+
+Use `.update()` on individual subpaths, NOT `.set()` on the root:
+```javascript
+// CORRECT
+await scoringRef.child('leaderboard/VT').update(vtData);
+await scoringRef.child('teamTotals').update(totalsData);
+
+// WRONG — destroys sibling data on partial failure
+await scoringRef.set({ leaderboard: {...}, teamTotals: {...} });
+```
+
+### Gap Ranking Algorithm
+
+Matches output.html behavior:
+```javascript
+let currentPlace = 1;
+sortedGymnasts.forEach((g, i) => {
+  if (i > 0 && g.score < sortedGymnasts[i-1].score) {
+    currentPlace = i + 1;  // Skip tied positions
+  }
+  g.rank = currentPlace;
+});
+// Result: [9.9, 9.8, 9.8, 9.7] → ranks [1, 2, 2, 4]
+```
+
+### Virtius Score Formula
+
+```javascript
+const diff = parseFloat(g.scores?.[0]?.start) || 0;
+const exec = parseFloat(g.e_score) || 0;  // Already includes 10.0 base
+const nd = parseFloat(g.neutral) || 0;
+const bonus = parseFloat(g.bonus) || 0;
+
+const score = diff + exec - nd + bonus;
+const stickBonus = bonus > 0;
+```
+
+**Critical:** `e_score` already includes the 10.0 base — do NOT add 10.0 again.
+
+### Apparatus Code Normalization
+
+```javascript
+const APPARATUS_MAP = {
+  'Floor Exercise': 'FX', 'FLOOR': 'FX', 'FX': 'FX',
+  'Pommel Horse': 'PH', 'HORSE': 'PH', 'PH': 'PH',
+  'Still Rings': 'SR', 'RINGS': 'SR', 'SR': 'SR',
+  'Vault': 'VT', 'VAULT': 'VT', 'VT': 'VT',
+  'Parallel Bars': 'PB', 'PBARS': 'PB', 'PB': 'PB',
+  'High Bar': 'HB', 'BAR': 'HB', 'HB': 'HB',
+  'Uneven Bars': 'UB', 'UBARS': 'UB', 'UB': 'UB',
+  'Balance Beam': 'BB', 'BEAM': 'BB', 'BB': 'BB',
+  'All Around': 'AA', 'AA': 'AA'
+};
+```
+
+### Gender-Based Column Variants
+
+```javascript
+const isWomens = gender === 'womens';
+const isAA = apparatus === 'AA';
+const showDiffExec = !isWomens && !isAA;  // Men's non-AA only
+```
+
+### Server Integration Points
+
+**Import location:** Top of `server/index.js` (after other service imports)
+
+**Initialization:** Call `initializeScoringIngestion()` in the startup sequence AFTER Firebase is ready:
+```javascript
+httpServer.listen(PORT, async () => {
+  // ... existing init
+  await initializeScoringIngestion();
+});
+```
+
+**Socket room:** `competition:{compId}` — same as playoutEngine
+
+**Event prefix:** `scoring:` (e.g., `scoring:pollCompleted`, `scoring:started`, `scoring:stopped`)
+
+### Producer Activity Reset Pattern
+
+Reset activity timestamp on ANY socket event from the competition room:
+```javascript
+socket.use((packet, next) => {
+  const service = scoringServices.get(clientCompId);
+  if (service) service.resetProducerActivity();
+  next();
+});
+```
+
+### ProducerView Panel Insertion Point
+
+Insert ScoringFeedPanel at line ~1287 (after ScoreBugPanel, before VMConnectionPanel):
+```jsx
+<ScoreBugPanel compId={compId} collapsed={true} />
+<ScoringFeedPanel compId={compId} collapsed={true} />  {/* NEW */}
+{competitionConfig?.vmCredentials && (
+  <VMConnectionPanel ... />
+)}
+```
+
+### HomePage Badge Insertion Point
+
+Insert ScoringFeedBadge at line ~1045 (in the dynamic badge area):
+```jsx
+<CommentaryStatusBadge compId={compId} />
+<ScoringFeedBadge compId={compId} />  {/* NEW */}
+```
+
+### Hook Pattern (useScoringFeed)
+
+Follow the same pattern as useThemeErrors:
+```javascript
+useEffect(() => {
+  if (!compId) {
+    setFeedState(null);
+    setLoading(false);
+    return;
+  }
+  const feedRef = ref(db, `competitions/${compId}/config/scoringFeed`);
+  const unsubscribe = onValue(feedRef, (snapshot) => {
+    setFeedState(snapshot.val() || defaultState);
+    setLoading(false);
+  });
+  return () => unsubscribe();
+}, [compId]);
+```
+
+### Panel Color Scheme
+
+Use blue for scoring feed (distinct from green scoreBug):
+- Border: `border-blue-500/30`
+- Background: `bg-blue-500/10`
+- Text: `text-blue-400`
+
+### Badge Color States
+
+| State | Color |
+|-------|-------|
+| LIVE | `bg-green-500/20 text-green-400 border-green-500/30` |
+| OFF | `bg-zinc-700 text-zinc-400` |
+| ERROR | `bg-red-500/20 text-red-400 border-red-500/30` |
+
+### Auto-Stop Priority
+
+1. Competition status listener (highest priority — admin action)
+2. Virtius session completion (in poll response)
+3. Producer timeout (30 minutes of no activity)
