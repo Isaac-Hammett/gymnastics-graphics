@@ -254,7 +254,7 @@ Create the Producer View sidebar panel for scoring feed control.
 
 ---
 
-### Task 9: Integrate ScoringFeedPanel into ProducerView — NOT STARTED
+### Task 9: Integrate ScoringFeedPanel into ProducerView — COMPLETE
 
 **Files:** `show-controller/src/views/ProducerView.jsx`
 
@@ -404,3 +404,4 @@ Test the complete data flow from Virtius API to Firebase to renderer blocks.
 - ScoringFeedPanel uses separate Firebase listener for virtiusSessionId to hide panel when not configured
 - TimeAgo component reuses the HeartbeatIndicator pattern from ScoreBugPanel but simplified for scoring feed
 - Blue color scheme (text-blue-400, bg-blue-500/*, border-blue-500/*) distinguishes scoring feed from green score bug
+- Task 9: Integration is straightforward — import + render with `compId={compId} collapsed={true}` props. Panel hides itself when no virtiusSessionId configured.

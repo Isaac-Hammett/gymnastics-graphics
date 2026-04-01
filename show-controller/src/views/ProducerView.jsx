@@ -17,6 +17,7 @@ import CameraRuntimePanel from '../components/CameraRuntimePanel';
 import OverrideLog from '../components/OverrideLog';
 import AlertPanel from '../components/AlertPanel';
 import ScoreBugPanel from '../components/ScoreBugPanel';
+import ScoringFeedPanel from '../components/ScoringFeedPanel';
 import ThemeErrorLog, { ThemeErrorBadge } from '../components/ThemeErrorLog';
 import { useAlerts } from '../hooks/useAlerts';
 import { useThemeErrors } from '../hooks/useThemeErrors';
@@ -1284,6 +1285,9 @@ export default function ProducerView() {
 
             {/* Score Bug Panel - Team scores overlay control */}
             <ScoreBugPanel compId={compId} collapsed={true} />
+
+            {/* Scoring Feed Panel - Virtius scoring data ingestion control */}
+            <ScoringFeedPanel compId={compId} collapsed={true} />
 
             {/* VM Connection Panel - Custom VM credentials for producers */}
             {competitionConfig?.vmCredentials && (
