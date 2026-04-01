@@ -4,17 +4,8 @@ import { db, ref, set, get, onValue, push, remove } from '../lib/firebase';
 import { PhotoIcon, XMarkIcon, ClipboardDocumentIcon, CheckIcon, Cog6ToothIcon, PlusIcon, TrashIcon } from '@heroicons/react/24/solid';
 import useEventConfig from '../hooks/useEventConfig';
 import useTeamsDatabase from '../hooks/useTeamsDatabase';
-import { getGraphicsForCompetition, getGraphicsByCategory, getGraphicById } from '../lib/graphicsRegistry';
+import { getGraphicsForCompetition, getGraphicsByCategory, getGraphicById, CATEGORIES } from '../lib/graphicsRegistry';
 import { resolveTheme } from '../lib/themeResolver';
-
-// Category to section mapping for display
-const CATEGORY_TO_SECTION = {
-  'pre-meet': 'Pre-Meet',
-  'in-meet': 'In-Meet',
-  'frame-overlays': 'Frame Overlays',
-  'stream': 'Stream',
-  'sponsors': 'Sponsors',
-};
 
 // Event button mapping for different genders (uses eventConfig IDs)
 // These map internal event IDs to display-friendly button configs
@@ -166,27 +157,20 @@ export default function GraphicsControl({ competitionId }) {
     // Get graphics from registry with dynamic labels
     const registryGraphics = getGraphicsForCompetition(config?.compType, teamNames);
 
-    // Build base graphic buttons from registry (pre-meet, in-meet, frame-overlays, stream, sponsors)
+    // Build graphic buttons from registry, using category labels from CATEGORIES
     const baseGraphicButtons = registryGraphics
-      .filter(g => ['pre-meet', 'in-meet', 'frame-overlays', 'stream', 'sponsors'].includes(g.category))
+      .filter(g => g.category && CATEGORIES[g.category]) // Only include graphics with valid categories
       .map(g => ({
         id: g.id,
         label: g.label,
-        section: CATEGORY_TO_SECTION[g.category] || g.category,
+        category: g.category,
+        subcategory: g.subcategory,
+        section: CATEGORIES[g.category]?.label || g.category,
+        renderer: g.renderer,
         team: g.team,
       }));
 
-    // Build leaderboard buttons from gender-specific events
-    const leaderboardButtons = eventIds
-      .map(eventId => leaderboardButtonConfig[eventId])
-      .filter(Boolean)
-      .map(btn => ({ ...btn, section: 'Leaderboards' }));
-
-    return [
-      ...baseGraphicButtons,
-      ...leaderboardButtons,
-      ...commonLeaderboardButtons.map(btn => ({ ...btn, section: 'Leaderboards' })),
-    ];
+    return baseGraphicButtons;
   }, [eventIds, config]);
 
   // Build apparatus buttons for Event Summary (gender-specific)
@@ -657,7 +641,16 @@ export default function GraphicsControl({ competitionId }) {
     });
   };
 
-  const sections = ['Pre-Meet', 'In-Meet', 'Frame Overlays', 'Leaderboards', 'Stream', 'Sponsors'];
+  // Generate sections dynamically from CATEGORIES, sorted by order
+  const sections = useMemo(() => {
+    return Object.entries(CATEGORIES)
+      .sort((a, b) => a[1].order - b[1].order)
+      .map(([key, cat]) => ({
+        key,
+        label: cat.label,
+        subcategories: cat.subcategories || {},
+      }));
+  }, []);
 
   const outputUrl = compId ? `${OUTPUT_BASE_URL}?comp=${compId}` : '';
   const localOutputUrl = compId ? `${LOCAL_OUTPUT_URL}?comp=${compId}` : '';
@@ -818,19 +811,23 @@ export default function GraphicsControl({ competitionId }) {
             // Get max teams for this competition type
             const maxTeams = teamCounts[config.compType] || 2;
 
-            // Filter buttons by section and team count
-            // Exclude rotation-slate from regular buttons - it gets its own rotation selector
+            // Filter buttons by category (section.key) and team count
+            // Exclude rotation-slate, event-summary from regular buttons - they get their own special sections
             const sectionButtons = graphicButtons.filter((btn) => {
-              if (btn.section !== section) return false;
-              if (btn.id === 'rotation-slate') return false; // Handle separately below
+              if (btn.category !== section.key) return false;
+              if (btn.id === 'rotation-slate' || btn.id === 'rotation-slate-auto') return false; // Handle separately below
+              if (btn.category === 'event-summary') return false; // Has its own special section
               // If button has a team number, only show if within max teams
               if (btn.team && btn.team > maxTeams) return false;
               return true;
             });
 
+            // Skip rendering if no buttons in this section (unless it's full-bleed which has rotation slate)
+            if (sectionButtons.length === 0 && section.key !== 'full-bleed') return null;
+
             return (
-              <div key={section} className="mb-4">
-                <div className="text-xs text-zinc-500 uppercase mb-2">{section}</div>
+              <div key={section.key} className="mb-4">
+                <div className="text-xs text-zinc-500 uppercase mb-2">{section.label}</div>
                 <div className="grid grid-cols-3 gap-1.5">
                   {sectionButtons.map((btn) => {
                     const isActive = currentGraphicId === btn.id;
@@ -857,8 +854,8 @@ export default function GraphicsControl({ competitionId }) {
                     );
                   })}
                 </div>
-                {/* Rotation Slate buttons - shown after In-Meet section */}
-                {section === 'In-Meet' && (
+                {/* Rotation Slate buttons - shown after full-bleed section */}
+                {section.key === 'full-bleed' && (
                   <>
                     <div className="flex items-center justify-between mt-3 mb-1">
                       <div className="text-xs text-zinc-600">Rotation Slate</div>
