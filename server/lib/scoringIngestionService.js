@@ -700,6 +700,262 @@ export class ScoringIngestionService extends EventEmitter {
 
     return state;
   }
+
+  // ============================================================================
+  // Polling Loop
+  // ============================================================================
+
+  /**
+   * Start the scoring ingestion service
+   * Reads config from Firebase and begins polling if session ID exists
+   */
+  async start() {
+    if (this._state !== 'stopped') {
+      this._log('warning', 'Service already running');
+      return;
+    }
+
+    this._log('info', 'Starting scoring ingestion service');
+
+    try {
+      // Read config from Firebase
+      if (this._firebase) {
+        const configRef = this._firebase.ref(`competitions/${this.compId}/config`);
+        const snapshot = await configRef.once('value');
+        const config = snapshot.val() || {};
+
+        this._virtiusSessionId = config.virtiusSessionId || null;
+        this._gender = config.gender || 'womens';
+
+        // Read poll interval from scoringFeed config
+        const feedConfig = config.scoringFeed || {};
+        this._pollInterval = feedConfig.pollInterval || DEFAULT_POLL_INTERVAL;
+      }
+
+      // Guard: no session ID means we can't poll
+      if (!this._virtiusSessionId) {
+        this._log('warning', 'No virtiusSessionId configured - cannot start polling');
+        return;
+      }
+
+      // Start polling
+      this._startPolling();
+      this._state = 'running';
+
+      // Write initial status to Firebase
+      await this._updateFeedStatus(FEED_STATUS.OK, null);
+
+      this.emit('started', { compId: this.compId });
+      this._log('info', `Started polling every ${this._pollInterval}s`);
+      this._broadcastState();
+
+      // Do an immediate poll
+      await this._poll();
+
+    } catch (error) {
+      this._log('error', `Failed to start: ${error.message}`);
+      await this._updateFeedStatus(FEED_STATUS.ERROR, error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Stop the scoring ingestion service
+   */
+  async stop() {
+    if (this._state === 'stopped') {
+      return;
+    }
+
+    this._log('info', 'Stopping scoring ingestion service');
+
+    this._stopPolling();
+    this._state = 'stopped';
+
+    // Write stopped status to Firebase
+    await this._updateFeedStatus(FEED_STATUS.STOPPED, null);
+
+    this.emit('stopped', { compId: this.compId });
+    this._broadcastState();
+  }
+
+  /**
+   * Force an immediate poll (manual refresh)
+   */
+  async forcePoll() {
+    if (this._state !== 'running') {
+      this._log('warning', 'Cannot force poll - service not running');
+      return;
+    }
+
+    this._log('info', 'Force poll triggered');
+    await this._poll();
+  }
+
+  /**
+   * Start the polling timer
+   * @private
+   */
+  _startPolling() {
+    // Guard against double-start
+    this._stopPolling();
+
+    this._pollTimer = setInterval(async () => {
+      try {
+        await this._poll();
+      } catch (err) {
+        // Errors are handled inside _poll, this is a safety net
+        console.error(`[ScoringIngestion:${this.compId}] Uncaught poll error:`, err.message);
+      }
+    }, this._pollInterval * 1000);
+  }
+
+  /**
+   * Stop the polling timer
+   * @private
+   */
+  _stopPolling() {
+    if (this._pollTimer) {
+      clearInterval(this._pollTimer);
+      this._pollTimer = null;
+    }
+  }
+
+  /**
+   * Execute a single poll cycle
+   * @private
+   */
+  async _poll() {
+    if (!this._virtiusSessionId) {
+      this._log('warning', 'No session ID - skipping poll');
+      return;
+    }
+
+    this._log('poll', 'Starting poll cycle');
+    const pollStartTime = Date.now();
+
+    try {
+      // Fetch data from Virtius API
+      const rawData = await this._fetchVirtiusData(this._virtiusSessionId);
+
+      // Process into graphic-ready structures
+      const processed = await this.processVirtiusData(rawData, this._gender);
+
+      // Write to Firebase using .update() on individual subpaths
+      await this._writeToFirebase(processed);
+
+      // Update tracking state
+      this._lastPollAt = new Date().toISOString();
+      this._lastPollResult = 'success';
+      this._lastApiError = null;
+
+      // Update feed status in Firebase
+      await this._updateFeedStatus(FEED_STATUS.OK, null);
+
+      const pollDuration = Date.now() - pollStartTime;
+      this._log('poll', `Poll completed in ${pollDuration}ms`);
+
+      this.emit('pollCompleted', {
+        compId: this.compId,
+        duration: pollDuration,
+        leaderboardCount: Object.keys(processed.leaderboards).length,
+        teamCount: Object.keys(processed.teamTotals).length
+      });
+
+      this._broadcastState();
+
+    } catch (error) {
+      this._lastPollAt = new Date().toISOString();
+      this._lastPollResult = 'error';
+      this._lastApiError = {
+        message: error.message,
+        timestamp: new Date().toISOString()
+      };
+
+      // Update feed status in Firebase
+      await this._updateFeedStatus(FEED_STATUS.ERROR, error.message);
+
+      this._log('error', `Poll failed: ${error.message}`);
+
+      this.emit('pollError', {
+        compId: this.compId,
+        error: error.message
+      });
+
+      this._broadcastState();
+
+      // Don't throw - let the polling loop continue
+    }
+  }
+
+  /**
+   * Write processed data to Firebase
+   * Uses .update() on individual subpaths to avoid overwriting sibling data
+   * @private
+   */
+  async _writeToFirebase(processed) {
+    if (!this._firebase) {
+      this._log('warning', 'No Firebase reference - skipping write');
+      return;
+    }
+
+    const scoringRef = this._firebase.ref(`competitions/${this.compId}/scoring`);
+
+    // Write each leaderboard separately
+    for (const [apparatus, leaderboard] of Object.entries(processed.leaderboards)) {
+      await scoringRef.child(`leaderboard/${apparatus}`).set(leaderboard);
+    }
+
+    // Write team totals
+    if (processed.teamTotals && Object.keys(processed.teamTotals).length > 0) {
+      await scoringRef.child('teamTotals').set(processed.teamTotals);
+    }
+
+    // Write rotation state
+    if (processed.rotationState) {
+      await scoringRef.child('rotationState').set(processed.rotationState);
+    }
+
+    // Write updatedAt timestamp
+    await scoringRef.child('updatedAt').set(new Date().toISOString());
+
+    this._log('write', `Wrote ${Object.keys(processed.leaderboards).length} leaderboards to Firebase`);
+  }
+
+  /**
+   * Update feed status in Firebase config
+   * @private
+   */
+  async _updateFeedStatus(status, errorMessage) {
+    if (!this._firebase) return;
+
+    const feedRef = this._firebase.ref(`competitions/${this.compId}/config/scoringFeed`);
+
+    const update = {
+      status,
+      lastPollAt: this._lastPollAt || new Date().toISOString()
+    };
+
+    if (errorMessage) {
+      update.errorMessage = errorMessage;
+    } else {
+      // Clear error message on success
+      update.errorMessage = null;
+    }
+
+    await feedRef.update(update);
+  }
+
+  /**
+   * Broadcast current state to connected clients
+   * @private
+   */
+  _broadcastState() {
+    if (!this._io) return;
+
+    const room = `competition:${this.compId}`;
+    this._io.to(room).emit('scoring:stateChanged', this.getState());
+  }
 }
 
 // ============================================================================
