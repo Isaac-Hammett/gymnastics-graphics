@@ -645,3 +645,104 @@ function getManifestById(graphicId) {
 5. **UI updates** — depend on generated registry being importable
 
 Never skip steps. Build failures cascade.
+
+## Phase 5 Findings
+
+### GraphicsControl.jsx — MISALIGNED CATEGORIES
+
+GraphicsControl uses hardcoded category mapping that does NOT match the registry:
+
+**Current hardcoded mapping (lines 11-17):**
+```javascript
+const CATEGORY_TO_SECTION = {
+  'pre-meet': 'Pre-Meet',
+  'in-meet': 'In-Meet',
+  'frame-overlays': 'Frame Overlays',
+  'stream': 'Stream',
+  'sponsors': 'Sponsors',
+};
+```
+
+**Registry categories:**
+- `full-screen-cards`, `lower-thirds`, `full-bleed`, `video-frames`, `standalone`, `event-summary`
+
+This mapping is completely out of sync. Graphics from registry have categories like `full-screen-cards` but GraphicsControl expects `pre-meet`. The entire category system needs replacement.
+
+### GraphicsControl Filter Excludes Most Graphics (line 171)
+
+```javascript
+.filter(g => ['pre-meet', 'in-meet', 'frame-overlays', 'stream', 'sponsors'].includes(g.category))
+```
+
+This filter **excludes** all registry graphics because they have new category names. Either remove the filter entirely or update it to include all 6 registry categories.
+
+### UrlGeneratorPage Special Category Handlers
+
+Three categories have custom rendering that must NOT be wrapped in CollapsibleSubcategory:
+
+| Category | Lines | Special UI |
+|----------|-------|------------|
+| `event-summary` | 603-660 | Theme dropdown + grid subcategories |
+| `full-bleed` | 664-800 | Rotation slate with layout picker |
+| `full-screen-cards` | 803-908 | Combined AA with session ID inputs |
+
+The default category branch (lines 911-959) is where CollapsibleSubcategory should be applied.
+
+### categories.json Subcategory Changes
+
+Two changes needed:
+1. **Add** `"coaches": "Coaches"` to `lower-thirds.subcategories`
+2. **Rename** `"camera-layouts"` → `"layouts"` in `video-frames.subcategories`
+
+After renaming, update 7 frame manifests that reference `camera-layouts`.
+
+### coaches.json Manifest ID vs Filename
+
+Filename is `coaches.json` but the `id` field is `team-coaches`. Always use the `id` field for lookups, not the filename.
+
+### CollapsibleSubcategory — Icon Import
+
+Use `ChevronRightIcon` from `@heroicons/react/24/outline`. Rotate 90° when expanded:
+```css
+className={`w-3 h-3 transition-transform duration-200 ${isOpen ? 'rotate-90' : ''}`}
+```
+
+### GraphicsControl Badge Text
+
+GraphicsControl uses abbreviated badge text: `'stg'`, `'ovl'`, `'out'`
+UrlGeneratorPage uses full text: `'stage'`, `'overlay'`, `'output'`
+
+They should match. Update GraphicsControl to use full text.
+
+### Gender Filtering Already Works
+
+Gender filtering via `isGraphicAvailable()` in graphicsRegistry.js already works correctly. No changes needed. Just verify it still works after reorganization.
+
+### Subcategory Count for UI
+
+Empty subcategories should not render. Always check:
+```javascript
+if (subData.graphics.length === 0) return null;
+```
+
+### GraphicsControl Special Handlers Location
+
+| Handler | Lines | Condition |
+|---------|-------|-----------|
+| Rotation Slate | 861-918 | `section === 'In-Meet'` |
+| Event Summary | 924-979 | `config.virtiusSessionId` exists |
+| Now Competing | 982-1030 | `config.virtiusSessionId` exists |
+| Custom Graphics | 1033-1111 | Always renders |
+
+These must be preserved during the reorganization. They don't use the category/subcategory system.
+
+### Build + Verify Cycle
+
+After each manifest or categories.json change:
+1. Run `npm run build:registry` (or `npm run build` which runs it via prebuild)
+2. Check for errors in console
+3. Check generated registry has expected structure
+
+### Skeletons & Blocks Section
+
+Phase 4 added this section. It appears at the bottom of the URL Generator sidebar. Don't break it during reorganization.

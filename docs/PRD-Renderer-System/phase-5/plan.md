@@ -109,7 +109,7 @@
 
 ---
 
-### Task 5: Update UrlGeneratorPage.jsx sidebar with collapsible subcategories — NOT STARTED
+### Task 5: Update UrlGeneratorPage.jsx sidebar with collapsible subcategories — COMPLETE
 
 **Issue:** Sidebar renders subcategories as flat sections, not collapsible.
 
@@ -294,6 +294,8 @@
 - LEARNING: Manifest validation runs during `npm run build:registry` and will fail if manifests reference removed subcategories.
 - LEARNING: For data/config changes (categories.json, manifests), verify with build output and grep. Screenshot verification is only needed for UI changes (Tasks 4-7+).
 - LEARNING: CollapsibleSubcategory follows the pattern from TalentProfilePage's CollapsibleSection, but uses ChevronRightIcon instead of ChevronDownIcon for horizontal-to-vertical rotation style. Keyboard accessibility via handleKeyDown for Enter/Space.
+- LEARNING: Task 5 was implemented by a previous iteration that crashed before marking COMPLETE. The code was fully functional — just needed build verification and screenshot confirmation. Always check for this pattern when a task is IN PROGRESS.
+- LEARNING: The default category branch in UrlGeneratorPage (lines ~912-959) wraps subcategories in CollapsibleSubcategory. Special handlers for event-summary, full-bleed, and full-screen-cards are separate branches above it and remain unchanged.
 
 ---
 
@@ -305,7 +307,7 @@
 | 2 | Update coaches.json manifest subcategory | COMPLETE |
 | 3 | Update frame-*.json manifests subcategory | COMPLETE |
 | 4 | Create CollapsibleSubcategory shared component | COMPLETE |
-| 5 | Update UrlGeneratorPage.jsx with collapsible subcategories | NOT STARTED |
+| 5 | Update UrlGeneratorPage.jsx with collapsible subcategories | COMPLETE |
 | 6 | Update GraphicsControl.jsx to use CATEGORIES from registry | NOT STARTED |
 | 7 | Add collapsible subcategories to GraphicsControl.jsx | NOT STARTED |
 | 8 | Update renderer badge style in GraphicsControl.jsx | NOT STARTED |

@@ -8,6 +8,7 @@ import { getTeamCount } from '../lib/competitionUtils';
 import { generateGraphicURL, copyToClipboard } from '../lib/urlBuilder';
 import { db, ref, get, update } from '../lib/firebase';
 import SponsorAdjustControls from '../components/SponsorAdjustControls';
+import CollapsibleSubcategory from '../components/CollapsibleSubcategory';
 
 // Available themes for Event Summary (same as GraphicsControl.jsx)
 const summaryThemes = [
@@ -924,8 +925,7 @@ export default function UrlGeneratorPage() {
                 {hasSubcategories && Object.entries(category.subcategories).map(([subId, sub]) => {
                   if (sub.graphics.length === 0) return null;
                   return (
-                    <div key={subId}>
-                      <div className="text-xs text-zinc-500 mb-1 first:mt-0 mt-3">{sub.label}</div>
+                    <CollapsibleSubcategory key={subId} title={sub.label} defaultOpen={true}>
                       {sub.graphics.map((g) => (
                         <GraphicSidebarButton
                           key={g.id}
@@ -936,7 +936,7 @@ export default function UrlGeneratorPage() {
                           onClick={() => setCurrentGraphic(g.id)}
                         />
                       ))}
-                    </div>
+                    </CollapsibleSubcategory>
                   );
                 })}
                 {/* Render ungrouped graphics */}
