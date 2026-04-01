@@ -1581,7 +1581,12 @@ function GraphicSection({ title, children }) {
   );
 }
 
-function GraphicSidebarButton({ id, label, number, active, onClick }) {
+function GraphicSidebarButton({ id, label, number, renderer, active, onClick }) {
+  // Badge color: teal for stage (new), gray for overlay/output (legacy)
+  const badgeClasses = renderer === 'stage'
+    ? 'bg-teal-500/20 text-teal-400'
+    : 'bg-zinc-700 text-zinc-400';
+
   return (
     <button
       onClick={onClick}
@@ -1591,8 +1596,13 @@ function GraphicSidebarButton({ id, label, number, active, onClick }) {
           : 'bg-transparent border border-zinc-800 text-zinc-300 hover:bg-zinc-800'
       }`}
     >
-      <span className={`text-xs w-5 ${active ? 'text-blue-200' : 'text-zinc-500'}`}>{number}</span>
-      {label}
+      {number && <span className={`text-xs w-5 ${active ? 'text-blue-200' : 'text-zinc-500'}`}>{number}</span>}
+      <span className="flex-1 truncate">{label}</span>
+      {renderer && (
+        <span className={`text-[9px] px-1.5 py-0.5 rounded ${badgeClasses} ${active ? 'opacity-80' : ''}`}>
+          {renderer}
+        </span>
+      )}
     </button>
   );
 }
