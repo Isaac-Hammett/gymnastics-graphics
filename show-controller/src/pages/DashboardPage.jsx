@@ -62,6 +62,18 @@ export default function DashboardPage() {
       team6Name: '',
       team6Logo: '',
       team6Tricode: '',
+      team7Name: '',
+      team7Logo: '',
+      team7Tricode: '',
+      team8Name: '',
+      team8Logo: '',
+      team8Tricode: '',
+      team9Name: '',
+      team9Logo: '',
+      team9Tricode: '',
+      team10Name: '',
+      team10Logo: '',
+      team10Tricode: '',
     };
   }
 
@@ -141,6 +153,18 @@ export default function DashboardPage() {
         team6Name: sortedTeams[5]?.name || prev.team6Name,
         team6Logo: getTeamLogo(sortedTeams[5]?.name, gender) || prev.team6Logo,
         team6Tricode: sortedTeams[5]?.tricode || prev.team6Tricode,
+        team7Name: sortedTeams[6]?.name || prev.team7Name,
+        team7Logo: getTeamLogo(sortedTeams[6]?.name, gender) || prev.team7Logo,
+        team7Tricode: sortedTeams[6]?.tricode || prev.team7Tricode,
+        team8Name: sortedTeams[7]?.name || prev.team8Name,
+        team8Logo: getTeamLogo(sortedTeams[7]?.name, gender) || prev.team8Logo,
+        team8Tricode: sortedTeams[7]?.tricode || prev.team8Tricode,
+        team9Name: sortedTeams[8]?.name || prev.team9Name,
+        team9Logo: getTeamLogo(sortedTeams[8]?.name, gender) || prev.team9Logo,
+        team9Tricode: sortedTeams[8]?.tricode || prev.team9Tricode,
+        team10Name: sortedTeams[9]?.name || prev.team10Name,
+        team10Logo: getTeamLogo(sortedTeams[9]?.name, gender) || prev.team10Logo,
+        team10Tricode: sortedTeams[9]?.tricode || prev.team10Tricode,
         virtiusSessionId: virtiusSessionId.trim(),
       }));
     } catch (error) {
@@ -190,7 +214,21 @@ export default function DashboardPage() {
       team6Name: config.team6Name || '',
       team6Logo: config.team6Logo || '',
       team6Tricode: config.team6Tricode || '',
+      team7Name: config.team7Name || '',
+      team7Logo: config.team7Logo || '',
+      team7Tricode: config.team7Tricode || '',
+      team8Name: config.team8Name || '',
+      team8Logo: config.team8Logo || '',
+      team8Tricode: config.team8Tricode || '',
+      team9Name: config.team9Name || '',
+      team9Logo: config.team9Logo || '',
+      team9Tricode: config.team9Tricode || '',
+      team10Name: config.team10Name || '',
+      team10Logo: config.team10Logo || '',
+      team10Tricode: config.team10Tricode || '',
       virtiusSessionId: config.virtiusSessionId || '',
+      clipApiUrl: config.clipApiUrl || '',
+      clipSessionKey: config.clipSessionKey || '',
     });
     setVirtiusSessionId(config.virtiusSessionId || '');
     setVirtiusError(null);
@@ -215,6 +253,8 @@ export default function DashboardPage() {
       venue: formData.venue,
       location: formData.location,
       virtiusSessionId: formData.virtiusSessionId || '',
+      clipApiUrl: formData.clipApiUrl || '',
+      clipSessionKey: formData.clipSessionKey || '',
       team1Name: formData.team1Name,
       team1Logo: formData.team1Logo || 'https://via.placeholder.com/200/00274C/FFCB05?text=T1',
       team1Tricode: formData.team1Tricode || '',
@@ -239,6 +279,22 @@ export default function DashboardPage() {
       team6Logo: formData.team6Logo || 'https://via.placeholder.com/200/000080/FFFFFF?text=T6',
       team6Tricode: formData.team6Tricode || '',
       team6Key: formData.team6Name ? buildTeamKey(formData.team6Name, gender) : '',
+      team7Name: formData.team7Name,
+      team7Logo: formData.team7Logo || 'https://via.placeholder.com/200/000080/FFFFFF?text=T7',
+      team7Tricode: formData.team7Tricode || '',
+      team7Key: formData.team7Name ? buildTeamKey(formData.team7Name, gender) : '',
+      team8Name: formData.team8Name,
+      team8Logo: formData.team8Logo || 'https://via.placeholder.com/200/008080/FFFFFF?text=T8',
+      team8Tricode: formData.team8Tricode || '',
+      team8Key: formData.team8Name ? buildTeamKey(formData.team8Name, gender) : '',
+      team9Name: formData.team9Name,
+      team9Logo: formData.team9Logo || 'https://via.placeholder.com/200/800000/FFFFFF?text=T9',
+      team9Tricode: formData.team9Tricode || '',
+      team9Key: formData.team9Name ? buildTeamKey(formData.team9Name, gender) : '',
+      team10Name: formData.team10Name,
+      team10Logo: formData.team10Logo || 'https://via.placeholder.com/200/4B0082/FFFFFF?text=T10',
+      team10Tricode: formData.team10Tricode || '',
+      team10Key: formData.team10Name ? buildTeamKey(formData.team10Name, gender) : '',
       // Defaults for stats
       hosts: 'Host Name',
       team1Ave: '0.000',
@@ -265,6 +321,22 @@ export default function DashboardPage() {
       team6High: '0.000',
       team6Con: '0%',
       team6Coaches: 'Coach Name',
+      team7Ave: '0.000',
+      team7High: '0.000',
+      team7Con: '0%',
+      team7Coaches: 'Coach Name',
+      team8Ave: '0.000',
+      team8High: '0.000',
+      team8Con: '0%',
+      team8Coaches: 'Coach Name',
+      team9Ave: '0.000',
+      team9High: '0.000',
+      team9Con: '0%',
+      team9Coaches: 'Coach Name',
+      team10Ave: '0.000',
+      team10High: '0.000',
+      team10Con: '0%',
+      team10Coaches: 'Coach Name',
     };
 
     if (editingCompId) {
@@ -311,7 +383,11 @@ export default function DashboardPage() {
     if (!editingCompId) return;
     setRefreshing(true);
     try {
-      await refreshTeamData(editingCompId);
+      const result = await refreshTeamData(editingCompId);
+      // Update local form state with refreshed config (logos, coaches, etc.)
+      if (result?.success && result.updatedConfig) {
+        setFormData(prev => ({ ...prev, ...result.updatedConfig }));
+      }
     } catch (err) {
       console.error('Failed to refresh team data:', err);
     }
@@ -361,7 +437,7 @@ export default function DashboardPage() {
             {competitionList.map((compId) => {
               const config = competitions[compId]?.config || {};
               const hasConfig = config.eventName && config.team1Name && config.team2Name;
-              const teams = [config.team1Name, config.team2Name, config.team3Name, config.team4Name, config.team5Name, config.team6Name].filter(Boolean);
+              const teams = [config.team1Name, config.team2Name, config.team3Name, config.team4Name, config.team5Name, config.team6Name, config.team7Name, config.team8Name, config.team9Name, config.team10Name].filter(Boolean);
 
               return (
                 <div
@@ -483,6 +559,34 @@ export default function DashboardPage() {
                 {virtiusError && (
                   <div className="mt-2 text-xs text-red-400">{virtiusError}</div>
                 )}
+              </div>
+
+              {/* Clip Engine Integration (optional) */}
+              <div className="mb-6 p-4 bg-zinc-800/50 border border-cyan-500/20 rounded-lg">
+                <div className="text-xs text-cyan-400 mb-2 uppercase tracking-wide">Clip Engine (optional)</div>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs text-zinc-400 mb-1">API URL</label>
+                    <input
+                      type="url"
+                      value={formData.clipApiUrl || ''}
+                      onChange={(e) => setFormData({ ...formData, clipApiUrl: e.target.value })}
+                      placeholder="https://example.ngrok-free.dev"
+                      className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm placeholder-zinc-500 focus:outline-none focus:border-cyan-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-zinc-400 mb-1">Session Key</label>
+                    <input
+                      type="text"
+                      value={formData.clipSessionKey || ''}
+                      onChange={(e) => setFormData({ ...formData, clipSessionKey: e.target.value })}
+                      placeholder="e.g., sJ3UJjy6mj"
+                      className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm placeholder-zinc-500 focus:outline-none focus:border-cyan-500"
+                    />
+                  </div>
+                  <p className="text-xs text-zinc-500">Used by playout segments — set once here, all playout segments will use these values.</p>
+                </div>
               </div>
 
               <FormGroup label="Competition ID (no spaces, lowercase)">
@@ -666,6 +770,50 @@ export default function DashboardPage() {
                   teamLogo={formData.team6Logo}
                   onNameChange={(val) => setFormData({ ...formData, team6Name: val })}
                   onLogoChange={(val) => setFormData({ ...formData, team6Logo: val })}
+                  gender={formData.gender}
+                  required
+                />
+              )}
+              {teamCount >= 7 && (
+                <TeamLogoInput
+                  teamNum={7}
+                  teamName={formData.team7Name}
+                  teamLogo={formData.team7Logo}
+                  onNameChange={(val) => setFormData({ ...formData, team7Name: val })}
+                  onLogoChange={(val) => setFormData({ ...formData, team7Logo: val })}
+                  gender={formData.gender}
+                  required
+                />
+              )}
+              {teamCount >= 8 && (
+                <TeamLogoInput
+                  teamNum={8}
+                  teamName={formData.team8Name}
+                  teamLogo={formData.team8Logo}
+                  onNameChange={(val) => setFormData({ ...formData, team8Name: val })}
+                  onLogoChange={(val) => setFormData({ ...formData, team8Logo: val })}
+                  gender={formData.gender}
+                  required
+                />
+              )}
+              {teamCount >= 9 && (
+                <TeamLogoInput
+                  teamNum={9}
+                  teamName={formData.team9Name}
+                  teamLogo={formData.team9Logo}
+                  onNameChange={(val) => setFormData({ ...formData, team9Name: val })}
+                  onLogoChange={(val) => setFormData({ ...formData, team9Logo: val })}
+                  gender={formData.gender}
+                  required
+                />
+              )}
+              {teamCount >= 10 && (
+                <TeamLogoInput
+                  teamNum={10}
+                  teamName={formData.team10Name}
+                  teamLogo={formData.team10Logo}
+                  onNameChange={(val) => setFormData({ ...formData, team10Name: val })}
+                  onLogoChange={(val) => setFormData({ ...formData, team10Logo: val })}
                   gender={formData.gender}
                   required
                 />

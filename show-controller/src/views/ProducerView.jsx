@@ -212,6 +212,7 @@ export default function ProducerView() {
     overrideState,
     preloadState,
     coordinatorHeartbeat,
+    clipApiFetch,
     momentReplay,
     eventLog,
     lastApiError,
@@ -319,7 +320,7 @@ export default function ProducerView() {
   }, [currentClip, skipClip]);
 
   const handleKeyboardPause = useCallback(() => {
-    if (currentMode === PLAYOUT_MODE.PAUSED) {
+    if (currentMode === PLAYOUT_MODE.PAUSED || currentMode === PLAYOUT_MODE.FALLBACK) {
       resumePlayout();
     } else {
       pausePlayout();
@@ -972,6 +973,7 @@ export default function ProducerView() {
                       nextContent={nextContent}
                       queueStats={queueStats}
                       coordinatorHeartbeat={coordinatorHeartbeat?.lastSeen}
+                      clipApiFetch={clipApiFetch}
                       currentRotation={currentRotation}
                       isOverride={overrideState?.active}
                     />
@@ -985,7 +987,7 @@ export default function ProducerView() {
 
                     {/* Playout Controls - persistent override control bar */}
                     <PlayoutControls
-                      isPaused={currentMode === PLAYOUT_MODE.PAUSED}
+                      isPaused={currentMode === PLAYOUT_MODE.PAUSED || currentMode === PLAYOUT_MODE.FALLBACK}
                       isOverride={overrideState?.active}
                       cameraStates={playoutCameraStates}
                       onPause={handleKeyboardPause}

@@ -546,13 +546,36 @@ const STAT_DISPLAY_OPTIONS = [
 ];
 
 // Variant options for full-screen graphics in preview selector
-// Event-summary layouts (simplified for Theme Editor — 6 main layouts)
+// Event-summary layouts — all available layouts
 const EVENT_SUMMARY_LAYOUTS = [
   { value: 'broadcast-table', label: 'Broadcast Table' },
   { value: 'classic-broadcast', label: 'Classic Broadcast' },
   { value: 'default-v2', label: 'Default v2' },
+  { value: 'default-v3', label: 'Default v3' },
+  { value: 'default-v4', label: 'Default v4' },
+  { value: 'default-v5', label: 'Default v5' },
+  { value: 'default-v6', label: 'Default v6' },
+  { value: 'default-v7', label: 'Default v7' },
+  { value: 'default-v8', label: 'Default v8' },
+  { value: 'default-v9', label: 'Default v9' },
+  { value: 'default-v10', label: 'Default v10' },
+  { value: 'default-v11', label: 'Default v11' },
+  { value: 'default-v12', label: 'Default v12' },
+  { value: 'default-v13', label: 'Default v13' },
+  { value: 'default-v14', label: 'Default v14' },
+  { value: 'default-v15', label: 'Default v15' },
+  { value: 'default-v16', label: 'Default v16' },
+  { value: 'default-v17', label: 'Default v17' },
+  { value: 'default-v18', label: 'Default v18' },
+  { value: 'default-v19', label: 'Default v19' },
+  { value: 'default-v20', label: 'Default v20' },
+  { value: 'default-v21', label: 'Default v21' },
+  { value: 'default-v22', label: 'Default v22' },
+  { value: 'default-v23', label: 'Default v23' },
+  { value: 'default-v24', label: 'Default v24' },
   { value: 'dual-dynamic-v1', label: 'Dual Dynamic v1' },
   { value: 'dual-dynamic-v2', label: 'Dual Dynamic v2' },
+  { value: 'split-row', label: 'Split Row' },
 ];
 
 // Team count options for event-summary
@@ -1032,6 +1055,7 @@ export default function ThemeEditorPage() {
       }
       return { ...prev, overrides: newOverrides };
     });
+    setIsDirty(true);
     setShowApplyTemplateConfirm(false);
   };
 
@@ -1079,6 +1103,7 @@ export default function ThemeEditorPage() {
       }
       return { ...prev, overrides: newOverrides };
     });
+    setIsDirty(true);
     setShowApplyFullScreenTemplateConfirm(false);
   };
 
@@ -1121,6 +1146,7 @@ export default function ThemeEditorPage() {
       }
       return { ...prev, overrides: newOverrides };
     });
+    setIsDirty(true);
     setShowApplyTeamCardsTemplateConfirm(false);
   };
 
@@ -1164,6 +1190,7 @@ export default function ThemeEditorPage() {
       }
       return { ...prev, overrides: newOverrides };
     });
+    setIsDirty(true);
     setShowApplySponsorsTemplateConfirm(false);
   };
 
@@ -1199,6 +1226,7 @@ export default function ThemeEditorPage() {
       }
       return { ...prev, overrides: newOverrides };
     });
+    setIsDirty(true);
     setShowApplyStreamTemplateConfirm(false);
   };
 
@@ -1760,65 +1788,120 @@ export default function ThemeEditorPage() {
     // Standard graphics — use output.html
     params.set('graphic', selectedGraphicType);
 
-    // Add placeholder data when no competition is selected so preview renders
-    if (!selectedCompetition) {
-      params.set('previewMode', 'placeholder');
-      // Event bar
-      if (selectedGraphicType === 'event-bar') {
-        params.set('venue', 'Sample Arena');
-        params.set('eventName', 'Home Team vs Away Team');
-        params.set('location', 'City, State');
-        params.set('team1Name', 'Home Team');
-        params.set('team1Logo', 'https://media.virti.us/upload/images/team/CbWKimoC_0RpBy-M-lcSy');
+    // Always provide baseline placeholder data for URL preview mode.
+    // output.html's URL preview mode renders from URL params only (ignores Firebase),
+    // so ALL required fields must be in the URL — even when a competition is selected.
+    // When a competition IS selected, we overlay real data from competition config below.
+    params.set('previewMode', 'placeholder');
+
+    const sampleLogo = 'https://media.virti.us/upload/images/team/CbWKimoC_0RpBy-M-lcSy';
+
+    // Event bar
+    if (selectedGraphicType === 'event-bar') {
+      params.set('venue', 'Sample Arena');
+      params.set('eventName', 'Home Team vs Away Team');
+      params.set('location', 'City, State');
+      params.set('team1Name', 'Home Team');
+      params.set('team1Logo', sampleLogo);
+    }
+    // Event summary — needs virtiusSessionId for real data, show placeholder layout without it
+    if (selectedGraphicType === 'event-summary') {
+      params.set('team1Name', 'Home Team');
+      params.set('team2Name', 'Away Team');
+    }
+    // Hosts
+    if (selectedGraphicType === 'hosts') {
+      params.set('venue', 'Sample Arena');
+      params.set('eventName', 'Home Team vs Away Team');
+      params.set('team1Name', 'Home Team');
+      params.set('hosts', 'Jane Smith\nJohn Doe');
+    }
+    // Warm-up / replay
+    if (selectedGraphicType === 'warm-up' || selectedGraphicType === 'replay') {
+      params.set('team1Name', 'Home Team');
+      params.set('team2Name', 'Away Team');
+      params.set('team1Logo', sampleLogo);
+      params.set('team2Logo', sampleLogo);
+    }
+    // Stream graphics
+    if (selectedGraphicType === 'stream-starting' || selectedGraphicType === 'stream-thanks') {
+      params.set('venue', 'Sample Arena');
+      params.set('eventName', 'Home Team vs Away Team');
+      params.set('meetDate', 'March 26, 2026');
+      params.set('compType', 'mens-dual');
+      params.set('team1Name', 'Home Team');
+      params.set('team1Logo', sampleLogo);
+      params.set('team2Name', 'Away Team');
+      params.set('team2Logo', sampleLogo);
+    }
+    // Coaches cards — need teamNCoaches or renderer crashes on .split()
+    if (selectedGraphicType.match(/^team\d-coaches$/)) {
+      const slot = selectedGraphicType.match(/team(\d)/)[1];
+      params.set('team1Name', 'Home Team');
+      params.set('team2Name', 'Away Team');
+      params.set('team1Logo', sampleLogo);
+      params.set('team2Logo', sampleLogo);
+      params.set(`team${slot}Coaches`, 'Head Coach\nAssistant Coach\nVolunteer Assistant');
+    }
+    // Stats cards — need stat values
+    if (selectedGraphicType.match(/^team\d-stats$/)) {
+      const slot = selectedGraphicType.match(/team(\d)/)[1];
+      params.set('team1Name', 'Home Team');
+      params.set('team2Name', 'Away Team');
+      params.set('team1Logo', sampleLogo);
+      params.set('team2Logo', sampleLogo);
+      params.set(`team${slot}Ave`, '196.500');
+      params.set(`team${slot}High`, '197.250');
+      params.set(`team${slot}Nqs`, '196.875');
+    }
+    // Leaderboard — needs virtiusSessionId for real data, show placeholder without it
+    if (selectedGraphicType === 'virtuis-leaderboard') {
+      params.set('team1Name', 'Home Team');
+      params.set('team2Name', 'Away Team');
+    }
+    // Event frame
+    if (selectedGraphicType === 'event-frame') {
+      params.set('team1Name', 'Home Team');
+      params.set('team2Name', 'Away Team');
+    }
+    // Live camera
+    if (selectedGraphicType === 'live-camera') {
+      params.set('cameraLabel', 'Camera 1');
+    }
+
+    // Overlay real competition data when a competition is selected
+    if (selectedCompetition) {
+      const compData = competitions[selectedCompetition];
+      const config = compData?.config || {};
+      const teamData = compData?.teamData || {};
+      // Team names and logos
+      for (let i = 1; i <= 7; i++) {
+        if (config[`team${i}Name`]) params.set(`team${i}Name`, config[`team${i}Name`]);
+        if (config[`team${i}Logo`] || teamData[`team${i}`]?.logo) {
+          params.set(`team${i}Logo`, config[`team${i}Logo`] || teamData[`team${i}`]?.logo);
+        }
       }
-      // Event summary
-      if (selectedGraphicType === 'event-summary') {
-        params.set('summaryMode', 'rotation');
-        params.set('summaryRotation', '1');
-        params.set('summaryNumTeams', '2');
-        params.set('team1Name', 'Home Team');
-        params.set('team2Name', 'Away Team');
+      // Coaches from team data
+      for (let i = 1; i <= 7; i++) {
+        const coaches = teamData[`team${i}`]?.coaches;
+        if (coaches) params.set(`team${i}Coaches`, Array.isArray(coaches) ? coaches.join('\n') : coaches);
       }
-      // Hosts / coaches
-      if (selectedGraphicType === 'hosts') {
-        params.set('venue', 'Sample Arena');
-        params.set('eventName', 'Home Team vs Away Team');
-        params.set('team1Name', 'Home Team');
+      // Stats from team data
+      for (let i = 1; i <= 7; i++) {
+        const stats = teamData[`team${i}`]?.stats;
+        if (stats?.ave) params.set(`team${i}Ave`, stats.ave);
+        if (stats?.high) params.set(`team${i}High`, stats.high);
+        if (stats?.nqs) params.set(`team${i}Nqs`, stats.nqs);
       }
-      // Warm-up / replay
-      if (selectedGraphicType === 'warm-up' || selectedGraphicType === 'replay') {
-        params.set('team1Name', 'Home Team');
-        params.set('team2Name', 'Away Team');
-        params.set('team1Logo', 'https://media.virti.us/upload/images/team/CbWKimoC_0RpBy-M-lcSy');
-        params.set('team2Logo', 'https://media.virti.us/upload/images/team/CbWKimoC_0RpBy-M-lcSy');
+      // Virtius session ID for event-summary and leaderboard
+      if (config.virtiusSessionId) {
+        params.set('virtiusSessionId', config.virtiusSessionId);
       }
-      // Stream graphics
-      if (selectedGraphicType === 'stream-starting' || selectedGraphicType === 'stream-thanks') {
-        params.set('venue', 'Sample Arena');
-        params.set('eventName', 'Home Team vs Away Team');
-        params.set('meetDate', 'March 26, 2026');
-        params.set('compType', 'mens-dual');
-        params.set('team1Name', 'Home Team');
-        params.set('team1Logo', 'https://media.virti.us/upload/images/team/CbWKimoC_0RpBy-M-lcSy');
-        params.set('team2Name', 'Away Team');
-        params.set('team2Logo', 'https://media.virti.us/upload/images/team/CbWKimoC_0RpBy-M-lcSy');
-      }
-      // Stats / coaches cards
-      if (selectedGraphicType.match(/^team\d-stats$/) || selectedGraphicType.match(/^team\d-coaches$/)) {
-        params.set('team1Name', 'Home Team');
-        params.set('team2Name', 'Away Team');
-        params.set('team1Logo', 'https://media.virti.us/upload/images/team/CbWKimoC_0RpBy-M-lcSy');
-        params.set('team2Logo', 'https://media.virti.us/upload/images/team/CbWKimoC_0RpBy-M-lcSy');
-      }
-      // Event frame / leaderboard
-      if (selectedGraphicType === 'event-frame' || selectedGraphicType === 'virtuis-leaderboard') {
-        params.set('team1Name', 'Home Team');
-        params.set('team2Name', 'Away Team');
-      }
-      // Live camera
-      if (selectedGraphicType === 'live-camera') {
-        params.set('cameraLabel', 'Camera 1');
-      }
+      // Other competition fields
+      if (config.venue) params.set('venue', config.venue);
+      if (config.eventName) params.set('eventName', config.eventName);
+      if (config.location) params.set('location', config.location);
+      if (config.compType) params.set('compType', config.compType);
     }
 
     // Apply variant selections for full-screen graphics

@@ -128,7 +128,7 @@ export const GRAPHICS = {
     transparent: true,
     perTeam: true,
     params: {
-      teamSlot: { type: 'number', min: 1, max: 7, required: true, label: 'Team' },
+      teamSlot: { type: 'number', min: 1, max: 10, required: true, label: 'Team' },
       teamName: { type: 'string', source: 'competition', required: true },
       logo: { type: 'string', source: 'competition', required: true },
       statType: {
@@ -156,7 +156,7 @@ export const GRAPHICS = {
     transparent: true,
     perTeam: true,
     params: {
-      teamSlot: { type: 'number', min: 1, max: 7, required: true, label: 'Team' },
+      teamSlot: { type: 'number', min: 1, max: 10, required: true, label: 'Team' },
       logo: { type: 'string', source: 'competition', required: true },
       coaches: { type: 'string', source: 'competition', label: 'Coaches (one per line)' },
     },
@@ -174,7 +174,7 @@ export const GRAPHICS = {
     transparent: false,
     perTeam: true,
     params: {
-      teamSlot: { type: 'number', min: 1, max: 7, required: true, label: 'Team' },
+      teamSlot: { type: 'number', min: 1, max: 10, required: true, label: 'Team' },
       logo: { type: 'string', source: 'competition', required: true },
       teamName: { type: 'string', source: 'competition', required: true },
     },
@@ -192,7 +192,7 @@ export const GRAPHICS = {
     transparent: true,
     perTeam: true,
     params: {
-      teamSlot: { type: 'number', min: 1, max: 7, required: true, label: 'Team' },
+      teamSlot: { type: 'number', min: 1, max: 10, required: true, label: 'Team' },
       logo: { type: 'string', source: 'competition', required: true },
       event: { type: 'string', required: true, label: 'Event Name', default: 'FLOOR EXERCISE' },
       athlete1Name: { type: 'string', required: true, label: 'Athlete 1 Name' },
@@ -218,7 +218,7 @@ export const GRAPHICS = {
     transparent: true,
     perTeam: true,
     params: {
-      teamSlot: { type: 'number', min: 1, max: 7, required: true, label: 'Team' },
+      teamSlot: { type: 'number', min: 1, max: 10, required: true, label: 'Team' },
       logo: { type: 'string', source: 'competition', required: true },
       athleteName: { type: 'string', required: true, label: 'Athlete Name' },
       headshot: { type: 'string', label: 'Athlete Headshot URL' },
@@ -240,7 +240,7 @@ export const GRAPHICS = {
     transparent: false,
     perTeam: true,
     params: {
-      teamSlot: { type: 'number', min: 1, max: 7, required: true, label: 'Team' },
+      teamSlot: { type: 'number', min: 1, max: 10, required: true, label: 'Team' },
       athleteName: { type: 'string', required: true, label: 'Athlete Name' },
       teamName: { type: 'string', source: 'competition' },
       logo: { type: 'string', source: 'competition' },
@@ -737,6 +737,22 @@ export const GRAPHICS = {
       leaderboardEvent: { type: 'string', default: 'aa' },
       leaderboardGender: { type: 'string', source: 'competition' },
       comp: { type: 'string', source: 'competition' },
+    },
+  },
+
+  'combined-aa-leaderboard': {
+    id: 'combined-aa-leaderboard',
+    label: 'Combined AA',
+    category: 'leaderboards',
+    keywords: ['leaderboard', 'leaders', 'combined', 'all around', 'allaround', 'aa', 'multi-session'],
+    gender: 'both',
+    renderer: 'output',
+    file: 'combined-aa-leaderboard',
+    transparent: false,
+    params: {
+      virtiusSessionId: { type: 'string', label: 'Session ID 1' },
+      virtiusSessionId2: { type: 'string', label: 'Session ID 2' },
+      leaderboardGender: { type: 'string', source: 'competition' },
     },
   },
 

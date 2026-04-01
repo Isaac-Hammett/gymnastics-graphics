@@ -92,6 +92,7 @@ const baseGraphicTitles = {
   'leaderboard-ub': 'Uneven Bars Leaderboard',
   'leaderboard-bb': 'Balance Beam Leaderboard',
   'leaderboard-aa': 'All-Around Leaderboard',
+  'combined-aa-leaderboard': 'Combined All-Around Leaderboard',
   // Event Summary Rotations
   'summary-r1': 'Event Summary - Rotation 1',
   'summary-r2': 'Event Summary - Rotation 2',
@@ -132,7 +133,7 @@ export default function UrlGeneratorPage() {
 
   const { config } = useCompetition(compId);
   const { updateCompetition, refreshTeamData } = useCompetitions();
-  const { getTeamSponsors, resolveSchoolKey, saveSponsor } = useTeamsDatabase();
+  const { teams: allTeams, getTeamSponsors, resolveSchoolKey, saveSponsor } = useTeamsDatabase();
   const [hasChanges, setHasChanges] = useState(false);
   const [saving, setSaving] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -154,6 +155,18 @@ export default function UrlGeneratorPage() {
   const [showSponsorBounds, setShowSponsorBounds] = useState(false);
   const [showSponsorCropControls, setShowSponsorCropControls] = useState(false);
   const [showSponsorGuides, setShowSponsorGuides] = useState(false);
+  const [cycleDuration, setCycleDuration] = useState(3); // seconds between sponsor switches
+  const [excludedSponsors, setExcludedSponsors] = useState([]); // array of excluded indices
+  const [combinedSessionId1, setCombinedSessionId1] = useState('');
+  const [combinedSessionId2, setCombinedSessionId2] = useState('');
+
+  // Interview Card state
+  const [icCoachName, setIcCoachName] = useState('');
+  const [icTitle, setIcTitle] = useState('HEAD COACH');
+  const [icTeamKey, setIcTeamKey] = useState('');
+  const [icSeries, setIcSeries] = useState('Behind the Chalk');
+  const [icBgImage, setIcBgImage] = useState('https://image2url.com/r2/default/images/1774545468853-d0a3d266-7ef9-4066-bff0-1cb82174171e.blob');
+  const [icEventLogo, setIcEventLogo] = useState('https://media.virti.us/upload/images/team/6HQvIZnZtygrv44TPNwxg');
 
   // Responsive preview scaling — dynamically fit 1920×1080 iframe into available space
   const previewContainerRef = useRef(null);
@@ -266,6 +279,27 @@ export default function UrlGeneratorPage() {
     team7High: '',
     team7Nqs: '',
     team7Coaches: '',
+    // Team 8
+    team8Name: '',
+    team8Logo: '',
+    team8Ave: '',
+    team8High: '',
+    team8Nqs: '',
+    team8Coaches: '',
+    // Team 9
+    team9Name: '',
+    team9Logo: '',
+    team9Ave: '',
+    team9High: '',
+    team9Nqs: '',
+    team9Coaches: '',
+    // Team 10
+    team10Name: '',
+    team10Logo: '',
+    team10Ave: '',
+    team10High: '',
+    team10Nqs: '',
+    team10Coaches: '',
   });
 
   // Load config from Firebase if competition is selected
@@ -285,8 +319,8 @@ export default function UrlGeneratorPage() {
         calendarColumns: config.calendarColumns || 'auto',
       };
 
-      // Load all team data (1-7)
-      for (let i = 1; i <= 7; i++) {
+      // Load all team data (1-10)
+      for (let i = 1; i <= 10; i++) {
         newFormData[`team${i}Name`] = config[`team${i}Name`] || '';
         newFormData[`team${i}Logo`] = config[`team${i}Logo`] || '';
         newFormData[`team${i}Ave`] = config[`team${i}Ave`] || '';
@@ -486,7 +520,8 @@ export default function UrlGeneratorPage() {
 
     return generateGraphicURL(graphic, formData, teamCount, undefined, {
       compType: config?.compType,
-      virtiusSessionId: config?.virtiusSessionId,
+      virtiusSessionId: graphic === 'combined-aa-leaderboard' ? combinedSessionId1 : config?.virtiusSessionId,
+      virtiusSessionId2: combinedSessionId2,
       compId: compId,
       summaryTheme: summaryTheme,
       sponsors: sponsorsJson,
@@ -501,6 +536,9 @@ export default function UrlGeneratorPage() {
       ...(graphic.startsWith('sponsors-') && selectedSponsorIndex >= 0 ? { lockedIndex: selectedSponsorIndex } : {}),
       ...(graphic.startsWith('sponsors-') && showSponsorBounds ? { showBounds: true } : {}),
       ...(graphic.startsWith('sponsors-') && showSponsorGuides ? { showGuides: true } : {}),
+      // Sponsor cycle controls
+      ...(graphic === 'sponsors-cycle' && cycleDuration !== 3 ? { cycleDuration } : {}),
+      ...(graphic === 'sponsors-cycle' && excludedSponsors.length > 0 ? { excluded: excludedSponsors } : {}),
     });
   };
 
@@ -509,7 +547,7 @@ export default function UrlGeneratorPage() {
     return generateURLWithOptions(graphic);
   };
 
-  const currentUrl = useMemo(() => generateURL(currentGraphic), [currentGraphic, formData, teamCount, config?.compType, config?.virtiusSessionId, config?.meetTheme, summaryTheme, rotationSlateNum, slateLayout, meetThemeLogo, meetThemeSponsors, teamSponsorsRaw, sponsorOverrides, selectedSponsorIndex, showSponsorBounds, showSponsorGuides, teamStatTypes]);
+  const currentUrl = useMemo(() => generateURL(currentGraphic), [currentGraphic, formData, teamCount, config?.compType, config?.virtiusSessionId, config?.meetTheme, summaryTheme, rotationSlateNum, slateLayout, meetThemeLogo, meetThemeSponsors, teamSponsorsRaw, sponsorOverrides, selectedSponsorIndex, showSponsorBounds, showSponsorGuides, teamStatTypes, combinedSessionId1, combinedSessionId2, cycleDuration, excludedSponsors]);
 
   return (
     <div className="h-screen bg-zinc-950 flex">
@@ -644,7 +682,7 @@ export default function UrlGeneratorPage() {
         </GraphicSection>
 
         <GraphicSection title="Leaderboards">
-          {leaderboardButtons.map((btn) => (
+          {leaderboardButtons.filter(btn => btn.id !== 'combined-aa-leaderboard').map((btn) => (
             <GraphicSidebarButton
               key={btn.id}
               id={btn.id}
@@ -653,6 +691,38 @@ export default function UrlGeneratorPage() {
               onClick={() => setCurrentGraphic(btn.id)}
             />
           ))}
+          <div className="mt-2 pt-2 border-t border-zinc-800">
+            <GraphicSidebarButton
+              id="combined-aa-leaderboard"
+              label="Combined AA"
+              active={currentGraphic === 'combined-aa-leaderboard'}
+              onClick={() => setCurrentGraphic('combined-aa-leaderboard')}
+            />
+            {currentGraphic === 'combined-aa-leaderboard' && (
+              <div className="mt-2 space-y-2 px-1">
+                <div>
+                  <label className="text-xs text-zinc-500 block mb-1">Session ID 1</label>
+                  <input
+                    type="text"
+                    value={combinedSessionId1}
+                    onChange={(e) => setCombinedSessionId1(e.target.value.trim())}
+                    placeholder="e.g., EeUcxrjyBD"
+                    className="w-full text-xs bg-zinc-800 text-zinc-200 border border-zinc-700 rounded px-2 py-1.5 focus:outline-none focus:border-blue-500 placeholder-zinc-600"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-zinc-500 block mb-1">Session ID 2</label>
+                  <input
+                    type="text"
+                    value={combinedSessionId2}
+                    onChange={(e) => setCombinedSessionId2(e.target.value.trim())}
+                    placeholder="e.g., XyZ123abCD"
+                    className="w-full text-xs bg-zinc-800 text-zinc-200 border border-zinc-700 rounded px-2 py-1.5 focus:outline-none focus:border-blue-500 placeholder-zinc-600"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
         </GraphicSection>
 
         <GraphicSection title="Event Summary">
@@ -812,6 +882,16 @@ export default function UrlGeneratorPage() {
           >
             URLs
           </button>
+          <button
+            onClick={() => setActiveTab('interview')}
+            className={`px-3 py-2 text-xs font-medium rounded-lg transition-colors ${
+              activeTab === 'interview'
+                ? 'bg-amber-600 text-white'
+                : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
+            }`}
+          >
+            Interview
+          </button>
         </div>
 
         {/* Competition type indicator */}
@@ -959,6 +1039,96 @@ export default function UrlGeneratorPage() {
             </div>
           );
         })()}
+
+        {/* Cycle settings - shown only for sponsors-cycle */}
+        {currentGraphic === 'sponsors-cycle' && activeSponsorList.length > 0 && (
+          <div className="mb-4 p-3 bg-zinc-800 border border-zinc-700 rounded-lg">
+            <h3 className="text-sm font-semibold text-zinc-300 mb-2">Cycle Settings</h3>
+
+            {/* Switching speed */}
+            <div className="mb-3">
+              <label className="text-[10px] text-zinc-500 block mb-1">Switch Speed</label>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setCycleDuration(d => Math.max(1, d - 1))}
+                  className="w-6 h-7 flex items-center justify-center bg-zinc-700 hover:bg-zinc-600 rounded-l text-zinc-300 text-xs font-bold transition-colors"
+                >−</button>
+                <span className="w-12 text-center text-sm font-mono text-zinc-300">{cycleDuration}s</span>
+                <button
+                  onClick={() => setCycleDuration(d => Math.min(30, d + 1))}
+                  className="w-6 h-7 flex items-center justify-center bg-zinc-700 hover:bg-zinc-600 rounded-r text-zinc-300 text-xs font-bold transition-colors"
+                >+</button>
+                {cycleDuration !== 3 && (
+                  <button
+                    onClick={() => setCycleDuration(3)}
+                    className="text-[10px] text-blue-400 hover:text-blue-300 ml-1"
+                  >Reset</button>
+                )}
+              </div>
+              <input
+                type="range"
+                min={1}
+                max={30}
+                step={1}
+                value={cycleDuration}
+                onChange={(e) => setCycleDuration(Number(e.target.value))}
+                className="w-full h-1 accent-blue-500 mt-1"
+              />
+            </div>
+
+            {/* Sponsor enable/disable toggles */}
+            <div>
+              <label className="text-[10px] text-zinc-500 block mb-1">Include in Cycle</label>
+              <div className="space-y-1">
+                {activeSponsorList.slice(0, 8).map((sponsor, index) => {
+                  const isExcluded = excludedSponsors.includes(index);
+                  return (
+                    <button
+                      key={index}
+                      onClick={() => {
+                        setExcludedSponsors(prev =>
+                          prev.includes(index)
+                            ? prev.filter(i => i !== index)
+                            : [...prev, index]
+                        );
+                      }}
+                      className={`w-full flex items-center gap-2 px-2 py-1.5 rounded transition-colors text-left ${
+                        isExcluded
+                          ? 'bg-zinc-900/50 opacity-40'
+                          : 'bg-zinc-900 hover:bg-zinc-800'
+                      }`}
+                    >
+                      <div className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 ${
+                        isExcluded
+                          ? 'border-zinc-600 bg-zinc-800'
+                          : 'border-blue-500 bg-blue-600'
+                      }`}>
+                        {!isExcluded && <span className="text-white text-[10px]">✓</span>}
+                      </div>
+                      {sponsor.url && (
+                        <img
+                          src={sponsor.url}
+                          alt=""
+                          className="w-6 h-6 object-contain bg-white rounded flex-shrink-0"
+                          onError={(e) => e.target.style.display = 'none'}
+                        />
+                      )}
+                      <span className={`text-xs truncate ${isExcluded ? 'text-zinc-600 line-through' : 'text-zinc-300'}`}>
+                        {sponsor.name || `Sponsor ${index + 1}`}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+              {excludedSponsors.length > 0 && (
+                <button
+                  onClick={() => setExcludedSponsors([])}
+                  className="mt-2 text-[10px] text-blue-400 hover:text-blue-300"
+                >Include All</button>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Sponsor logo adjustments - shown when a sponsor graphic is selected */}
         {currentGraphic.startsWith('sponsors-') && activeSponsorList.length > 0 && (
@@ -1134,6 +1304,71 @@ export default function UrlGeneratorPage() {
             </button>
           </div>
         )}
+
+        {activeTab === 'interview' && (() => {
+          const selectedTeam = icTeamKey ? allTeams[icTeamKey] : null;
+          const teamLogo = selectedTeam?.logo || '';
+          const baseUrl = window.location.origin;
+          const icParams = new URLSearchParams();
+          if (icCoachName) icParams.set('name', icCoachName);
+          if (icTitle) icParams.set('title', icTitle);
+          if (teamLogo) icParams.set('logo', teamLogo);
+          if (config?.meetTheme) icParams.set('meetTheme', config.meetTheme);
+          if (icSeries) icParams.set('series', icSeries);
+          if (icBgImage) icParams.set('bgImage', icBgImage);
+          if (icEventLogo) icParams.set('eventLogo', icEventLogo);
+          const icUrl = `${baseUrl}/overlays/interview-card.html?${icParams.toString()}`;
+          const sortedTeams = Object.entries(allTeams)
+            .sort(([,a], [,b]) => (a.displayName || '').localeCompare(b.displayName || ''));
+
+          return (
+            <div>
+              <h3 className="text-sm font-semibold text-zinc-300 mb-3">Interview Card</h3>
+
+              <div className="mb-4">
+                <label className="block text-xs text-zinc-400 mb-1.5">Team</label>
+                <select
+                  value={icTeamKey}
+                  onChange={(e) => setIcTeamKey(e.target.value)}
+                  className="w-full px-3 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
+                >
+                  <option value="">Select team...</option>
+                  {sortedTeams.map(([key, team]) => (
+                    <option key={key} value={key}>{team.displayName || key}</option>
+                  ))}
+                </select>
+              </div>
+
+              {selectedTeam && selectedTeam.logo && (
+                <div className="mb-4 flex justify-center">
+                  <img src={selectedTeam.logo} alt="" className="h-16 w-16 object-contain" />
+                </div>
+              )}
+
+              <ConfigInput label="Coach Name" value={icCoachName} onChange={setIcCoachName} placeholder="e.g. Barb Cordova" />
+              <ConfigInput label="Title" value={icTitle} onChange={setIcTitle} placeholder="HEAD COACH" />
+              <ConfigInput label="Series Label" value={icSeries} onChange={setIcSeries} placeholder="Behind the Chalk" />
+              <ConfigInput label="Background Image URL" value={icBgImage} onChange={setIcBgImage} placeholder="https://..." />
+              <ConfigInput label="Event Logo URL" value={icEventLogo} onChange={setIcEventLogo} placeholder="https://..." />
+
+              {/* Generated URL */}
+              <div className="mt-4 p-3 bg-zinc-950 border border-zinc-800 rounded-lg">
+                <div className="text-xs text-zinc-400 mb-2">Interview Card URL</div>
+                <div className="text-[10px] text-zinc-500 break-all mb-3 max-h-20 overflow-y-auto">{icUrl}</div>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(icUrl);
+                    setToast('Interview card URL copied!');
+                    setTimeout(() => setToast(''), 2000);
+                  }}
+                  className="w-full px-3 py-2 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-500 transition-colors"
+                >
+                  Copy URL
+                </button>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Save to Competition Button */}
         {compId && (

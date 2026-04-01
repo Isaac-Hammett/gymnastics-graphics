@@ -205,7 +205,7 @@ export default function TalentClipInfo({
 
         {/* Next clip info or waiting message */}
         <div className="py-4 border-b border-zinc-700">
-          {hasQueuedClips ? (
+          {hasQueuedClips && upcomingClips[0] ? (
             <div className="text-center">
               <div className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-2">
                 NEXT CLIP

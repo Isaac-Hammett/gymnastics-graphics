@@ -119,6 +119,10 @@ async function enrichTeamsWithRTN(config, gender = 'womens') {
     config.team4Name,
     config.team5Name,
     config.team6Name,
+    config.team7Name,
+    config.team8Name,
+    config.team9Name,
+    config.team10Name,
   ].filter(Boolean); // Remove empty team names
 
   // Fetch RTN team dashboards and Firebase headshots in parallel
@@ -515,7 +519,7 @@ export function useCompetitions() {
           const currentSnap = await get(ref(db, `competitions/${compId}/config`));
           const currentConfig = currentSnap.val();
           if (currentConfig) {
-            for (let i = 1; i <= 7; i++) {
+            for (let i = 1; i <= 10; i++) {
               const field = `team${i}Name`;
               if (config[field] !== undefined && config[field] !== currentConfig[field]) {
                 shouldRefreshRTN = true;
@@ -595,11 +599,34 @@ export function useCompetitions() {
         if (Object.keys(configUpdates).length > 0) {
           await update(ref(db, `competitions/${compId}/config`), configUpdates);
         }
-
-        return { success: true, teamsEnriched: Object.keys(teamData).length };
       }
 
-      return { success: true, teamsEnriched: 0 };
+      // Sync logos from teamsDatabase for all teams
+      const logoUpdates = {};
+      for (let i = 1; i <= 10; i++) {
+        const teamKey = config[`team${i}Key`];
+        if (!teamKey) continue;
+        try {
+          const teamSnap = await get(ref(db, `teamsDatabase/teams/${teamKey}/logo`));
+          if (teamSnap.exists()) {
+            const dbLogo = teamSnap.val();
+            if (dbLogo && dbLogo !== config[`team${i}Logo`]) {
+              logoUpdates[`team${i}Logo`] = dbLogo;
+            }
+          }
+        } catch (err) {
+          console.warn(`[refreshTeamData] Failed to sync logo for ${teamKey}:`, err.message);
+        }
+      }
+      if (Object.keys(logoUpdates).length > 0) {
+        await update(ref(db, `competitions/${compId}/config`), logoUpdates);
+      }
+
+      // Re-read the full config so the caller can update local form state
+      const updatedSnap = await get(ref(db, `competitions/${compId}/config`));
+      const updatedConfig = updatedSnap.val();
+
+      return { success: true, teamsEnriched: Object.keys(teamData).length, updatedConfig };
     } catch (err) {
       return { success: false, error: err.message };
     }

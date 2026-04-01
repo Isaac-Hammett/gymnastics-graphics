@@ -128,10 +128,11 @@ function deduplicateClips(clips) {
 /**
  * Fetch clips from the Clip Engine API with timeout and retry on 5xx.
  * @param {string} sessionKey — The session key for the meet
+ * @param {string} [clipApiUrl] — Optional per-competition API base URL (overrides env/default)
  * @returns {Promise<Object>} Raw API response
  */
-async function fetchClipsRaw(sessionKey) {
-  const baseUrl = getBaseUrl();
+async function fetchClipsRaw(sessionKey, clipApiUrl = null) {
+  const baseUrl = clipApiUrl ? clipApiUrl.replace(/\/+$/, '') : getBaseUrl();
   const url = `${baseUrl}/clip-api/meets/${encodeURIComponent(sessionKey)}/deliveries`;
 
   const attempt = async () => {
@@ -178,16 +179,17 @@ async function fetchClipsRaw(sessionKey) {
  * Returns a deduplicated array of normalized clip objects.
  *
  * @param {string} sessionKey — Clip Engine session key
+ * @param {string} [clipApiUrl] — Optional per-competition API base URL
  * @returns {Promise<{clips: Array, total: number, sessionKey: string, error: string|null}>}
  */
-export async function fetchClips(sessionKey) {
+export async function fetchClips(sessionKey, clipApiUrl = null) {
   if (!sessionKey) {
     console.warn('[clipService] No session key provided');
     return { clips: [], total: 0, sessionKey: null, error: 'No session key' };
   }
 
   try {
-    const raw = await fetchClipsRaw(sessionKey);
+    const raw = await fetchClipsRaw(sessionKey, clipApiUrl);
 
     if (!raw || !Array.isArray(raw.clips)) {
       console.warn('[clipService] Unexpected response shape:', typeof raw, raw ? Object.keys(raw) : 'null');
@@ -217,10 +219,11 @@ export async function fetchClips(sessionKey) {
  *
  * @param {string} sessionKey
  * @param {Set<string>} existingDraftIds — Set of draft_ids already in the queue
+ * @param {string} [clipApiUrl] — Optional per-competition API base URL
  * @returns {Promise<{newClips: Array, allClips: Array, error: string|null}>}
  */
-export async function fetchNewClips(sessionKey, existingDraftIds) {
-  const result = await fetchClips(sessionKey);
+export async function fetchNewClips(sessionKey, existingDraftIds, clipApiUrl = null) {
+  const result = await fetchClips(sessionKey, clipApiUrl);
   if (result.error) {
     return { newClips: [], allClips: [], error: result.error };
   }

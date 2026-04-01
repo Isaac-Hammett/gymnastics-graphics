@@ -268,7 +268,7 @@ function EventLogEntry({ event, onRetry }) {
       {canRetry && clipId && (
         <button
           onClick={() => onRetry(clipId)}
-          className="px-2 py-0.5 text-xs font-medium rounded bg-amber-500/20 text-amber-400 border border-amber-500/30 hover:bg-amber-500/30 transition-colors opacity-0 group-hover:opacity-100"
+          className="px-2 py-0.5 text-xs font-medium rounded bg-amber-500/20 text-amber-400 border border-amber-500/30 hover:bg-amber-500/30 transition-colors sm:opacity-0 sm:group-hover:opacity-100"
         >
           Retry
         </button>

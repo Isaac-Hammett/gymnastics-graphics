@@ -72,12 +72,23 @@ export default function MomentReplayDialog({
 
   const duration = clip?.duration || 0;
 
+  // Minimum replay window size in seconds
+  const MIN_WINDOW_SIZE = 2;
+
   // Initialize window based on flag time when dialog opens
   useEffect(() => {
     if (isOpen && flagTime !== undefined) {
       // Clamp window to clip bounds per PRD
-      const start = Math.max(0, flagTime - DEFAULT_WINDOW_SIZE);
-      const end = Math.min(duration, flagTime + DEFAULT_WINDOW_SIZE);
+      let start = Math.max(0, flagTime - DEFAULT_WINDOW_SIZE);
+      let end = Math.min(duration, flagTime + DEFAULT_WINDOW_SIZE);
+      // Enforce minimum window size
+      if (end - start < MIN_WINDOW_SIZE && duration >= MIN_WINDOW_SIZE) {
+        if (end >= duration) {
+          start = Math.max(0, end - MIN_WINDOW_SIZE);
+        } else {
+          end = Math.min(duration, start + MIN_WINDOW_SIZE);
+        }
+      }
       setSeekStart(start);
       setSeekEnd(end);
       setSpeed(0.5); // Reset to default speed

@@ -127,13 +127,13 @@ export default function usePlayoutSimulation(playoutState) {
           // Calculate score reveal threshold: max(duration - 5, duration * 0.6)
           const scoreRevealThreshold = Math.max(duration - 5, duration * 0.6);
 
-          // Check if we should trigger score reveal
-          const shouldTriggerScoreReveal = !clip.scoreRevealed && newElapsed >= scoreRevealThreshold;
+          // Check if we should trigger score reveal (only when score exists)
+          const shouldTriggerScoreReveal = !clip.scoreRevealed && clip.score !== null && newElapsed >= scoreRevealThreshold;
 
           // Check if clip has ended
           if (newElapsed >= duration) {
             // Will be handled by separate effect that checks for clip end
-            return { ...clip, elapsed: duration, scoreRevealed: true };
+            return { ...clip, elapsed: duration, scoreRevealed: clip.score !== null };
           }
 
           return {
@@ -291,6 +291,11 @@ export default function usePlayoutSimulation(playoutState) {
       !nextClip ||
       preloadState.clipId === nextClip.draft_id
     ) {
+      // Clean up any running preload timer when conditions are no longer met
+      if (preloadTimerRef.current) {
+        clearInterval(preloadTimerRef.current);
+        preloadTimerRef.current = null;
+      }
       return;
     }
 

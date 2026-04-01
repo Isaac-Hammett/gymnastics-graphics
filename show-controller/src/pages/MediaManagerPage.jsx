@@ -41,6 +41,9 @@ export default function MediaManagerPage() {
     reorderSponsors,
     getTeamSponsors,
     getTeamSponsorCount,
+    getAthleteMedia,
+    saveAthleteMedia,
+    deleteAthleteMedia,
   } = useTeamsDatabase();
 
   const [expandedTeam, setExpandedTeam] = useState(null);
@@ -428,6 +431,9 @@ export default function MediaManagerPage() {
                           teamKey={team.key}
                           teams={teams}
                           getTeamRosterWithHeadshots={getTeamRosterWithHeadshots}
+                          getAthleteMedia={getAthleteMedia}
+                          saveAthleteMedia={saveAthleteMedia}
+                          deleteAthleteMedia={deleteAthleteMedia}
                         />
                         <SponsorsView
                           teamKey={team.key}
@@ -634,9 +640,14 @@ export default function MediaManagerPage() {
   );
 }
 
-function RosterView({ teamKey, teams, getTeamRosterWithHeadshots }) {
+function RosterView({ teamKey, teams, getTeamRosterWithHeadshots, getAthleteMedia, saveAthleteMedia, deleteAthleteMedia }) {
   const roster = getTeamRosterWithHeadshots(teamKey);
   const team = teams[teamKey];
+  const [expandedAthlete, setExpandedAthlete] = useState(null);
+  const [newMediaUrl, setNewMediaUrl] = useState('');
+  const [newMediaType, setNewMediaType] = useState('portrait');
+  const [newMediaLabel, setNewMediaLabel] = useState('');
+  const [mediaSaving, setMediaSaving] = useState(false);
 
   if (!roster || roster.length === 0) {
     return (
@@ -647,37 +658,155 @@ function RosterView({ teamKey, teams, getTeamRosterWithHeadshots }) {
     );
   }
 
+  const handleAddMedia = async (athleteName) => {
+    if (!newMediaUrl.trim() || !saveAthleteMedia) return;
+    setMediaSaving(true);
+    await saveAthleteMedia(athleteName, newMediaUrl.trim(), newMediaType, newMediaLabel.trim() || newMediaType);
+    setNewMediaUrl('');
+    setNewMediaLabel('');
+    setNewMediaType('portrait');
+    setMediaSaving(false);
+  };
+
+  const handleDeleteMedia = async (athleteName, index) => {
+    if (!deleteAthleteMedia) return;
+    await deleteAthleteMedia(athleteName, index);
+  };
+
   return (
     <div className="p-4 border-t border-zinc-700">
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-2 max-h-64 overflow-y-auto">
-        {roster.map((athlete, idx) => (
-          <div
-            key={idx}
-            className="flex items-center gap-2 p-2 bg-zinc-700/50 rounded"
-          >
-            <div className="w-8 h-8 bg-zinc-600 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0">
-              {athlete.hasHeadshot ? (
-                <img src={athlete.headshotUrl} alt={athlete.name} className="w-8 h-8 object-cover" />
-              ) : (
-                <UserGroupIcon className="w-4 h-4 text-zinc-500" />
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-2 max-h-[500px] overflow-y-auto">
+        {roster.map((athlete, idx) => {
+          const isExpanded = expandedAthlete === athlete.name;
+          const mediaImages = getAthleteMedia ? getAthleteMedia(athlete.name) : [];
+          const mediaCount = mediaImages.length;
+
+          return (
+            <div key={idx} className={`${isExpanded ? 'col-span-2 md:col-span-4 lg:col-span-5' : ''}`}>
+              <button
+                type="button"
+                onClick={() => setExpandedAthlete(isExpanded ? null : athlete.name)}
+                className={`w-full flex items-center gap-2 p-2 rounded text-left transition-colors ${
+                  isExpanded ? 'bg-zinc-600/70 ring-1 ring-rose-500/30' : 'bg-zinc-700/50 hover:bg-zinc-700'
+                }`}
+              >
+                <div className="w-8 h-8 bg-zinc-600 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0">
+                  {athlete.hasHeadshot ? (
+                    <img src={athlete.headshotUrl} alt={athlete.name} className="w-8 h-8 object-cover" />
+                  ) : (
+                    <UserGroupIcon className="w-4 h-4 text-zinc-500" />
+                  )}
+                </div>
+                <span className="text-xs text-zinc-300 truncate flex-1">{athlete.name}</span>
+                {mediaCount > 0 && (
+                  <span className="text-[9px] px-1 py-0.5 rounded bg-rose-600/20 text-rose-400 flex-shrink-0" title={`${mediaCount} additional image${mediaCount !== 1 ? 's' : ''}`}>
+                    <PhotoIcon className="w-3 h-3 inline -mt-px" /> {mediaCount}
+                  </span>
+                )}
+                {athlete.rtnId && (
+                  <span className="text-[9px] px-1 py-0.5 rounded bg-blue-600/20 text-blue-400 flex-shrink-0" title={`RTN ID: ${athlete.rtnId}`}>
+                    RTN
+                  </span>
+                )}
+                {athlete.hasHeadshot ? (
+                  <CheckCircleIcon className="w-3 h-3 text-green-500 flex-shrink-0" />
+                ) : (
+                  <XCircleIcon className="w-3 h-3 text-red-500 flex-shrink-0" />
+                )}
+              </button>
+
+              {/* Expanded: show all images + add form */}
+              {isExpanded && (
+                <div className="mt-2 p-3 bg-zinc-800/80 rounded-lg border border-zinc-700 space-y-3">
+                  {/* Image gallery */}
+                  <div className="flex flex-wrap gap-3">
+                    {/* Headshot */}
+                    {athlete.hasHeadshot && (
+                      <div className="text-center">
+                        <div className="w-20 h-20 rounded-lg overflow-hidden border-2 border-green-500/40 bg-zinc-700">
+                          <img src={athlete.headshotUrl} alt="Headshot" className="w-full h-full object-cover" />
+                        </div>
+                        <span className="text-[9px] text-zinc-500 mt-1 block">Headshot</span>
+                      </div>
+                    )}
+
+                    {/* Gallery images */}
+                    {mediaImages.map((img, i) => (
+                      <div key={i} className="text-center group relative">
+                        <div className="w-20 h-20 rounded-lg overflow-hidden border-2 border-rose-500/30 bg-zinc-700">
+                          <img src={img.url} alt={img.label || img.type} className="w-full h-full object-cover" onError={(e) => { e.target.style.display = 'none'; }} />
+                        </div>
+                        <span className="text-[9px] text-zinc-500 mt-1 block">{img.label || img.type}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteMedia(athlete.name, i)}
+                          className="absolute -top-1 -right-1 w-4 h-4 bg-red-600 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                          title="Delete this image"
+                        >
+                          <TrashIcon className="w-2.5 h-2.5 text-white" />
+                        </button>
+                      </div>
+                    ))}
+
+                    {/* Empty state */}
+                    {!athlete.hasHeadshot && mediaImages.length === 0 && (
+                      <p className="text-xs text-zinc-600">No images for this athlete yet.</p>
+                    )}
+                  </div>
+
+                  {/* Add image form */}
+                  <div className="pt-2 border-t border-zinc-700">
+                    <p className="text-[10px] text-zinc-500 uppercase tracking-wide mb-2 font-medium">Add Image</p>
+                    <div className="flex gap-2 items-end flex-wrap">
+                      <div className="flex-1 min-w-[200px]">
+                        <label className="block text-[10px] text-zinc-600 mb-0.5">Image URL</label>
+                        <input
+                          type="text"
+                          value={newMediaUrl}
+                          onChange={(e) => setNewMediaUrl(e.target.value)}
+                          placeholder="https://..."
+                          className="w-full px-2 py-1.5 bg-zinc-900 border border-zinc-600 rounded text-white text-xs focus:outline-none focus:border-rose-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] text-zinc-600 mb-0.5">Type</label>
+                        <select
+                          value={newMediaType}
+                          onChange={(e) => setNewMediaType(e.target.value)}
+                          className="px-2 py-1.5 bg-zinc-900 border border-zinc-600 rounded text-white text-xs"
+                        >
+                          <option value="portrait">Portrait</option>
+                          <option value="action">Action Shot</option>
+                          <option value="full-body">Full Body</option>
+                          <option value="custom">Custom</option>
+                        </select>
+                      </div>
+                      <div className="min-w-[120px]">
+                        <label className="block text-[10px] text-zinc-600 mb-0.5">Label (optional)</label>
+                        <input
+                          type="text"
+                          value={newMediaLabel}
+                          onChange={(e) => setNewMediaLabel(e.target.value)}
+                          placeholder="e.g., Media Day 2026"
+                          className="w-full px-2 py-1.5 bg-zinc-900 border border-zinc-600 rounded text-white text-xs focus:outline-none focus:border-rose-500"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleAddMedia(athlete.name)}
+                        disabled={!newMediaUrl.trim() || mediaSaving}
+                        className="px-3 py-1.5 bg-rose-600 hover:bg-rose-500 disabled:bg-zinc-700 disabled:text-zinc-500 text-white text-xs font-medium rounded transition-colors flex items-center gap-1"
+                      >
+                        <PlusIcon className="w-3 h-3" />
+                        {mediaSaving ? 'Saving...' : 'Add'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
               )}
             </div>
-            <span className="text-xs text-zinc-300 truncate flex-1">{athlete.name}</span>
-            {athlete.rtnId && (
-              <span
-                className="text-[9px] px-1 py-0.5 rounded bg-blue-600/20 text-blue-400 flex-shrink-0"
-                title={`RTN ID: ${athlete.rtnId}`}
-              >
-                RTN
-              </span>
-            )}
-            {athlete.hasHeadshot ? (
-              <CheckCircleIcon className="w-3 h-3 text-green-500 flex-shrink-0" />
-            ) : (
-              <XCircleIcon className="w-3 h-3 text-red-500 flex-shrink-0" />
-            )}
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

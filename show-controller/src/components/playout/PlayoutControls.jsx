@@ -56,8 +56,8 @@ export default function PlayoutControls({
 
   // Close dropdown when clicking outside
   const handleDropdownBlur = useCallback((e) => {
-    // Check if the related target is within the dropdown
-    if (!e.currentTarget.contains(e.relatedTarget)) {
+    // relatedTarget is null when focus leaves the document entirely
+    if (!e.relatedTarget || !e.currentTarget.contains(e.relatedTarget)) {
       setCameraDropdownOpen(false);
     }
   }, []);

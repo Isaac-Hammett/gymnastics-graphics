@@ -76,6 +76,20 @@ function mapEditorToEngine(editorSegment) {
     engineSegment.maxDuration = editorSegment.maxDuration;
   }
 
+  // Preserve type-specific fields
+  if (editorSegment.whoToWatch) {
+    engineSegment.whoToWatch = editorSegment.whoToWatch;
+  }
+  if (editorSegment.playoutRules) {
+    engineSegment.playoutRules = editorSegment.playoutRules;
+  }
+  if (editorSegment.contentSequence) {
+    engineSegment.contentSequence = editorSegment.contentSequence;
+  }
+  if (editorSegment.advanceCondition) {
+    engineSegment.advanceCondition = editorSegment.advanceCondition;
+  }
+
   return engineSegment;
 }
 
@@ -143,6 +157,20 @@ function mapEngineToEditor(engineSegment) {
   }
   if (engineSegment.maxDuration !== undefined) {
     editorSegment.maxDuration = engineSegment.maxDuration;
+  }
+
+  // Preserve type-specific fields
+  if (engineSegment.whoToWatch) {
+    editorSegment.whoToWatch = engineSegment.whoToWatch;
+  }
+  if (engineSegment.playoutRules) {
+    editorSegment.playoutRules = engineSegment.playoutRules;
+  }
+  if (engineSegment.contentSequence) {
+    editorSegment.contentSequence = engineSegment.contentSequence;
+  }
+  if (engineSegment.advanceCondition) {
+    editorSegment.advanceCondition = engineSegment.advanceCondition;
   }
 
   return editorSegment;
@@ -283,7 +311,8 @@ function compareSegments(oldSegment, newSegment) {
     'scene', 'obsScene',
     'graphic', 'graphicData',
     'timingMode', 'autoAdvance',
-    'bufferAfter', 'locked', 'optional', 'minDuration', 'maxDuration'
+    'bufferAfter', 'locked', 'optional', 'minDuration', 'maxDuration',
+    'whoToWatch', 'playoutRules', 'contentSequence', 'advanceCondition'
   ];
 
   for (const field of fieldsToCompare) {
