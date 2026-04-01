@@ -15,11 +15,7 @@ window.BlockAthleteGrid = {
       { name: 'Caroline Williams' },
       { name: 'Diana Brown' },
       { name: 'Elizabeth Davis' },
-      { name: 'Francesca Miller' },
-      { name: 'Gabriella Wilson' },
-      { name: 'Hannah Moore' },
-      { name: 'Isabella Taylor' },
-      { name: 'Julia Anderson' }
+      { name: 'Francesca Miller' }
     ]
   },
 
