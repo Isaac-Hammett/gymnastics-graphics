@@ -109,7 +109,7 @@ Add the polling loop that fetches data and writes to Firebase at the configured 
 
 ---
 
-### Task 4: Implement config listener for dynamic interval changes — NOT STARTED
+### Task 4: Implement config listener for dynamic interval changes — COMPLETE
 
 **Files:** `server/lib/scoringIngestionService.js`
 
@@ -383,3 +383,8 @@ Test the complete data flow from Virtius API to Firebase to renderer blocks.
 - Firebase writes use `.set()` on child paths (e.g., `scoringRef.child('leaderboard/VT').set(...)`) — avoids `.update()` on root to prevent partial overwrites
 - `_poll()` catches all errors internally so the interval loop never crashes
 - `_broadcastState()` emits to socket room `competition:{compId}` with event name `scoring:stateChanged`
+- Task 4 adds `_setupConfigListener()`, `_cleanupConfigListener()` methods for dynamic config changes
+- Config listener tracks `lastForceRefresh` to detect new force refresh triggers (avoids triggering on initial read)
+- Config listener handles: `pollInterval` changes (restarts loop), `enabled: false` (stops service), `forceRefresh` timestamp (immediate poll)
+- `_configListenerRef` and `_configListenerCallback` stored for proper cleanup in `stop()`
+- "Setting `enabled: true` resumes polling" requires Task 6 integration — the coordinator needs to detect the config change and call `start()` on a stopped service

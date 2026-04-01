@@ -126,7 +126,8 @@ export class ScoringIngestionService extends EventEmitter {
     this._lastProducerActivity = Date.now();
 
     // Firebase listeners (for cleanup)
-    this._configListener = null;
+    this._configListenerRef = null;
+    this._configListenerCallback = null;
     this._competitionStatusListener = null;
     this._producerTimeoutTimer = null;
 
@@ -742,6 +743,9 @@ export class ScoringIngestionService extends EventEmitter {
       this._startPolling();
       this._state = 'running';
 
+      // Setup config listener for dynamic changes
+      this._setupConfigListener();
+
       // Write initial status to Firebase
       await this._updateFeedStatus(FEED_STATUS.OK, null);
 
@@ -770,6 +774,7 @@ export class ScoringIngestionService extends EventEmitter {
     this._log('info', 'Stopping scoring ingestion service');
 
     this._stopPolling();
+    this._cleanupConfigListener();
     this._state = 'stopped';
 
     // Write stopped status to Firebase
@@ -887,6 +892,81 @@ export class ScoringIngestionService extends EventEmitter {
       // Don't throw - let the polling loop continue
     }
   }
+
+  // ============================================================================
+  // Config Listener (Dynamic Interval Changes)
+  // ============================================================================
+
+  /**
+   * Setup Firebase listener for scoringFeed config changes
+   * Handles: pollInterval changes, enabled toggle, forceRefresh trigger
+   * @private
+   */
+  _setupConfigListener() {
+    if (!this._firebase) {
+      this._log('warning', 'No Firebase reference - skipping config listener');
+      return;
+    }
+
+    const feedRef = this._firebase.ref(`competitions/${this.compId}/config/scoringFeed`);
+
+    // Track last forceRefresh timestamp to detect new triggers
+    let lastForceRefresh = null;
+
+    this._configListenerCallback = (snapshot) => {
+      const feedConfig = snapshot.val() || {};
+
+      // Handle enabled toggle
+      if (feedConfig.enabled === false && this._state === 'running') {
+        this._log('config', 'Feed disabled via config - stopping');
+        this.stop();
+        return;
+      }
+
+      // Handle pollInterval change
+      const newInterval = feedConfig.pollInterval || DEFAULT_POLL_INTERVAL;
+      if (newInterval !== this._pollInterval && this._state === 'running') {
+        this._log('config', `Poll interval changed: ${this._pollInterval}s → ${newInterval}s`);
+        this._pollInterval = newInterval;
+        // Restart polling with new interval
+        this._stopPolling();
+        this._startPolling();
+      }
+
+      // Handle forceRefresh trigger
+      if (feedConfig.forceRefresh && feedConfig.forceRefresh !== lastForceRefresh) {
+        lastForceRefresh = feedConfig.forceRefresh;
+        // Only trigger if service is running and this isn't the initial read
+        if (this._state === 'running' && lastForceRefresh !== null) {
+          this._log('config', 'Force refresh triggered via config');
+          this.forcePoll();
+        }
+      }
+    };
+
+    // Start listening
+    feedRef.on('value', this._configListenerCallback);
+    this._configListenerRef = feedRef;
+
+    this._log('config', 'Config listener setup complete');
+  }
+
+  /**
+   * Cleanup the config listener
+   * @private
+   */
+  _cleanupConfigListener() {
+    if (this._configListenerRef && this._configListenerCallback) {
+      this._configListenerRef.off('value', this._configListenerCallback);
+      this._configListenerRef = null;
+      this._configListenerCallback = null;
+      this._log('config', 'Config listener cleaned up');
+    }
+  }
+
+  // ============================================================================
+  // Firebase Writes
+  // ============================================================================
 
   /**
    * Write processed data to Firebase
