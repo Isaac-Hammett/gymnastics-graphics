@@ -512,31 +512,34 @@ OBS browser sources use the same Chromium engine as automated tests. Full OBS in
 
 ---
 
-### Task 19: Remove overlays/team-roster.html — NOT STARTED
-**Files:** `overlays/team-roster.html`
+### Task 19: Remove overlays/team-roster.html — COMPLETE
+**Files:** `overlays/team-roster.html`, `show-controller/src/lib/urlBuilder.js`, `overlays/graphic-ids.json`
 **Resolves:** PRD Issue #38 (roster code removal)
 **Verify:** File deleted, no broken references
 
-**Pre-removal:**
-- Document the URL migration for producers
-- Verify no hardcoded references in show-controller
-
-**What to remove:**
-- Entire file: `overlays/team-roster.html` (~580 lines)
+**Verification performed 2026-04-01:**
+- Deleted `overlays/team-roster.html` (580 lines)
+- Updated `buildTeamRosterURL()` in urlBuilder.js to return stage.html URL instead of legacy overlay URL
+- Updated `graphic-ids.json` to mark team-roster as stage renderer, removed from overlayFiles list
+- Build passes successfully
+- Stage engine roster renders correctly with sample data (screenshot: `local-task-19-roster-stage.png`)
+- Old URL `overlays/team-roster.html` returns 404 (file confirmed deleted)
+- output.html loads without related errors
 
 **URL Migration:**
 | Old URL | New URL |
 |---------|---------|
 | `overlays/team-roster.html?compId={id}&teamSlot=1` | `stage/stage.html?comp={id}&graphic=team-roster-1` |
 | `overlays/team-roster.html?compId={id}&teamSlot=2` | `stage/stage.html?comp={id}&graphic=team-roster-2` |
+| (etc. for teamSlot 3-7) | (etc.) |
 
 **Checklist:**
-- [ ] URL migration documented
-- [ ] File deleted
-- [ ] No broken imports in show-controller
-- [ ] No broken references in urlBuilder.js
-- [ ] URL Generator still works for roster graphics
-- [ ] No console errors
+- [x] URL migration documented — table above, urlBuilder.js updated
+- [x] File deleted — confirmed via 404 response
+- [x] No broken imports in show-controller — build passes
+- [x] No broken references in urlBuilder.js — updated to use stage.html URL
+- [x] URL Generator still works for roster graphics — urlBuilder returns stage.html URLs
+- [x] No console errors — only favicon 404 (acceptable)
 
 ---
 
@@ -621,8 +624,11 @@ ssh_exec command="cd /var/www/commentarygraphic && tar -xzf /tmp/stage.tar.gz &&
 - LEARNING: (Task 15 fix) stage.html Firebase listener at line 609 was passing `val.data` to `renderGraphic()`, but `blocks`, `skeleton`, and `theme` are at the top level of `val`, not inside `val.data`. Fixed to pass `val` directly. The `data` sub-object inside `val` contains graphic-specific data (e.g., `apparatus`, `source`), while the render spec (`blocks`, `skeleton`, `theme`) is at root.
 - LEARNING: (Task 17) Leaderboard CSS in output.html was in THREE locations: (1) main CSS, (2) theme override CSS with `--virtuis-leaderboard-*` variables, (3) one selector in the texture overlay rule. A previous iteration removed #1 but not #2 and #3. Always grep for multiple patterns when verifying removal.
 - LEARNING: (Task 18) When removing functions, verify helper dependencies first. `APPARATUS_FLIGHT_REGEX` and `getSchoolInfoFromName()` were listed in plan.md as "shared helpers to keep" but grep showed they were ONLY used by the leaderboard functions being removed. Both could be safely deleted. Always grep actual usage before deciding what to keep.
+- LEARNING: (Task 19) When removing an overlay file, three things need updating: (1) delete the file itself, (2) update urlBuilder.js to return the new stage.html URL, (3) update graphic-ids.json to reflect new renderer and remove from overlayFiles list. The stage.html URL uses different param names: `comp` instead of `compId`, `graphic` instead of `teamSlot`, `theme` instead of `meetTheme`.
 
-### Line Number Reference (as of Task 18 completion)
+### Line Number Reference (as of Task 19 completion)
+
+**overlays/team-roster.html: REMOVED**
 
 **output.html JS removal (COMPLETED):**
 - `APPARATUS_FLIGHT_REGEX`: REMOVED
@@ -651,8 +657,5 @@ ssh_exec command="cd /var/www/commentarygraphic && tar -xzf /tmp/stage.tar.gz &&
 - Stage renderer handling: lines 14246-14255
 - Cleanup: `output.innerHTML = ''`, `hideAnimatedBackground()`, `themeClearOverrides()`
 
-**overlays/team-roster.html:**
-- Total: ~580 lines
-- CSS: lines 13-269
-- HTML: lines 271-282
-- JS: lines 284-576
+**overlays/team-roster.html: DELETED**
+- Was ~580 lines, now replaced by stage engine roster (athlete-grid block)

@@ -197,13 +197,12 @@ export function buildTeamRosterURL({ compId, teamSlot, teamName, logo, baseUrl, 
   const base = baseUrl || getBaseURL();
   const params = new URLSearchParams();
 
-  if (compId) params.set('compId', compId);
-  if (teamSlot) params.set('teamSlot', teamSlot);
-  if (teamName) params.set('teamName', teamName);
-  if (logo) params.set('logo', logo);
-  if (meetTheme) params.set('meetTheme', meetTheme);
+  // Stage engine uses ?comp= (not ?compId=) and ?graphic=team-roster-{slot}
+  if (compId) params.set('comp', compId);
+  params.set('graphic', `team-roster-${teamSlot || 1}`);
+  if (meetTheme) params.set('theme', meetTheme);
 
-  return `${base}/overlays/team-roster.html?${params.toString()}`;
+  return `${base}/stage/stage.html?${params.toString()}`;
 }
 
 /**
