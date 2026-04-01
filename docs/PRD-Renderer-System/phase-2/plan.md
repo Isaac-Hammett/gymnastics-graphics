@@ -86,7 +86,7 @@ The block renders a title (left) and optional logo (right) with `flex` / `space-
 
 ---
 
-### Task 3: athlete-grid Block — NOT STARTED
+### Task 3: athlete-grid Block — COMPLETE
 **Files:**
 - `stage/blocks/athlete-grid.js` (create)
 - `stage/blocks/athlete-grid.css` (create)
@@ -211,3 +211,4 @@ Tasks 2 and 3 are independent of each other but both depend on Task 1 (header-ba
 
 - LEARNING: `ready()` is called by `waitForReady()` with NO arguments and BEFORE `render()`. Don't try to query DOM elements in `ready()` — if the block has no async setup (e.g., no Firebase listener), just `return Promise.resolve()`. Logo loading can't be checked in `ready()` because the img element doesn't exist yet.
 - LEARNING: Block CSS uses `.block-{type}` prefix (e.g., `.block-leaderboard-table`) to scope all styles. Internal element classes use a short prefix (e.g., `lb-` for leaderboard-table, `hb-` for header-bar).
+- LEARNING: athlete-grid block uses `ag-` prefix for internal classes. The headshot fallback uses onerror handler: `onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"` which hides the img and shows the next sibling (initials div). The initials div is rendered after the img with `style="display:none;"` initially.

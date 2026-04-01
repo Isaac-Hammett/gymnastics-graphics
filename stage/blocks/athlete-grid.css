@@ -1,0 +1,175 @@
+/* Athlete Grid Block */
+.block-athlete-grid {
+  flex: 1;
+  background: var(--meet-overlay-bg, #18181b);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  overflow: hidden;
+}
+
+.block-athlete-grid .ag-grid {
+  display: grid;
+  gap: 20px;
+  justify-content: center;
+  align-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+/* Loading and Empty States */
+.block-athlete-grid .ag-loading,
+.block-athlete-grid .ag-empty {
+  font-size: 24px;
+  color: #71717a;
+  text-align: center;
+}
+
+/* Dynamic grid layouts based on athlete count */
+/* 1-6 athletes: single row */
+.block-athlete-grid .ag-count-1 { grid-template-columns: repeat(1, 250px); }
+.block-athlete-grid .ag-count-2 { grid-template-columns: repeat(2, 250px); }
+.block-athlete-grid .ag-count-3 { grid-template-columns: repeat(3, 250px); }
+.block-athlete-grid .ag-count-4 { grid-template-columns: repeat(4, 250px); }
+.block-athlete-grid .ag-count-5 { grid-template-columns: repeat(5, 250px); }
+.block-athlete-grid .ag-count-6 { grid-template-columns: repeat(6, 250px); }
+
+/* 7-8 athletes: 2 rows of 4 */
+.block-athlete-grid .ag-count-8 { grid-template-columns: repeat(4, 220px); }
+
+/* 9-10 athletes: 2 rows of 5 */
+.block-athlete-grid .ag-count-10 { grid-template-columns: repeat(5, 200px); }
+
+/* 11-12 athletes: 3 rows of 4 */
+.block-athlete-grid .ag-count-12 { grid-template-columns: repeat(4, 220px); gap: 16px; }
+
+/* 13-15 athletes: 3 rows of 5 */
+.block-athlete-grid .ag-count-15 { grid-template-columns: repeat(5, 200px); gap: 14px; }
+
+/* 16-20 athletes: 4 rows of 5 */
+.block-athlete-grid .ag-count-20 { grid-template-columns: repeat(5, 190px); gap: 12px; }
+
+/* 21-25 athletes: 5 rows of 5 */
+.block-athlete-grid .ag-count-25 { grid-template-columns: repeat(5, 180px); gap: 10px; }
+
+/* 26+ athletes: 6 columns, compact */
+.block-athlete-grid .ag-count-large { grid-template-columns: repeat(6, 160px); gap: 8px; }
+
+/* Athlete Card */
+.block-athlete-grid .ag-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+/* Headshot */
+.block-athlete-grid .ag-headshot {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: center 20%;
+  background: #3f3f46;
+  border: 3px solid #52525b;
+  margin-bottom: 12px;
+}
+
+/* Initials Fallback */
+.block-athlete-grid .ag-initials {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #3f3f46 0%, #27272a 100%);
+  border: 3px solid #52525b;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36px;
+  font-weight: 700;
+  color: #a1a1aa;
+}
+
+/* Athlete Name */
+.block-athlete-grid .ag-name {
+  font-size: 18px;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  color: var(--meet-overlay-text, #fff);
+  text-transform: uppercase;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ========== Scaling for larger rosters ========== */
+
+/* 11-15 athletes: smaller headshots */
+.block-athlete-grid .ag-count-12 .ag-headshot,
+.block-athlete-grid .ag-count-15 .ag-headshot {
+  width: 100px;
+  height: 100px;
+}
+.block-athlete-grid .ag-count-12 .ag-initials,
+.block-athlete-grid .ag-count-15 .ag-initials {
+  width: 100px;
+  height: 100px;
+  font-size: 30px;
+}
+.block-athlete-grid .ag-count-12 .ag-name,
+.block-athlete-grid .ag-count-15 .ag-name {
+  font-size: 16px;
+}
+
+/* 16-20 athletes */
+.block-athlete-grid .ag-count-20 .ag-headshot {
+  width: 90px;
+  height: 90px;
+  margin-bottom: 8px;
+}
+.block-athlete-grid .ag-count-20 .ag-initials {
+  width: 90px;
+  height: 90px;
+  font-size: 26px;
+  margin-bottom: 8px;
+}
+.block-athlete-grid .ag-count-20 .ag-name {
+  font-size: 14px;
+}
+
+/* 21-25 athletes */
+.block-athlete-grid .ag-count-25 .ag-headshot {
+  width: 80px;
+  height: 80px;
+  margin-bottom: 6px;
+}
+.block-athlete-grid .ag-count-25 .ag-initials {
+  width: 80px;
+  height: 80px;
+  font-size: 22px;
+  margin-bottom: 6px;
+}
+.block-athlete-grid .ag-count-25 .ag-name {
+  font-size: 13px;
+}
+
+/* 26+ athletes (large roster) */
+.block-athlete-grid .ag-count-large .ag-headshot {
+  width: 70px;
+  height: 70px;
+  margin-bottom: 4px;
+  border-width: 2px;
+}
+.block-athlete-grid .ag-count-large .ag-initials {
+  width: 70px;
+  height: 70px;
+  font-size: 20px;
+  margin-bottom: 4px;
+  border-width: 2px;
+}
+.block-athlete-grid .ag-count-large .ag-name {
+  font-size: 12px;
+}
