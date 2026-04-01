@@ -269,7 +269,7 @@ Phase 6 verifies visual parity between legacy and new renderers, validates routi
 
 ---
 
-### Task 10: Side-by-Side — Roster (Theme Applied) — NOT STARTED
+### Task 10: Side-by-Side — Roster (Theme Applied) — COMPLETE
 **Files:** None (verification only)
 **Resolves:** PRD Issue #34 (theme integration)
 **Verify:** Screenshot with theme colors applied
@@ -279,12 +279,17 @@ Phase 6 verifies visual parity between legacy and new renderers, validates routi
 2. Screenshot both renderers with theme
 3. Compare theme application
 
+**Verification performed 2026-04-01:**
+- Used `behind-the-chalk` theme via URL param `?theme=behind-the-chalk`
+- Screenshot: `phase-6/screenshots/local-task-10-roster-themed.png`
+- Theme data verified: headerBar #2D3436, textOnHeader #F5F5F5, bodyBackground #1a1a2e, textOnContent #F5F5F5
+
 **Checklist:**
-- [ ] Header background uses `--meet-header-bg`
-- [ ] Content background uses `--meet-overlay-bg`
-- [ ] Name color uses `--meet-overlay-text`
-- [ ] If theme not fully supported in new block, document limitation
-- [ ] No console errors
+- [x] Header background uses `--meet-header-bg` — dark gray #2D3436 visible in header bar
+- [x] Content background uses `--meet-overlay-bg` — navy #1a1a2e visible in content area
+- [x] Name color uses `--meet-overlay-text` — light #F5F5F5 text visible for athlete names
+- [x] If theme not fully supported in new block, document limitation — **FULL SUPPORT**: athlete-grid.js declares `themeVars: ['--meet-overlay-bg', '--meet-overlay-text', '--meet-border-color']` and all three are properly wired in the CSS
+- [x] No console errors — only favicon 404 (acceptable)
 
 ---
 
@@ -560,6 +565,7 @@ ssh_exec command="cd /var/www/commentarygraphic && tar -xzf /tmp/stage.tar.gz &&
 - LEARNING: The competition `0l8juzfq` (William & Mary vs Alaska) has `virtiusSessionId: W4mEcGUbqn` but legacy leaderboard URL preview still shows placeholder because preview mode disables live data fetch.
 - LEARNING: Stage engine theme support is partial. The header-bar block fully supports themes (`--meet-header-bg`, `--meet-header-text`). The leaderboard-table block only uses `--meet-overlay-bg` for the outer container; table rows, text, medals, badges all use hardcoded colors. This is a known limitation documented in agent.md and Task 5 verification.
 - LEARNING: Tie detection was implemented in Phase 2 — leaderboard-table.js already has `rankCounts` map (lines 51-56) and superscript "T" display (lines 85-89). CSS styling for the superscript is at leaderboard-table.css lines 78-81.
+- LEARNING: The athlete-grid (roster) block has FULL theme support — all three declared themeVars (`--meet-overlay-bg`, `--meet-overlay-text`, `--meet-border-color`) are properly wired in athlete-grid.css. Unlike leaderboard-table which has partial support, athlete-grid uses CSS variables throughout.
 
 ### Line Number Reference (as of 2026-04-01)
 
