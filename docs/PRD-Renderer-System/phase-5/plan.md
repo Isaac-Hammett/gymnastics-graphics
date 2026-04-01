@@ -133,7 +133,7 @@
 
 ---
 
-### Task 6: Update GraphicsControl.jsx to use CATEGORIES from registry — NOT STARTED
+### Task 6: Update GraphicsControl.jsx to use CATEGORIES from registry — COMPLETE
 
 **Issue:** GraphicsControl uses hardcoded `CATEGORY_TO_SECTION` mapping with old category names (`pre-meet`, `in-meet`, etc.) that don't match the registry's new categories.
 
@@ -148,11 +148,11 @@
 6. Update filter at line 171 to include all registry categories, not just 5 hardcoded ones
 
 **Verify:**
-- [ ] GraphicsControl renders all 6 categories from registry
-- [ ] Categories appear in correct order (full-screen-cards, lower-thirds, full-bleed, video-frames, standalone, event-summary)
-- [ ] All graphics appear under correct categories
-- [ ] No graphics are missing
-- [ ] No console errors
+- [x] GraphicsControl renders all 6 categories from registry
+- [x] Categories appear in correct order (full-screen-cards, lower-thirds, full-bleed, video-frames, standalone, event-summary)
+- [x] All graphics appear under correct categories
+- [x] No graphics are missing
+- [x] No console errors (build passes)
 
 ---
 
@@ -296,6 +296,8 @@
 - LEARNING: CollapsibleSubcategory follows the pattern from TalentProfilePage's CollapsibleSection, but uses ChevronRightIcon instead of ChevronDownIcon for horizontal-to-vertical rotation style. Keyboard accessibility via handleKeyDown for Enter/Space.
 - LEARNING: Task 5 was implemented by a previous iteration that crashed before marking COMPLETE. The code was fully functional — just needed build verification and screenshot confirmation. Always check for this pattern when a task is IN PROGRESS.
 - LEARNING: The default category branch in UrlGeneratorPage (lines ~912-959) wraps subcategories in CollapsibleSubcategory. Special handlers for event-summary, full-bleed, and full-screen-cards are separate branches above it and remain unchanged.
+- LEARNING: GraphicsControl `sections` is now an array of objects `{key, label, subcategories}` from CATEGORIES, not strings. Filter by `section.key` (category ID like 'full-bleed'), display `section.label` (human name like 'Full-Bleed'). The rotation slate UI is keyed to `section.key === 'full-bleed'`, not a string.
+- LEARNING: GraphicsControl `graphicButtons` now includes `category`, `subcategory`, and `renderer` fields from the registry. The filter changed from checking old hardcoded categories to checking `CATEGORIES[g.category]` validity.
 
 ---
 
@@ -308,7 +310,7 @@
 | 3 | Update frame-*.json manifests subcategory | COMPLETE |
 | 4 | Create CollapsibleSubcategory shared component | COMPLETE |
 | 5 | Update UrlGeneratorPage.jsx with collapsible subcategories | COMPLETE |
-| 6 | Update GraphicsControl.jsx to use CATEGORIES from registry | NOT STARTED |
+| 6 | Update GraphicsControl.jsx to use CATEGORIES from registry | COMPLETE |
 | 7 | Add collapsible subcategories to GraphicsControl.jsx | NOT STARTED |
 | 8 | Update renderer badge style in GraphicsControl.jsx | NOT STARTED |
 | 9 | Verify gender filtering works with new structure | NOT STARTED |
