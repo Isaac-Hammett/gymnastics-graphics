@@ -43,7 +43,7 @@
     { "id": "now-competing", "renderMode": "inline", "source": "output.html" },
     { "id": "event-summary", "renderMode": "inline", "source": "output.html" },
     { "id": "virtius-leaderboard", "renderMode": "inline", "source": "output.html" },
-    { "id": "team-roster", "renderMode": "iframe", "source": "output.html", "iframeTarget": "overlays/team-roster.html", "notes": "Inline container with embedded iframe" },
+    { "id": "team-roster", "renderMode": "stage", "source": "stage.html", "notes": "Rendered by stage engine as team-roster-{N}" },
     { "id": "live-camera", "renderMode": "inline", "source": "output.html" }
   ],
   "overlayFiles": [
@@ -72,7 +72,6 @@
     { "file": "sponsors-thanks.html", "usedByRenderer": true, "rendererIds": ["sponsors-thanks"], "loadsThemeLoader": true },
     { "file": "stream.html", "usedByRenderer": false, "loadsThemeLoader": true, "notes": "Loaded directly in OBS browser source" },
     { "file": "team-bug.html", "usedByRenderer": false, "loadsThemeLoader": true, "notes": "Loaded directly in OBS browser source" },
-    { "file": "team-roster.html", "usedByRenderer": true, "rendererIds": ["team-roster"], "loadsThemeLoader": true },
     { "file": "team-stats.html", "usedByRenderer": false, "loadsThemeLoader": true, "notes": "Loaded directly in OBS browser source" },
     { "file": "warm-up.html", "usedByRenderer": false, "loadsThemeLoader": true, "notes": "Loaded directly in OBS browser source" },
     { "file": "who-to-watch.html", "usedByRenderer": true, "rendererIds": ["who-to-watch-lower-third"], "loadsThemeLoader": true },
@@ -81,9 +80,10 @@
   "summary": {
     "totalRenderers": 43,
     "inlineRenderers": 33,
-    "iframeRenderers": 10,
-    "totalOverlayFiles": 30,
-    "overlayFilesUsedByRenderers": 9,
+    "iframeRenderers": 9,
+    "stageRenderers": 1,
+    "totalOverlayFiles": 29,
+    "overlayFilesUsedByRenderers": 8,
     "overlayFilesDirectOBSOnly": 19,
     "overlayFilesNoTheme": 2
   }
