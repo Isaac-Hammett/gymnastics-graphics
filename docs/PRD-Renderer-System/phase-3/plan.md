@@ -306,7 +306,7 @@ Create the competition card badge for scoring feed status.
 
 ---
 
-### Task 11: Integrate ScoringFeedBadge into HomePage — NOT STARTED
+### Task 11: Integrate ScoringFeedBadge into HomePage — COMPLETE
 
 **Files:** `show-controller/src/pages/HomePage.jsx`
 
@@ -406,3 +406,4 @@ Test the complete data flow from Virtius API to Firebase to renderer blocks.
 - Blue color scheme (text-blue-400, bg-blue-500/*, border-blue-500/*) distinguishes scoring feed from green score bug
 - Task 9: Integration is straightforward — import + render with `compId={compId} collapsed={true}` props. Panel hides itself when no virtiusSessionId configured.
 - Task 10: ScoringFeedBadge follows inline badge pattern from CommentaryStatusBadge — uses Firebase listener for virtiusSessionId visibility, useScoringFeed hook for state/actions, and includes confirm dialog before disabling. Green pulsing dot for LIVE state uses Tailwind animate-ping.
+- Task 11: Integration follows same pattern as other badges in HomePage — import at top (line 15), render inside the badge container div (line 1047) after CommentaryStatusBadge. Badge hides itself when no virtiusSessionId configured, so no conditional rendering needed in HomePage.
