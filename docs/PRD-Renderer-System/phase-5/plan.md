@@ -252,17 +252,21 @@
 
 ---
 
-### Task 11: Verify Skeletons & Blocks section appears correctly — NOT STARTED
+### Task 11: Verify Skeletons & Blocks section appears correctly — COMPLETE
 
-**Issue:** Phase 4 added "Skeletons & Blocks" section to URL Generator. Verify it still appears after reorganization.
+**Issue:** Phase 4 was supposed to add "Skeletons & Blocks" section to URL Generator. Verify it exists.
 
 **Files:** None (verification only)
 
-**Verify:**
-- [ ] "Skeletons & Blocks" section appears at bottom of URL Generator sidebar
-- [ ] Lists all skeletons (full-screen-card)
-- [ ] Lists all blocks (header-bar, leaderboard-table, athlete-grid)
-- [ ] Preview links work correctly
+**Finding:** The "Skeletons & Blocks" section was **NEVER implemented in Phase 4**. The PRD (Phase-4-Tool-Integration.md Task 7, lines 386-408) specified the feature, but the implementation checklist (line 574) remains unchecked: `- [ ] Skeletons & Blocks preview section appears in URL Generator sidebar`.
+
+**Verify:** (verified via code analysis — Phase 4 checklist + grep of UrlGeneratorPage.jsx)
+- [ ] ~~"Skeletons & Blocks" section appears at bottom of URL Generator sidebar~~ — **NOT IMPLEMENTED**
+- [ ] ~~Lists all skeletons (full-screen-card)~~ — **NOT IMPLEMENTED**
+- [ ] ~~Lists all blocks (header-bar, leaderboard-table, athlete-grid)~~ — **NOT IMPLEMENTED**
+- [ ] ~~Preview links work correctly~~ — **NOT IMPLEMENTED**
+
+**Action:** Filed as BUG below. This is a missing feature from Phase 4, not a Phase 5 regression.
 
 ---
 
@@ -288,7 +292,7 @@
 
 ## Discovered Bugs
 
-(populated by iterations as they find problems)
+- BUG: "Skeletons & Blocks" preview section was specified in Phase-4-Tool-Integration.md (Task 7, lines 386-408) but never implemented. The feature should show skeletons and blocks at the bottom of the URL Generator sidebar with Preview/Copy URL buttons. This is deferred to a future phase. (found during Task 11)
 
 ---
 
@@ -309,6 +313,7 @@
 - LEARNING: GraphicsControl badge text was abbreviated (`stg`/`ovl`/`out`) via ternary, while UrlGeneratorPage used full text (`{renderer}`). Also badge colors differed: GraphicsControl used `bg-zinc-600` vs UrlGeneratorPage's `bg-zinc-700`. Both are now aligned.
 - LEARNING: Gender filtering for graphics uses `graphic.gender === 'mens'/'womens'` fields in the registry. Men's-only: HB, PB, PH, SR leaderboards + R5/R6 summaries. Women's-only: BB, UB leaderboards + summaries. Filtering logic is in `isGraphicAvailable()` (graphicsRegistry.js:105-116) and duplicated in `getGroupedGraphics()` (UrlGeneratorPage.jsx:118-120). GraphicsControl uses `getGraphicsForCompetition()` which calls `isGraphicAvailable()`.
 - LEARNING: For Task 10 verification: Women's dual meet shows 37 buttons = 25 regular + 12 perTeam (6 graphics x 2 teams). Registry has 55 total graphics, 45 non-mens, 41 for 2-team meets. Event Summary (8) and Rotation Slate (2) use special UI components, not regular buttons. The iframe preview errors (500) in dev mode are expected — Vite doesn't serve static HTML files like output.html and overlays/*.html.
+- LEARNING: Task 11 revealed that the "Skeletons & Blocks" section in the URL Generator sidebar was SPECIFIED in Phase-4-Tool-Integration.md (Task 7) but NEVER IMPLEMENTED. Always verify Phase 4 checklists before assuming features exist. The unchecked checkbox at Phase-4-Tool-Integration.md line 574 confirms this.
 
 ---
 
@@ -326,7 +331,7 @@
 | 8 | Update renderer badge style in GraphicsControl.jsx | COMPLETE |
 | 9 | Verify gender filtering works with new structure | COMPLETE |
 | 10 | Verify all graphics appear in new sidebar | COMPLETE |
-| 11 | Verify Skeletons & Blocks section appears correctly | NOT STARTED |
+| 11 | Verify Skeletons & Blocks section appears correctly | COMPLETE (BUG: not implemented in Phase 4) |
 | 12 | Deploy and production verification | NOT STARTED |
 
 **Total: 12 tasks** (8 implementation + 4 verification)
