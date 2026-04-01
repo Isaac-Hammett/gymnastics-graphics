@@ -462,9 +462,11 @@ When a graphic is selected in the URL Generator, show a label above the preview 
 
 ---
 
-### Task 10: Migration Status Report (Auto-Generated)
+### Task 10: Migration Status Report (Auto-Generated) — FIXED 2026-04-01
 
-Add a `--status` flag to `buildGraphicsRegistry.js` that scans the filesystem and prints a migration progress report. This replaces the manually-maintained Block Catalog and Migration Tracker tables in the main PRD.
+~~Add a `--status` flag to `buildGraphicsRegistry.js` that scans the filesystem and prints a migration progress report.~~ — **FIXED 2026-04-01.** Implemented `--status` flag with ASCII progress bars, per-category breakdown, blocked graphics detection, and one-line summary for normal builds. Commit: see Task 22 commit.
+
+This replaces the manually-maintained Block Catalog and Migration Tracker tables in the main PRD.
 
 **Usage:**
 ```bash
