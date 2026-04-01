@@ -293,7 +293,7 @@ Phase 6 verifies visual parity between legacy and new renderers, validates routi
 
 ---
 
-### Task 11: Routing — Stage Graphic Triggers, output.html Clears — NOT STARTED
+### Task 11: Routing — Stage Graphic Triggers, output.html Clears — COMPLETE
 **Files:** None (verification only)
 **Resolves:** PRD Issue #35 (cross-renderer routing)
 **Verify:** Both renderers respond correctly
@@ -305,11 +305,16 @@ Phase 6 verifies visual parity between legacy and new renderers, validates routi
 4. Trigger leaderboard-vt (stage graphic)
 5. Verify browser A clears, browser B shows leaderboard
 
+**Verification performed 2026-04-01:**
+- Used competition `wcgnic-2026-prelim1` with full config data
+- Triggered `leaderboard-vt` with `renderer: "stage"` via Firebase
+- Screenshots: `task-11-output-cleared-after-stage.png`, `task-11-stage-showing-leaderboard.png`
+
 **Checklist:**
-- [ ] output.html clears immediately when stage graphic triggered
-- [ ] stage.html shows leaderboard
-- [ ] No overlap (both showing graphics simultaneously)
-- [ ] No console errors in either browser
+- [x] output.html clears immediately when stage graphic triggered — blank white screen after stage graphic triggered
+- [x] stage.html shows leaderboard — VAULT header with table structure rendered (empty rows because no live Virtius data at `scoring/leaderboard/VT`)
+- [x] No overlap (both showing graphics simultaneously) — verified, only stage.html shows graphic
+- [x] No console errors in either browser — stage.html: 0 errors; output.html: 1 error but unrelated (event-bar config read failure, not routing)
 
 ---
 
