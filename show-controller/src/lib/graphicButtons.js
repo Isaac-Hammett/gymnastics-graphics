@@ -107,6 +107,9 @@ export const teamCounts = {
   'womens-5': 5,
   'womens-6': 6,
   'womens-7': 7,
+  'womens-8': 8,
+  'womens-9': 9,
+  'womens-10': 10,
 };
 
 export const competitionTypes = [
@@ -121,6 +124,9 @@ export const competitionTypes = [
   { value: 'womens-5', label: "Women's 5-Team Meet" },
   { value: 'womens-6', label: "Women's 6-Team Meet" },
   { value: 'womens-7', label: "Women's 7-Team Meet" },
+  { value: 'womens-8', label: "Women's 8-Team Meet" },
+  { value: 'womens-9', label: "Women's 9-Team Meet" },
+  { value: 'womens-10', label: "Women's 10-Team Meet" },
 ];
 
 export const typeLabels = {
@@ -135,6 +141,9 @@ export const typeLabels = {
   'womens-5': "Women's 5-Team",
   'womens-6': "Women's 6-Team",
   'womens-7': "Women's 7-Team",
+  'womens-8': "Women's 8-Team",
+  'womens-9': "Women's 9-Team",
+  'womens-10': "Women's 10-Team",
 };
 
 export const eventFrameIds = ['floor', 'pommel', 'rings', 'vault', 'pbars', 'hbar', 'ubars', 'beam', 'allaround', 'final', 'order', 'lineups', 'summary'];
@@ -150,7 +159,7 @@ export const transparentGraphics = getAllGraphics()
   .map(g => g.id)
   .concat(
     // Add team-specific graphics
-    Array.from({ length: 7 }, (_, i) => [`team${i + 1}-stats`, `team${i + 1}-coaches`]).flat()
+    Array.from({ length: 10 }, (_, i) => [`team${i + 1}-stats`, `team${i + 1}-coaches`]).flat()
   );
 
 export function getApparatusButtons(compType) {

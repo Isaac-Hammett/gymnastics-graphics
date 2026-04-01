@@ -186,6 +186,10 @@ export class PlayoutEngine extends EventEmitter {
     // Track last API error for health indicator
     this._lastApiError = null;
 
+    // Track clip API polling for health indicator
+    this._lastClipFetchAt = null;
+    this._lastClipFetchResult = null; // 'success' | 'error' | 'no-new'
+
     // Rotation tracking (for auto-advance)
     this._virtiusSessionId = null;
     this._currentRotation = null;
@@ -198,6 +202,9 @@ export class PlayoutEngine extends EventEmitter {
     this._contentSequenceIndex = -1;       // Current item index in sequence
     this._contentSequenceTimer = null;     // Timer for auto-advancing content items
     this._contentSequenceStartedAt = null; // When the current item started
+
+    // Team name → logo URL lookup (built from competition config at start)
+    this._teamLogoMap = new Map();
 
     console.log(`[PlayoutEngine] Created for competition ${this.compId}`);
   }
@@ -299,8 +306,28 @@ export class PlayoutEngine extends EventEmitter {
     try {
       // Store per-competition API URL
       this._clipApiUrl = clipApiUrl || null;
+
+      // If no clipApiUrl passed, read the full deliveries URL from Firebase config
+      if (!this._clipApiUrl && this.firebase) {
+        const clipUrlRef = this.firebase.ref(`competitions/${this.compId}/config/clipApiUrl`);
+        const clipUrlSnap = await clipUrlRef.once('value');
+        const fullUrl = clipUrlSnap.val();
+        if (fullUrl) {
+          // Parse full URL: {baseUrl}/clip-api/meets/{sessionKey}/deliveries
+          const match = fullUrl.match(/^(.+)\/clip-api\/meets\/([^/]+)\/deliveries\/?$/);
+          if (match) {
+            this._clipApiUrl = match[1];
+            if (!sessionKey) sessionKey = match[2];
+            console.log(`[PlayoutEngine] Parsed clipApiUrl from Firebase — base: ${this._clipApiUrl}, sessionKey: ${sessionKey}`);
+          } else {
+            this._clipApiUrl = fullUrl.replace(/\/+$/, '');
+            console.warn(`[PlayoutEngine] clipApiUrl doesn't match expected pattern, using as base URL: ${this._clipApiUrl}`);
+          }
+        }
+      }
+
       if (this._clipApiUrl) {
-        console.log(`[PlayoutEngine] Using per-competition clip API URL: ${this._clipApiUrl}`);
+        console.log(`[PlayoutEngine] Using clip API URL: ${this._clipApiUrl}`);
       }
 
       // Get session key from parameter or Firebase config
@@ -349,6 +376,45 @@ export class PlayoutEngine extends EventEmitter {
         }
       }
 
+      // Build team name → logo lookup from competition config + aliases
+      if (this.firebase) {
+        const configRef = this.firebase.ref(`competitions/${this.compId}/config`);
+        const configSnap = await configRef.once('value');
+        const config = configSnap.val() || {};
+
+        // Map config team key bases to their logos (e.g., "twu" → logo)
+        const keyBaseToLogo = new Map();
+        for (let i = 1; i <= 7; i++) {
+          const name = config[`team${i}Name`];
+          const logo = config[`team${i}Logo`];
+          const teamKey = config[`team${i}Key`];
+          if (name && logo) {
+            this._teamLogoMap.set(name.toLowerCase(), logo);
+          }
+          if (teamKey && logo) {
+            // Add key base (e.g., "twu-womens" → "twu")
+            const base = teamKey.replace(/-(mens|womens)$/, '');
+            keyBaseToLogo.set(base, logo);
+            this._teamLogoMap.set(base, logo);
+          }
+        }
+
+        // Load aliases and add any that match a config team key base
+        try {
+          const aliasSnap = await this.firebase.ref('teamsDatabase/aliases').once('value');
+          const aliases = aliasSnap.val() || {};
+          for (const [aliasName, aliasBase] of Object.entries(aliases)) {
+            if (keyBaseToLogo.has(aliasBase)) {
+              this._teamLogoMap.set(aliasName.toLowerCase(), keyBaseToLogo.get(aliasBase));
+            }
+          }
+        } catch (err) {
+          console.warn('[PlayoutEngine] Failed to load aliases for logo map:', err.message);
+        }
+
+        console.log(`[PlayoutEngine] Built team logo map: ${this._teamLogoMap.size} entries`);
+      }
+
       // Restore persisted queue if available
       await this._restoreQueue();
 
@@ -360,10 +426,8 @@ export class PlayoutEngine extends EventEmitter {
       // Set up clip status listener for write-backs from output.html
       this._setupClipStatusListener();
 
-      // Persist clipApiUrl to competition config so REST proxy can use it
-      if (this._clipApiUrl && this.firebase) {
-        await this.firebase.ref(`competitions/${this.compId}/config/clipApiUrl`).set(this._clipApiUrl);
-      }
+      // Note: clipApiUrl in Firebase is the full deliveries URL set by the producer.
+      // Do NOT overwrite it with the parsed base URL.
 
       // Start timers
       this._startHeartbeat();
@@ -576,6 +640,11 @@ export class PlayoutEngine extends EventEmitter {
 
     this._updateClipStatus(draftId, CLIP_STATUS.QUEUED);
     this._logEvent('control', `Re-queued clip: ${clip.athlete_name}`);
+
+    // If in fallback mode, pick up the re-queued clip immediately
+    if (this._mode === PLAYOUT_MODE.FALLBACK) {
+      this._evaluatePriorityStack();
+    }
     this._broadcastState();
   }
 
@@ -597,6 +666,10 @@ export class PlayoutEngine extends EventEmitter {
 
     this._updateClipStatus(draftId, CLIP_STATUS.QUEUED);
     this._logEvent('control', `Retrying clip: ${clip.athlete_name}`);
+
+    if (this._mode === PLAYOUT_MODE.FALLBACK) {
+      this._evaluatePriorityStack();
+    }
     this._broadcastState();
   }
 
@@ -614,6 +687,9 @@ export class PlayoutEngine extends EventEmitter {
 
     if (failedClips.length > 0) {
       this._logEvent('control', `Retrying ${failedClips.length} failed clips`);
+      if (this._mode === PLAYOUT_MODE.FALLBACK) {
+        this._evaluatePriorityStack();
+      }
       this._broadcastState();
     }
   }
@@ -647,6 +723,11 @@ export class PlayoutEngine extends EventEmitter {
       momentReplayQueue: this._momentReplayQueue,
       eventLog: this._eventLog,
       lastApiError: this._lastApiError,
+      clipApiFetch: {
+        lastFetchAt: this._lastClipFetchAt,
+        result: this._lastClipFetchResult,
+        totalClips: this._clips.length
+      },
       currentRotation: this._currentRotation,
       rotationBreakPending: this._rotationBreakPending,
       contentSequenceState: this.contentSequenceState,
@@ -673,11 +754,15 @@ export class PlayoutEngine extends EventEmitter {
 
       if (result.error) {
         this._lastApiError = result.error;
+        this._lastClipFetchAt = Date.now();
+        this._lastClipFetchResult = 'error';
         this._logEvent('error', `API error: ${result.error}`);
+        this._broadcastState();
         return;
       }
 
       this._lastApiError = null;
+      this._lastClipFetchAt = Date.now();
 
       if (result.newClips.length > 0) {
         // Add new clips with QUEUED status
@@ -701,6 +786,7 @@ export class PlayoutEngine extends EventEmitter {
         // Persist queue
         await this._persistQueue();
 
+        this._lastClipFetchResult = 'success';
         this._logEvent('clip', `Loaded ${result.newClips.length} new clips (${this._clips.length} total)`);
         this.emit('queueUpdated', {
           newClips: result.newClips,
@@ -716,12 +802,59 @@ export class PlayoutEngine extends EventEmitter {
         if (this._mode === PLAYOUT_MODE.FALLBACK) {
           this._evaluatePriorityStack();
         }
+      } else {
+        this._lastClipFetchResult = 'no-new';
+        this._broadcastState();
       }
     } catch (error) {
       console.error(`[PlayoutEngine] Error fetching clips:`, error.message);
       this._lastApiError = error.message;
+      this._lastClipFetchAt = Date.now();
+      this._lastClipFetchResult = 'error';
       this._logEvent('error', `Failed to fetch clips: ${error.message}`);
+      this._broadcastState();
     }
+  }
+
+  /**
+   * Resolve team logo URL from clip's team_name using competition config.
+   * Uses fuzzy matching: exact match first, then substring containment
+   * (e.g., API "University of Bridgeport" matches config "Bridgeport").
+   * @private
+   */
+  _resolveTeamLogo(clip) {
+    if (!clip || !clip.team_name) return null;
+    const clipName = clip.team_name.toLowerCase();
+
+    // Exact match
+    if (this._teamLogoMap.has(clipName)) return this._teamLogoMap.get(clipName);
+
+    // Substring match: config name contained in API name, or API name contained in config name
+    for (const [configName, logo] of this._teamLogoMap) {
+      if (clipName.includes(configName) || configName.includes(clipName)) {
+        return logo;
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Build the full data object for a clip (used for current + next clip data)
+   * @private
+   */
+  _buildClipData(clip) {
+    if (!clip) return null;
+    return {
+      draftId: clip.draft_id,
+      clipUrl: clip.clip_url,
+      athleteName: clip.athlete_name,
+      teamName: clip.team_name,
+      teamLogo: this._resolveTeamLogo(clip),
+      apparatus: clip.apparatus,
+      score: clip.score,
+      duration: clip.duration,
+      thumbnailUrl: clip.thumbnail_url,
+    };
   }
 
   /**
@@ -756,6 +889,14 @@ export class PlayoutEngine extends EventEmitter {
       this._updateClipStatus(this._currentClip.draft_id, CLIP_STATUS.PLAYED);
     }
 
+    // Don't advance if paused — wait for explicit resume
+    if (this._state === ENGINE_STATE.PAUSED) {
+      this._currentClip = null;
+      this._logEvent('control', 'Advance blocked - playout is paused');
+      this._broadcastState();
+      return;
+    }
+
     // Check for moment replay first (priority)
     if (this._momentReplayQueue.length > 0) {
       this._playMomentReplay();
@@ -768,6 +909,7 @@ export class PlayoutEngine extends EventEmitter {
     if (nextClip) {
       this._currentClip = nextClip;
       this._clipStartTime = Date.now();
+      this._currentClip.startedAt = this._clipStartTime;
       this._updateClipStatus(nextClip.draft_id, CLIP_STATUS.PLAYING);
       this._currentClip.elapsed = 0;
 
@@ -777,20 +919,18 @@ export class PlayoutEngine extends EventEmitter {
       // Switch OBS to Clip Playback Scene
       this._switchToClipScene();
 
+      // Build next clip lookahead for optimistic advance
+      const peekNext = this._getNextQueuedClip();
+      const nextClipData = this._buildClipData(peekNext);
+
       // Write clip-playback graphic to Firebase
       this._writeCurrentGraphic({
         graphic: 'clip-playback',
         data: {
-          draftId: nextClip.draft_id,
-          clipUrl: nextClip.clip_url,
-          athleteName: nextClip.athlete_name,
-          teamName: nextClip.team_name,
-          teamLogo: nextClip.teamLogo || null,
-          apparatus: nextClip.apparatus,
-          score: nextClip.score,
-          duration: nextClip.duration,
-          thumbnailUrl: nextClip.thumbnail_url,
-          nextClipUrl: this._getNextQueuedClip()?.clip_url || null,
+          ...this._buildClipData(nextClip),
+          nextClipUrl: peekNext?.clip_url || null,
+          nextClipDraftId: peekNext?.draft_id || null,
+          nextClipData: nextClipData ? { ...nextClipData, meetTheme: this._meetTheme } : null,
           meetTheme: this._meetTheme
         }
       });
@@ -836,6 +976,10 @@ export class PlayoutEngine extends EventEmitter {
     // Switch OBS to Clip Playback Scene for moment replay
     this._switchToClipScene();
 
+    // Build next clip lookahead for optimistic advance after replay
+    const peekNext = this._getNextQueuedClip();
+    const nextClipData = this._buildClipData(peekNext);
+
     // Write moment-replay graphic to Firebase
     this._writeCurrentGraphic({
       graphic: 'moment-replay',
@@ -844,12 +988,15 @@ export class PlayoutEngine extends EventEmitter {
         clipUrl: moment.clip_url,
         athleteName: moment.athlete_name,
         teamName: moment.team_name,
+        teamLogo: this._teamLogoMap.get((moment.team_name || '').toLowerCase()) || null,
         apparatus: moment.apparatus,
         seekStart: moment.seekStart,
         seekEnd: moment.seekEnd,
         playbackRate: moment.speed,
         muted: true,
-        nextClipUrl: this._getNextQueuedClip()?.clip_url || null,
+        nextClipUrl: peekNext?.clip_url || null,
+        nextClipDraftId: peekNext?.draft_id || null,
+        nextClipData: nextClipData ? { ...nextClipData, meetTheme: this._meetTheme } : null,
         meetTheme: this._meetTheme
       }
     });
@@ -869,6 +1016,11 @@ export class PlayoutEngine extends EventEmitter {
    * @private
    */
   _evaluatePriorityStack() {
+    // 0. Paused - don't do anything until explicitly resumed
+    if (this._state === ENGINE_STATE.PAUSED) {
+      return;
+    }
+
     // 1. Override active - already handled by forceCamera/pause
     if (this._override.active) {
       return;

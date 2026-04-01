@@ -294,7 +294,7 @@ export function buildSponsorsThanksURL({ logo, sponsorsJson, baseUrl, meetTheme 
  * @param {string} [options.meetTheme] - Meet theme ID for themed graphics
  * @returns {string} Complete URL
  */
-export function buildSponsorsCycleURL({ logo, sponsorsJson, baseUrl, meetTheme, lockedIndex, showBounds, showGuides }) {
+export function buildSponsorsCycleURL({ logo, sponsorsJson, baseUrl, meetTheme, lockedIndex, showBounds, showGuides, cycleDuration, excluded }) {
   const base = baseUrl || getBaseURL();
   const params = new URLSearchParams();
 
@@ -302,6 +302,8 @@ export function buildSponsorsCycleURL({ logo, sponsorsJson, baseUrl, meetTheme, 
   if (sponsorsJson) params.set('sponsors', sponsorsJson);
   if (meetTheme) params.set('meetTheme', meetTheme);
   if (lockedIndex != null && lockedIndex >= 0) params.set('lockedIndex', String(lockedIndex));
+  if (cycleDuration != null && cycleDuration !== 3) params.set('cycleDuration', String(cycleDuration));
+  if (excluded && excluded.length > 0) params.set('excluded', excluded.join(','));
   if (showBounds) params.set('showBounds', 'true');
   if (showGuides) params.set('showGuides', 'true');
 
@@ -388,6 +390,38 @@ export function buildLeaderboardURL({ event, virtiusSessionId, gender, teams, te
 }
 
 /**
+ * Build URL for Combined AA Leaderboard graphic (merges two Virtius sessions)
+ * @param {Object} options
+ * @param {string} options.virtiusSessionId - First Virtius session ID
+ * @param {string} options.virtiusSessionId2 - Second Virtius session ID
+ * @param {string} options.gender - Gender ('mens' or 'womens') for column visibility
+ * @param {Object} options.teams - Team data keyed by team number
+ * @param {number} options.teamCount - Number of teams
+ * @param {string} [options.baseUrl] - Override base URL
+ * @param {string} [options.meetTheme] - Meet theme ID for themed graphics
+ * @returns {string} Complete URL
+ */
+export function buildCombinedAALeaderboardURL({ virtiusSessionId, virtiusSessionId2, gender, teams, teamCount, baseUrl, meetTheme }) {
+  const base = baseUrl || getBaseURL();
+  const params = new URLSearchParams();
+
+  if (virtiusSessionId) params.set('virtiusSessionId', virtiusSessionId);
+  if (virtiusSessionId2) params.set('virtiusSessionId2', virtiusSessionId2);
+  if (gender) params.set('leaderboardGender', gender);
+
+  // Add team data for display
+  for (let i = 1; i <= teamCount; i++) {
+    const name = teams[`team${i}Name`];
+    const logo = teams[`team${i}Logo`];
+    if (name) params.set(`team${i}Name`, name);
+    if (logo) params.set(`team${i}Logo`, logo);
+  }
+
+  if (meetTheme) params.set('meetTheme', meetTheme);
+  return `${base}/output.html?graphic=combined-aa-leaderboard&${params.toString()}`;
+}
+
+/**
  * Build URL for Event Summary graphic
  * @param {Object} options
  * @param {string} options.mode - 'rotation' or 'apparatus'
@@ -454,7 +488,7 @@ export function buildEventSummaryURL({ mode, rotation, apparatus, virtiusSession
  */
 export function generateGraphicURL(graphicId, formData, teamCount, baseUrl, options = {}) {
   const base = baseUrl || getBaseURL();
-  const { compType, virtiusSessionId, compId, summaryTheme, sponsors, meetTheme, meetThemeLogo, lockedIndex, showBounds, showGuides } = options;
+  const { compType, virtiusSessionId, virtiusSessionId2, compId, summaryTheme, sponsors, meetTheme, meetThemeLogo, lockedIndex, showBounds, showGuides, cycleDuration, excluded } = options;
 
   // Helper to get team logo with placeholder fallback
   const getTeamLogo = (teamNum) => {
@@ -560,6 +594,20 @@ export function generateGraphicURL(graphicId, formData, teamCount, baseUrl, opti
   if (frameMatch) {
     return buildFrameOverlayURL({
       frameType: frameMatch[1],
+      teams: getTeamsData(),
+      teamCount,
+      baseUrl: base,
+      meetTheme,
+    });
+  }
+
+  // Handle combined AA leaderboard (two session IDs)
+  if (graphicId === 'combined-aa-leaderboard') {
+    const gender = compType?.startsWith('mens') ? 'mens' : 'womens';
+    return buildCombinedAALeaderboardURL({
+      virtiusSessionId,
+      virtiusSessionId2,
+      gender,
       teams: getTeamsData(),
       teamCount,
       baseUrl: base,
@@ -745,6 +793,8 @@ export function generateGraphicURL(graphicId, formData, teamCount, baseUrl, opti
         lockedIndex,
         showBounds,
         showGuides,
+        cycleDuration,
+        excluded,
       });
 
     case 'sponsors-bug':

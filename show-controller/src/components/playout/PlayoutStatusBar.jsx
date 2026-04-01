@@ -29,6 +29,7 @@ export default function PlayoutStatusBar({
   nextContent = {},
   queueStats = {},
   coordinatorHeartbeat = null,
+  clipApiFetch = null,
   currentRotation = 1,
   isOverride = false,
 }) {
@@ -66,7 +67,10 @@ export default function PlayoutStatusBar({
             <span className="text-sm text-zinc-400">— Rotation {currentRotation}</span>
           )}
         </div>
-        <CoordinatorHealthIndicator health={coordinatorHealth} />
+        <div className="flex items-center gap-3">
+          <ClipApiHealthIndicator clipApiFetch={clipApiFetch} />
+          <CoordinatorHealthIndicator health={coordinatorHealth} />
+        </div>
       </div>
 
       {/* Three cards row */}
@@ -203,6 +207,15 @@ function NowCard({ mode, content }) {
  * NEXT Card — Upcoming content with preload indicator
  */
 function NextCard({ content }) {
+  if (!content) {
+    return (
+      <div className="bg-zinc-900 rounded-lg p-3">
+        <div className="text-xs text-zinc-500 uppercase tracking-wide mb-1.5">Next</div>
+        <div className="text-zinc-500 text-sm">No upcoming content</div>
+      </div>
+    );
+  }
+
   const { type, athleteName, apparatus, teamName, score, preloadState } = content;
 
   // Preload indicator
@@ -284,6 +297,52 @@ function QueueCard({ stats, formatTime }) {
         ~{formatTime(estimatedTimeRemaining)} left
       </div>
       <div className="text-zinc-500 text-xs">{playedCount} played</div>
+    </div>
+  );
+}
+
+/**
+ * Clip API Health Indicator — Shows last poll time and result
+ */
+function ClipApiHealthIndicator({ clipApiFetch }) {
+  const { health, label } = useMemo(() => {
+    if (!clipApiFetch || !clipApiFetch.lastFetchAt) {
+      return { health: 'waiting', label: 'API: waiting' };
+    }
+
+    const age = Math.round((Date.now() - clipApiFetch.lastFetchAt) / 1000);
+    const ageLabel = age < 60 ? `${age}s ago` : `${Math.floor(age / 60)}m ago`;
+
+    if (clipApiFetch.result === 'error') {
+      return { health: 'error', label: `API: error (${ageLabel})` };
+    }
+    if (age > 30) {
+      return { health: 'stale', label: `API: ${ageLabel}` };
+    }
+    const suffix = clipApiFetch.totalClips > 0 ? ` · ${clipApiFetch.totalClips} clips` : '';
+    return { health: 'ok', label: `API: ${ageLabel}${suffix}` };
+  }, [clipApiFetch]);
+
+  const colors = {
+    ok: 'bg-green-500',
+    waiting: 'bg-zinc-500',
+    stale: 'bg-amber-500',
+    error: 'bg-red-500',
+  };
+
+  const textColors = {
+    ok: 'text-zinc-400',
+    waiting: 'text-zinc-500',
+    stale: 'text-amber-400',
+    error: 'text-red-400',
+  };
+
+  return (
+    <div className="flex items-center gap-1.5">
+      <span className={`w-2 h-2 rounded-full ${colors[health]} animate-pulse`} />
+      <span className={`text-xs ${textColors[health]}`}>
+        {label}
+      </span>
     </div>
   );
 }

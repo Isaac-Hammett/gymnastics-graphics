@@ -22,7 +22,8 @@ export default function StatsStatusBadge({ compId, config }) {
   for (let i = 1; i <= 6; i++) {
     const teamName = config?.[`team${i}Name`];
     if (teamName) {
-      const teamKey = buildTeamDbKey(teamName, gender);
+      // Prefer explicit team key from config (needed for composite/placeholder teams like WCGNIC)
+      const teamKey = config?.[`team${i}Key`] || buildTeamDbKey(teamName, gender);
       if (teamKey) teamKeys.push({ index: i, teamKey });
     }
   }
@@ -55,7 +56,7 @@ export default function StatsStatusBadge({ compId, config }) {
   // Determine overall status from all team metas
   const metas = Object.values(teamMetas).filter(Boolean);
   const hasAnyStats = metas.length > 0;
-  const allComplete = hasAnyStats && metas.every(m => m.status === 'complete');
+  const allComplete = hasAnyStats && metas.every(m => m.status === 'complete' || m.status === 'composite');
   const anyError = metas.some(m => m.status === 'error');
   const anyPartial = metas.some(m => m.status === 'partial');
 

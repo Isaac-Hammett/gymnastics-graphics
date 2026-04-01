@@ -90,6 +90,11 @@ const INITIAL_STATE = {
     lastSeen: null,
     connected: false
   },
+  clipApiFetch: {
+    lastFetchAt: null,
+    result: null,
+    totalClips: 0
+  },
   momentReplay: null,
   momentReplayQueue: [],
   eventLog: [],
@@ -131,6 +136,7 @@ export default function usePlayoutState() {
         overrideState: state.overrideState ?? INITIAL_STATE.overrideState,
         preloadState: state.preloadState ?? INITIAL_STATE.preloadState,
         coordinatorHeartbeat: state.coordinatorHeartbeat ?? { lastSeen: Date.now(), connected: true },
+        clipApiFetch: state.clipApiFetch ?? INITIAL_STATE.clipApiFetch,
         momentReplay: state.momentReplay ?? null,
         momentReplayQueue: state.momentReplayQueue ?? [],
         eventLog: state.eventLog ?? [],
@@ -238,6 +244,9 @@ export default function usePlayoutState() {
     // Coordinator health
     coordinatorHeartbeat: serverState.coordinatorHeartbeat,
     setCoordinatorHeartbeat: noopSetter, // No-op: server-managed
+
+    // Clip API polling health
+    clipApiFetch: serverState.clipApiFetch,
 
     // Moment replay
     momentReplay: serverState.momentReplay,

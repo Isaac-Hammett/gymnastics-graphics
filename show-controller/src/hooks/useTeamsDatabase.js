@@ -38,6 +38,7 @@ export function useTeamsDatabase() {
   const [headshots, setHeadshots] = useState({});
   const [aliases, setAliases] = useState({});
   const [sponsors, setSponsors] = useState({});
+  const [media, setMedia] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -47,11 +48,12 @@ export function useTeamsDatabase() {
     const headshotsRef = ref(db, 'teamsDatabase/headshots');
     const aliasesRef = ref(db, 'teamsDatabase/aliases');
     const sponsorsRef = ref(db, 'teamsDatabase/sponsors');
+    const mediaRef = ref(db, 'teamsDatabase/media');
 
     let loadedCount = 0;
     const checkLoaded = () => {
       loadedCount++;
-      if (loadedCount >= 4) setLoading(false);
+      if (loadedCount >= 5) setLoading(false);
     };
 
     const unsubTeams = onValue(teamsRef, (snapshot) => {
@@ -86,11 +88,20 @@ export function useTeamsDatabase() {
       checkLoaded();
     });
 
+    const unsubMedia = onValue(mediaRef, (snapshot) => {
+      setMedia(snapshot.val() || {});
+      checkLoaded();
+    }, (err) => {
+      setError(err.message);
+      checkLoaded();
+    });
+
     return () => {
       unsubTeams();
       unsubHeadshots();
       unsubAliases();
       unsubSponsors();
+      unsubMedia();
     };
   }, []);
 
@@ -677,6 +688,68 @@ export function useTeamsDatabase() {
   }, [saveTeam, saveHeadshots]);
 
   // ============================================
+  // ATHLETE MEDIA (additional images beyond headshots)
+  // ============================================
+  // Firebase path: teamsDatabase/media/{safeKey}/
+  //   Each key is an athlete's normalized+safe name
+  //   Value is an array of { url, type, label, updatedAt }
+  //   type: 'portrait' | 'action' | 'full-body' | 'custom'
+
+  /**
+   * Get all media images for an athlete
+   * @param {string} athleteName - Athlete name
+   * @returns {Array} Array of { url, type, label } objects
+   */
+  const getAthleteMedia = useCallback((athleteName) => {
+    if (!athleteName) return [];
+    const normalized = normalizeName(athleteName);
+    const safeKey = getSafeFirebaseKey(normalized);
+    const entry = media[safeKey];
+    if (!entry) return [];
+    // Handle both array and object formats
+    if (Array.isArray(entry)) return entry;
+    return Object.values(entry);
+  }, [media]);
+
+  /**
+   * Save a media image for an athlete (appends to existing)
+   * @param {string} athleteName - Athlete name
+   * @param {string} url - Image URL
+   * @param {string} type - Image type ('portrait', 'action', 'full-body', 'custom')
+   * @param {string} label - Optional label (e.g., "Media Day 2026")
+   */
+  const saveAthleteMedia = useCallback(async (athleteName, url, type = 'portrait', label = '') => {
+    if (!athleteName || !url) return;
+    const normalized = normalizeName(athleteName);
+    const safeKey = getSafeFirebaseKey(normalized);
+    const existing = getAthleteMedia(athleteName);
+    const newMedia = [...existing, {
+      url,
+      type,
+      label: label || type,
+      updatedAt: new Date().toISOString(),
+    }];
+    await set(ref(db, `teamsDatabase/media/${safeKey}`), newMedia);
+  }, [getAthleteMedia]);
+
+  /**
+   * Delete a specific media image for an athlete by index
+   */
+  const deleteAthleteMedia = useCallback(async (athleteName, index) => {
+    if (!athleteName) return;
+    const normalized = normalizeName(athleteName);
+    const safeKey = getSafeFirebaseKey(normalized);
+    const existing = getAthleteMedia(athleteName);
+    if (index < 0 || index >= existing.length) return;
+    const updated = existing.filter((_, i) => i !== index);
+    if (updated.length === 0) {
+      await set(ref(db, `teamsDatabase/media/${safeKey}`), null);
+    } else {
+      await set(ref(db, `teamsDatabase/media/${safeKey}`), updated);
+    }
+  }, [getAthleteMedia]);
+
+  // ============================================
   // DIAGNOSTICS
   // ============================================
 
@@ -835,6 +908,11 @@ export function useTeamsDatabase() {
     reorderSponsors,
     getTeamSponsors,
     getTeamSponsorCount,
+
+    // Athlete media operations
+    getAthleteMedia,
+    saveAthleteMedia,
+    deleteAthleteMedia,
 
     // Migration
     migrateFromStatic,

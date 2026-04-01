@@ -34,8 +34,8 @@ const db = admin.database();
 // ── CSV paths ────────────────────────────────────────────────────────────────
 const CSV_DIR = resolve(__dirname, '../../docs/PRD-Commentary-Talent-CRM');
 const COMMENTATORS_CSV = resolve(CSV_DIR, 'Master 2026_ Commentary Tracker - Commentators 2026.csv');
-const ASSIGNMENTS_CSV  = resolve(CSV_DIR, 'Master 2026_ Commentary Tracker - 2026 Assignment.csv');
-const SURVEY_CSV       = resolve(CSV_DIR, 'Official Virtius Remote Commentary 2026 (Responses) - Form Responses 1 (6).csv');
+const ASSIGNMENTS_CSV  = resolve(CSV_DIR, 'Master 2026_ Commentary Tracker - 2026 Assignment (1).csv');
+const SURVEY_CSV       = resolve(CSV_DIR, 'Official Virtius Remote Commentary 2026 (Responses) - Form Responses 1 (7).csv');
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -161,22 +161,25 @@ const assignmentMap = {}; // talentName (lowercase) → [ { compId, role, date }
 for (const row of assignments) {
   const event = row['Event'];
   const date  = row['Date'];
-  const lead  = (row['Lead'] || '').trim();
-  const color = (row['Color'] || '').trim();
+  const lead     = (row['Lead'] || '').trim();
+  const color    = (row['Color'] || '').trim();
+  const producer = (row['Producer'] || '').trim();
 
   if (!event || event.toLowerCase().includes('week')) continue; // skip blank/header-like rows
 
   const compId = slugifyMeet(event, date);
+  const type   = (row['Type'] || '').trim(); // WAG or MAG
 
   const addAssignment = (name, role) => {
     const key = name.toLowerCase().trim();
-    if (!key || key === 'n/a' || key === 'tbd' || key === '') return;
+    if (!key || key === 'n/a' || key === 'tbd' || key === '' || key === 'canceled') return;
     if (!assignmentMap[key]) assignmentMap[key] = [];
-    assignmentMap[key].push({ compId, role, date: date || '' });
+    assignmentMap[key].push({ compId, role, date: date || '', type: type || '' });
   };
 
   addAssignment(lead, 'pbp');
   addAssignment(color, 'analyst');
+  addAssignment(producer, 'producer');
 }
 
 // ── Build survey map: email (lowercase) → survey data ───────────────────────
@@ -200,7 +203,8 @@ function findCol(row, substring) {
   return Object.keys(row).find(k => k.toLowerCase().includes(substring.toLowerCase()));
 }
 
-const surveyMap = {}; // email lowercase → merged object
+const surveyMap = {};    // email lowercase → merged object
+const surveyByName = {}; // name lowercase → merged object (fallback when commentator has no email)
 
 for (const row of surveyResponses) {
   const nameKey  = findCol(row, 'provide your name');
@@ -213,25 +217,52 @@ for (const row of surveyResponses) {
   const micKey   = findCol(row, 'microphone options');
   const discordKey = findCol(row, 'discord');
 
+  const availKey   = findCol(row, 'competitions that you would be available');
+  const expGymKey  = findCol(row, 'experience with gymnastics');
+  const expCommKey = findCol(row, 'experience commentating');
+  const linksKey   = findCol(row, 'competitions you have provided commentary');
+  const partnerKey = findCol(row, 'like to commentate with');
+  const interestKey = findCol(row, 'looking for help');
+  const ideasKey   = findCol(row, 'fresh idea');
+
   const email = emailKey ? (row[emailKey] || '').toLowerCase().trim() : '';
-  if (!email) continue;
+  const name  = nameKey  ? (row[nameKey] || '').trim() : '';
+
+  // Allow entries with name but no email (will match by name later)
+  if (!email && !name) continue;
 
   const speedRaw = speedKey ? row[speedKey] : '';
   const speeds = parseSpeed(speedRaw);
 
-  surveyMap[email] = {
-    name:                  nameKey  ? row[nameKey]  : '',
+  const entry = {
+    name,
     email,
-    phone:                 phoneKey ? row[phoneKey] : '',
+    phone:                 phoneKey ? (row[phoneKey] || '').trim() : '',
     wagMag:                wagMagKey ? row[wagMagKey] : '',
     commentaryRole:        roleKey  ? mapRole(row[roleKey]) : 'both',
     hasHeadphones:         headphoneKey ? (row[headphoneKey] || '').toLowerCase().includes('yes') : false,
-    micType:               micKey   ? row[micKey]   : '',
-    discordStatus:         discordKey ? row[discordKey] : '',
+    micType:               micKey   ? (row[micKey] || '').trim()   : '',
+    discordStatus:         discordKey ? (row[discordKey] || '').trim() : '',
     internetUploadMbps:    speeds.upload,
     internetDownloadMbps:  speeds.download,
     surveyCompleted:       true,
+    surveyAvailability:    availKey  ? (row[availKey] || '').trim()  : '',
+    gymExperience:         expGymKey ? (row[expGymKey] || '').trim() : '',
+    commentaryExperience:  expCommKey ? (row[expCommKey] || '').trim() : '',
+    sampleLinks:           linksKey  ? (row[linksKey] || '').trim()  : '',
+    preferredPartners:     partnerKey ? (row[partnerKey] || '').trim() : '',
+    otherInterests:        interestKey ? (row[interestKey] || '').trim() : '',
+    freshIdeas:            ideasKey  ? (row[ideasKey] || '').trim()  : '',
+    surveyTimestamp:       (row['Timestamp'] || '').trim(),
   };
+
+  if (email) {
+    surveyMap[email] = entry;
+  }
+  // Also index by name for matching when email doesn't exist on commentator record
+  if (name) {
+    surveyByName[name.toLowerCase()] = entry;
+  }
 }
 
 console.log(`Survey map: ${Object.keys(surveyMap).length} entries keyed by email`);
@@ -302,9 +333,22 @@ for (const row of commentators) {
     }
   }
 
-  // Merge survey data (match by email)
+  // Merge survey data (match by email, fallback to name)
   const emailKey = rawEmail.toLowerCase();
-  const surveyData = surveyMap[emailKey] || {};
+  let surveyData = surveyMap[emailKey] || {};
+  if (!Object.keys(surveyData).length) {
+    // Try name-based match
+    surveyData = surveyByName[nameLower] || {};
+    if (!Object.keys(surveyData).length) {
+      // Fuzzy name match against survey entries
+      for (const [sName, sData] of Object.entries(surveyByName)) {
+        if (similarity(nameLower, sName) > 0.9) {
+          surveyData = sData;
+          break;
+        }
+      }
+    }
+  }
 
   // Build final record
   const record = {
@@ -324,8 +368,14 @@ for (const row of commentators) {
     discordAdded:    surveyData.discordStatus ? surveyData.discordStatus.toLowerCase().includes('yes') : false,
     internetUploadMbps:   surveyData.internetUploadMbps || null,
     internetDownloadMbps: surveyData.internetDownloadMbps || null,
-    hasHeadphones:   surveyData.hasHeadphones || null,
-    micType:         surveyData.micType || null,
+    hasHeadphones:        surveyData.hasHeadphones || null,
+    micType:              surveyData.micType || null,
+    gymExperience:        surveyData.gymExperience || null,
+    commentaryExperience: surveyData.commentaryExperience || null,
+    sampleLinks:          surveyData.sampleLinks || null,
+    preferredPartners:    surveyData.preferredPartners || null,
+    otherInterests:       surveyData.otherInterests || null,
+    surveyAvailability:   surveyData.surveyAvailability || null,
     createdAt:       new Date().toISOString(),
     updatedAt:       new Date().toISOString(),
   };
@@ -337,6 +387,76 @@ for (const row of commentators) {
 
   records.push({ talentId, record, emailKey });
 }
+
+// ── Create records for unmatched survey respondents ─────────────────────────
+
+const matchedEmails = new Set(records.map(r => r.emailKey).filter(Boolean));
+const matchedNames = new Set(records.map(r => r.record.name.toLowerCase()));
+
+let surveyOnly = 0;
+for (const [email, sData] of Object.entries(surveyMap)) {
+  if (matchedEmails.has(email)) continue;
+  const sNameLower = (sData.name || '').toLowerCase();
+  if (!sNameLower) continue;
+  let nameMatched = false;
+  for (const existingName of matchedNames) {
+    if (similarity(sNameLower, existingName) > 0.9) {
+      nameMatched = true;
+      break;
+    }
+  }
+  if (nameMatched) continue;
+
+  let talentId = makeTalentId(sData.name);
+  if (usedIds[talentId] !== undefined) {
+    let suffix = 2;
+    while (usedIds[`${talentId}-${suffix}`] !== undefined) suffix++;
+    talentId = `${talentId}-${suffix}`;
+  }
+  usedIds[talentId] = records.length;
+
+  const competitionHistory = [];
+  const nameVariants = [sNameLower];
+  const nameParts = sNameLower.split(/\s+/);
+  if (nameParts.length > 2) nameVariants.push(`${nameParts[0]} ${nameParts[nameParts.length - 1]}`);
+  for (const variant of nameVariants) {
+    if (assignmentMap[variant]) { competitionHistory.push(...assignmentMap[variant]); break; }
+    for (const [key, entries] of Object.entries(assignmentMap)) {
+      if (similarity(variant, key) > 0.9) { competitionHistory.push(...entries); break; }
+    }
+  }
+
+  const record = {
+    name: sData.name,
+    phone: sData.phone || null,
+    email: sData.email || null,
+    wagMag: sData.wagMag || null,
+    commentaryRole: sData.commentaryRole || 'both',
+    status: 'need-info',
+    competitionHistory: competitionHistory.length > 0 ? competitionHistory : null,
+    surveyCompleted: true,
+    hasHeadphones: sData.hasHeadphones || null,
+    micType: sData.micType || null,
+    internetUploadMbps: sData.internetUploadMbps || null,
+    internetDownloadMbps: sData.internetDownloadMbps || null,
+    discordAdded: sData.discordStatus ? sData.discordStatus.toLowerCase().includes('complete') : false,
+    gymExperience: sData.gymExperience || null,
+    commentaryExperience: sData.commentaryExperience || null,
+    sampleLinks: sData.sampleLinks || null,
+    preferredPartners: sData.preferredPartners || null,
+    otherInterests: sData.otherInterests || null,
+    surveyAvailability: sData.surveyAvailability || null,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+  for (const k of Object.keys(record)) { if (record[k] === null) delete record[k]; }
+  records.push({ talentId, record, emailKey: email });
+  matchedEmails.add(email);
+  matchedNames.add(sNameLower);
+  surveyOnly++;
+}
+
+console.log(`Survey-only new records: ${surveyOnly}`);
 
 // ── Summary ──────────────────────────────────────────────────────────────────
 

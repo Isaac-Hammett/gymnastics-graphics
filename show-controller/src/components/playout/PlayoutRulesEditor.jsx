@@ -103,6 +103,7 @@ export default function PlayoutRulesEditor({ playoutRules, onChange, disabled = 
     onChange?.(newRules);
   };
 
+
   // Gap fill sequence handlers
   const addGapFillItem = () => {
     const newSequence = [...(rules.gapFillSequence || []), { ...DEFAULT_GAP_FILL_ITEM }];

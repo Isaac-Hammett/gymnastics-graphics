@@ -703,6 +703,7 @@ function ClipCard({ clip, isUpNext, isPlaying, onSkip, onAddToQueue, onRetry, CL
             <XMarkIcon className="w-4 h-4" />
           </button>
         );
+      case CLIP_STATUS.PLAYED:
       case CLIP_STATUS.SHOWN_LIVE:
       case CLIP_STATUS.SKIPPED:
         return (
@@ -711,7 +712,7 @@ function ClipCard({ clip, isUpNext, isPlaying, onSkip, onAddToQueue, onRetry, CL
             className="flex items-center gap-1 px-2 py-1 text-xs bg-green-500/20 text-green-400 hover:bg-green-500/30 rounded border border-green-500/30 transition-colors"
           >
             <PlusIcon className="w-3 h-3" />
-            Queue
+            {clip.status === CLIP_STATUS.PLAYED ? 'Re-queue' : 'Queue'}
           </button>
         );
       case CLIP_STATUS.FAILED:

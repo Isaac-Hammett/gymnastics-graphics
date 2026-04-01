@@ -16,7 +16,9 @@ const SEGMENT_TYPES = {
   HOLD: 'hold',         // Hold for producer decision
   BREAK: 'break',       // Commercial/intermission break
   VIDEO: 'video',       // Pre-recorded video
-  GRAPHIC: 'graphic'    // Graphics overlay
+  GRAPHIC: 'graphic',   // Graphics overlay
+  PLAYOUT: 'playout',   // Autonomous clip playout (PRD Clip Integration)
+  WHO_TO_WATCH: 'who-to-watch'  // Who to Watch auto-sequence (title cards → clip)
 };
 
 // Engine states
@@ -277,6 +279,22 @@ class TimesheetEngine extends EventEmitter {
       return;
     }
 
+    // Stop playout engine if currently on a playout segment
+    if (this._currentSegment?.type === SEGMENT_TYPES.PLAYOUT) {
+      this.emit('playoutStopped', {
+        segmentId: this._currentSegment.id,
+        timestamp: Date.now()
+      });
+    }
+
+    // Stop who-to-watch sequencer if currently on a who-to-watch segment
+    if (this._currentSegment?.type === SEGMENT_TYPES.WHO_TO_WATCH) {
+      this.emit('whoToWatchStopped', {
+        segmentId: this._currentSegment.id,
+        timestamp: Date.now()
+      });
+    }
+
     // Record final segment in history
     if (this._currentSegment) {
       this._recordHistory('completed');
@@ -421,8 +439,13 @@ class TimesheetEngine extends EventEmitter {
     const nextIndex = this._currentSegmentIndex + 1;
     if (nextIndex >= this.segments.length) return;
 
-    // Hold segments NEVER auto-advance - producer must decide
-    if (this._currentSegment.type === SEGMENT_TYPES.HOLD) {
+    // Hold, Playout, and Who to Watch segments NEVER auto-advance
+    // Hold: producer must decide when to move on
+    // Playout: autonomous engine controls lifecycle; stops via playoutStopped event or manual advance
+    // Who to Watch: sequencer controls lifecycle (title cards → clip → advance)
+    if (this._currentSegment.type === SEGMENT_TYPES.HOLD ||
+        this._currentSegment.type === SEGMENT_TYPES.PLAYOUT ||
+        this._currentSegment.type === SEGMENT_TYPES.WHO_TO_WATCH) {
       return;
     }
 
@@ -479,6 +502,22 @@ class TimesheetEngine extends EventEmitter {
   _completeShow() {
     if (!this._isRunning) {
       return;
+    }
+
+    // Stop playout engine if currently on a playout segment
+    if (this._currentSegment?.type === SEGMENT_TYPES.PLAYOUT) {
+      this.emit('playoutStopped', {
+        segmentId: this._currentSegment.id,
+        timestamp: Date.now()
+      });
+    }
+
+    // Stop who-to-watch sequencer if on a who-to-watch segment
+    if (this._currentSegment?.type === SEGMENT_TYPES.WHO_TO_WATCH) {
+      this.emit('whoToWatchStopped', {
+        segmentId: this._currentSegment.id,
+        timestamp: Date.now()
+      });
     }
 
     // Record final segment in history as completed naturally
@@ -569,6 +608,22 @@ class TimesheetEngine extends EventEmitter {
 
     const previousSegment = this._currentSegment;
     const segment = this.segments[index];
+
+    // Emit playoutStopped when leaving a playout segment
+    if (previousSegment?.type === SEGMENT_TYPES.PLAYOUT) {
+      this.emit('playoutStopped', {
+        segmentId: previousSegment.id,
+        timestamp: Date.now()
+      });
+    }
+
+    // Emit whoToWatchStopped when leaving a who-to-watch segment
+    if (previousSegment?.type === SEGMENT_TYPES.WHO_TO_WATCH) {
+      this.emit('whoToWatchStopped', {
+        segmentId: previousSegment.id,
+        timestamp: Date.now()
+      });
+    }
 
     this._currentSegmentIndex = index;
     this._currentSegment = segment;
@@ -772,6 +827,26 @@ class TimesheetEngine extends EventEmitter {
         await this._triggerGraphic(segment);
         break;
 
+      case SEGMENT_TYPES.PLAYOUT:
+        // Playout segment - start autonomous clip playout engine (PRD Clip Integration)
+        this.emit('playoutStarted', {
+          segmentId: segment.id,
+          sessionKey: segment.playoutRules?.sessionKey || null,
+          clipApiUrl: segment.playoutRules?.clipApiUrl || null,
+          playoutRules: segment.playoutRules || null,
+          timestamp: Date.now()
+        });
+        break;
+
+      case SEGMENT_TYPES.WHO_TO_WATCH:
+        // Who to Watch segment - start auto-sequence (title cards → clip → advance)
+        this.emit('whoToWatchStarted', {
+          segmentId: segment.id,
+          whoToWatch: segment.whoToWatch || null,
+          timestamp: Date.now()
+        });
+        break;
+
       default:
         // Unknown segment type, try to trigger graphic if present
         if (segment.graphic) {
@@ -837,6 +912,8 @@ class TimesheetEngine extends EventEmitter {
             location: config.location || '',
             hosts: config.hosts || '',
             virtiusSessionId: config.virtiusSessionId || '',
+            // Meet theme for themed graphics (PRD Who To Watch: Issue #14)
+            meetTheme: config.meetTheme || '',
             // Team 1-6 data
             ...Object.fromEntries(
               [1, 2, 3, 4, 5, 6].flatMap(i => [

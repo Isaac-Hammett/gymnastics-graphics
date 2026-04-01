@@ -198,7 +198,7 @@ Wire the scoring service into the coordinator server startup and socket handlers
 
 ---
 
-### Task 7: Create useScoringFeed hook — NOT STARTED
+### Task 7: Create useScoringFeed hook — COMPLETE
 
 **Files:** `show-controller/src/hooks/useScoringFeed.js` (new)
 
@@ -398,3 +398,5 @@ Test the complete data flow from Virtius API to Firebase to renderer blocks.
 - Socket handlers check `service.listenerCount('started')` to avoid duplicate event wiring
 - Initial scoring state sent on client connect (similar to playout state pattern)
 - Producer activity reset added to existing `socket.use()` middleware for automatic reset on any socket event
+- Task 7: useScoringFeed hook follows useThemeErrors pattern — Firebase `onValue` listener with `update()` for writes, cleanup on unmount
+- useScoringFeed uses DEFAULT_STATE object for consistent defaults when Firebase path doesn't exist

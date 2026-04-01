@@ -190,7 +190,7 @@ function CameraCard({ camera, onForceCamera, isActiveOverride }) {
 
       {/* Force Camera button */}
       <button
-        onClick={() => onForceCamera?.(cameraNumber)}
+        onClick={() => !isActiveOverride && onForceCamera?.(cameraNumber)}
         disabled={isActiveOverride}
         title={getButtonTooltip()}
         className={`w-full text-xs font-medium px-2 py-1.5 rounded transition-colors flex items-center justify-center gap-1.5 ${

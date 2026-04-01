@@ -860,9 +860,189 @@ async function ingestTeamStats(teamKey, rtnId, gender, year, io, compId, league)
   return { status: overallStatus, endpointStatus, errors: Object.keys(errors).length > 0 ? errors : null };
 }
 
+// ============================================================================
+// Composite Team Assembly (Phase 9)
+// ============================================================================
+
+/**
+ * Assemble stats for a composite/placeholder team from multiple source teams.
+ *
+ * Used for championship events where individual qualifiers from non-qualifying
+ * teams are grouped under a placeholder team slot (e.g., "WCGNIC").
+ *
+ * Reads individual athlete data (highs, averages, MVP) from each source team's
+ * existing stats and filters to only the named athletes. Writes a synthetic
+ * stats record to the placeholder team's stats path.
+ *
+ * @param {string} compId - Competition ID
+ * @param {string} teamSlot - Team slot name (e.g., "team4")
+ * @param {string} placeholderKey - Placeholder team key (e.g., "wcgnic-womens")
+ * @param {Object} compositeConfig - { athletes: [{ name, sourceTeamKey }] }
+ * @param {string} gender - "mens" or "womens"
+ * @param {number} year - Season year
+ * @param {Object} [io] - Socket.IO server instance for progress events
+ * @returns {Promise<{ status: string, athleteCount: number, sourceTeams: string[], errors: Object|null }>}
+ */
+async function assembleCompositeTeamStats(compId, teamSlot, placeholderKey, compositeConfig, gender, year, io) {
+  const db = productionConfigService.getDb();
+  if (!db) {
+    return { status: 'error', athleteCount: 0, sourceTeams: [], errors: { firebase: 'Firebase not available' } };
+  }
+
+  const athletes = compositeConfig.athletes || [];
+  if (athletes.length === 0) {
+    return { status: 'error', athleteCount: 0, sourceTeams: [], errors: { config: 'No athletes in composite config' } };
+  }
+
+  console.log(`[rtnStatsService] Assembling composite stats for ${placeholderKey} (${athletes.length} athletes from ${teamSlot})`);
+
+  // Deduplicate source team keys
+  const sourceTeamKeys = [...new Set(athletes.map(a => a.sourceTeamKey).filter(Boolean))];
+
+  // Ensure source teams have fresh stats
+  const sourceErrors = {};
+  for (const sourceKey of sourceTeamKeys) {
+    const staleness = await checkStaleness(sourceKey);
+    if (staleness.isStale) {
+      console.log(`[rtnStatsService] Source team ${sourceKey} is stale, refreshing...`);
+      // Look up rtnId and league for source team
+      try {
+        const [rtnIdSnap, leagueSnap] = await Promise.all([
+          db.ref(`teamsDatabase/teams/${sourceKey}/rtnId`).once('value'),
+          db.ref(`teamsDatabase/teams/${sourceKey}/league`).once('value'),
+        ]);
+        const rtnId = rtnIdSnap.val();
+        const league = leagueSnap.val() || 'ncaa';
+        if (rtnId) {
+          await ingestTeamStats(sourceKey, rtnId, gender, year, io, compId, league);
+        } else {
+          console.warn(`[rtnStatsService] Source team ${sourceKey} has no rtnId, cannot refresh`);
+          sourceErrors[sourceKey] = 'Missing rtnId';
+        }
+      } catch (err) {
+        console.error(`[rtnStatsService] Failed to refresh source team ${sourceKey}:`, err.message);
+        sourceErrors[sourceKey] = err.message;
+      }
+    }
+  }
+
+  // Read individual stats from each source team
+  const compositeHighs = [];
+  const compositeAverages = [];
+  const compositeMvp = [];
+  let matchedCount = 0;
+
+  // Build a lookup set of athlete names (lowercase) for matching
+  const athleteNameSet = new Set(athletes.map(a => (a.name || '').toLowerCase().trim()));
+  // Also build a map from athlete name -> sourceTeamKey for validation
+  const athleteSourceMap = new Map(athletes.map(a => [(a.name || '').toLowerCase().trim(), a.sourceTeamKey]));
+
+  for (const sourceKey of sourceTeamKeys) {
+    try {
+      const [highsSnap, avgsSnap, mvpSnap] = await Promise.all([
+        db.ref(`teamsDatabase/stats/${sourceKey}/individualHighs`).once('value'),
+        db.ref(`teamsDatabase/stats/${sourceKey}/individualAverages`).once('value'),
+        db.ref(`teamsDatabase/stats/${sourceKey}/mvp`).once('value'),
+      ]);
+
+      const highs = highsSnap.val();
+      const avgs = avgsSnap.val();
+      const mvpData = mvpSnap.val();
+
+      // Filter individual highs to named athletes
+      if (Array.isArray(highs)) {
+        for (const athlete of highs) {
+          const fullName = (athlete.fullName || '').toLowerCase().trim();
+          if (athleteNameSet.has(fullName) && athleteSourceMap.get(fullName) === sourceKey) {
+            compositeHighs.push({ ...athlete, sourceTeam: sourceKey });
+            matchedCount++;
+          }
+        }
+      }
+
+      // Filter individual averages to named athletes
+      if (Array.isArray(avgs)) {
+        for (const athlete of avgs) {
+          const fullName = (athlete.fullName || '').toLowerCase().trim();
+          if (athleteNameSet.has(fullName) && athleteSourceMap.get(fullName) === sourceKey) {
+            compositeAverages.push({ ...athlete, sourceTeam: sourceKey });
+          }
+        }
+      }
+
+      // Filter MVP to named athletes
+      if (Array.isArray(mvpData)) {
+        for (const athlete of mvpData) {
+          const fullName = (athlete.fullName || '').toLowerCase().trim();
+          if (athleteNameSet.has(fullName) && athleteSourceMap.get(fullName) === sourceKey) {
+            compositeMvp.push({ ...athlete, sourceTeam: sourceKey });
+          }
+        }
+      }
+    } catch (err) {
+      console.error(`[rtnStatsService] Failed to read stats from source team ${sourceKey}:`, err.message);
+      sourceErrors[sourceKey] = err.message;
+    }
+  }
+
+  // Log any athletes that were not found in source team data
+  const matchedNames = new Set([
+    ...compositeHighs.map(a => (a.fullName || '').toLowerCase().trim()),
+    ...compositeAverages.map(a => (a.fullName || '').toLowerCase().trim()),
+  ]);
+  const unmatchedAthletes = athletes.filter(a => !matchedNames.has((a.name || '').toLowerCase().trim()));
+  if (unmatchedAthletes.length > 0) {
+    console.warn(`[rtnStatsService] Unmatched composite athletes: ${unmatchedAthletes.map(a => `${a.name} (${a.sourceTeamKey})`).join(', ')}`);
+  }
+
+  // Build meta
+  const meta = {
+    fetchedAt: new Date().toISOString(),
+    status: 'composite',
+    sourceTeams: sourceTeamKeys,
+    athleteCount: matchedNames.size,
+    unmatchedAthletes: unmatchedAthletes.length > 0 ? unmatchedAthletes.map(a => a.name) : null,
+    errors: Object.keys(sourceErrors).length > 0 ? sourceErrors : null,
+  };
+
+  // Write to Firebase
+  try {
+    const writeData = {
+      meta,
+      individualHighs: compositeHighs.length > 0 ? compositeHighs : null,
+      individualAverages: compositeAverages.length > 0 ? compositeAverages : null,
+      mvp: compositeMvp.length > 0 ? compositeMvp : null,
+      // Composite teams don't have team-level stats
+      teamRanking: null,
+      consistency: null,
+      topScores: null,
+      lineup: null,
+    };
+
+    // Filter out null values to avoid destroying existing data
+    const filteredData = Object.fromEntries(
+      Object.entries(writeData).filter(([_, v]) => v !== null)
+    );
+
+    await db.ref(`teamsDatabase/stats/${placeholderKey}`).update(filteredData);
+    console.log(`[rtnStatsService] Wrote composite stats for ${placeholderKey}: ${matchedNames.size} athletes from ${sourceTeamKeys.length} source teams`);
+  } catch (err) {
+    console.error(`[rtnStatsService] Failed to write composite stats for ${placeholderKey}:`, err.message);
+    return { status: 'error', athleteCount: 0, sourceTeams: sourceTeamKeys, errors: { firebase: err.message } };
+  }
+
+  return {
+    status: 'composite',
+    athleteCount: matchedNames.size,
+    sourceTeams: sourceTeamKeys,
+    errors: Object.keys(sourceErrors).length > 0 ? sourceErrors : null,
+  };
+}
+
 /**
  * Ingest RTN stats for all teams in a competition.
  * Checks staleness, deduplicates, fetches if needed, writes to shared store.
+ * Detects composite teams (individual qualifiers) and routes to assembly instead.
  *
  * @param {string} compId - Competition ID
  * @param {Object} [io] - Socket.IO server instance for progress/result events
@@ -894,6 +1074,16 @@ async function ingestCompetitionStats(compId, io) {
   const { gender, teamCount } = parseCompetitionType(config.compType);
   const year = new Date().getFullYear();
 
+  // Read composite team config (Phase 9: individual qualifiers from multiple teams)
+  let compositeTeams = null;
+  try {
+    const compositeSnapshot = await db.ref(`competitions/${compId}/compositeTeams`).once('value');
+    compositeTeams = compositeSnapshot.val();
+  } catch (err) {
+    // Non-fatal — most competitions won't have composite teams
+    console.log(`[rtnStatsService] No composite teams config for ${compId}`);
+  }
+
   // Build team name list from config
   const teamNames = [];
   for (let i = 1; i <= teamCount; i++) {
@@ -908,10 +1098,21 @@ async function ingestCompetitionStats(compId, io) {
   const teamResults = {};
 
   for (const { index, name } of teamNames) {
-    const teamKey = buildTeamDbKey(name, gender);
+    const teamSlot = `team${index}`;
+    const teamKey = config[`team${index}Key`] || buildTeamDbKey(name, gender);
     if (!teamKey) {
       console.warn(`[rtnStatsService] Could not build team key for "${name}"`);
-      teamResults[`team${index}`] = { teamKey: null, status: 'error', error: 'Invalid team name' };
+      teamResults[teamSlot] = { teamKey: null, status: 'error', error: 'Invalid team name' };
+      continue;
+    }
+
+    // Check if this is a composite team (Phase 9)
+    if (compositeTeams && compositeTeams[teamSlot]) {
+      console.log(`[rtnStatsService] ${teamKey}: Detected as composite team, assembling from source teams...`);
+      const compositeResult = await assembleCompositeTeamStats(
+        compId, teamSlot, teamKey, compositeTeams[teamSlot], gender, year, io
+      );
+      teamResults[teamSlot] = { teamKey, ...compositeResult };
       continue;
     }
 
@@ -941,7 +1142,7 @@ async function ingestCompetitionStats(compId, io) {
       } catch (e) {
         // Best effort
       }
-      teamResults[`team${index}`] = { teamKey, status: 'error', error: 'Missing RTN ID' };
+      teamResults[teamSlot] = { teamKey, status: 'error', error: 'Missing RTN ID' };
       continue;
     }
 
@@ -950,20 +1151,20 @@ async function ingestCompetitionStats(compId, io) {
 
     if (staleness.withinDedup) {
       console.log(`[rtnStatsService] ${teamKey}: Recently ingested (dedup window), skipping`);
-      teamResults[`team${index}`] = { teamKey, status: 'skipped', reason: 'dedup' };
+      teamResults[teamSlot] = { teamKey, status: 'skipped', reason: 'dedup' };
       continue;
     }
 
     if (!staleness.isStale) {
       console.log(`[rtnStatsService] ${teamKey}: Stats are fresh (fetched ${staleness.fetchedAt}), skipping`);
-      teamResults[`team${index}`] = { teamKey, status: 'skipped', reason: 'fresh' };
+      teamResults[teamSlot] = { teamKey, status: 'skipped', reason: 'fresh' };
       continue;
     }
 
     // Stats are stale or missing — fetch from RTN
     console.log(`[rtnStatsService] ${teamKey}: Stats are stale/missing, fetching from RTN${league === 'gymact' ? ' (GymACT)' : ''}...`);
     const result = await ingestTeamStats(teamKey, rtnId, gender, year, io, compId, league);
-    teamResults[`team${index}`] = { teamKey, ...result };
+    teamResults[teamSlot] = { teamKey, ...result };
   }
 
   const allStatuses = Object.values(teamResults).map(r => r.status);
@@ -1528,6 +1729,9 @@ export {
   checkStaleness,
   ingestTeamStats,
   ingestCompetitionStats,
+
+  // Composite team assembly (Phase 9)
+  assembleCompositeTeamStats,
 
   // Config sync (Task 6)
   syncStatsToConfig,

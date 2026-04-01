@@ -49,7 +49,7 @@ export default function HomePage() {
     error: coordinatorError,
     wake,
   } = useCoordinator();
-  const { getTeamLogo } = useTeamsDatabase();
+  const { getTeamLogo, resolveSchoolKey } = useTeamsDatabase();
   const { alerts, loading: alertsLoading } = useProductionAlerts();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -100,6 +100,9 @@ export default function HomePage() {
       team5Name: '', team5Logo: '', team5Tricode: '',
       team6Name: '', team6Logo: '', team6Tricode: '',
       team7Name: '', team7Logo: '', team7Tricode: '',
+      team8Name: '', team8Logo: '', team8Tricode: '',
+      team9Name: '', team9Logo: '', team9Tricode: '',
+      team10Name: '', team10Logo: '', team10Tricode: '',
     };
   }
 
@@ -271,6 +274,15 @@ export default function HomePage() {
         team7Name: sortedTeams[6]?.name || prev.team7Name,
         team7Logo: getTeamLogo(sortedTeams[6]?.name, gender) || prev.team7Logo,
         team7Tricode: sortedTeams[6]?.tricode || prev.team7Tricode,
+        team8Name: sortedTeams[7]?.name || prev.team8Name,
+        team8Logo: getTeamLogo(sortedTeams[7]?.name, gender) || prev.team8Logo,
+        team8Tricode: sortedTeams[7]?.tricode || prev.team8Tricode,
+        team9Name: sortedTeams[8]?.name || prev.team9Name,
+        team9Logo: getTeamLogo(sortedTeams[8]?.name, gender) || prev.team9Logo,
+        team9Tricode: sortedTeams[8]?.tricode || prev.team9Tricode,
+        team10Name: sortedTeams[9]?.name || prev.team10Name,
+        team10Logo: getTeamLogo(sortedTeams[9]?.name, gender) || prev.team10Logo,
+        team10Tricode: sortedTeams[9]?.tricode || prev.team10Tricode,
         virtiusSessionId: virtiusSessionId.trim(),
       }));
     } catch (error) {
@@ -309,7 +321,11 @@ export default function HomePage() {
       team5Name: config.team5Name || '', team5Logo: config.team5Logo || '', team5Tricode: config.team5Tricode || '',
       team6Name: config.team6Name || '', team6Logo: config.team6Logo || '', team6Tricode: config.team6Tricode || '',
       team7Name: config.team7Name || '', team7Logo: config.team7Logo || '', team7Tricode: config.team7Tricode || '',
+      team8Name: config.team8Name || '', team8Logo: config.team8Logo || '', team8Tricode: config.team8Tricode || '',
+      team9Name: config.team9Name || '', team9Logo: config.team9Logo || '', team9Tricode: config.team9Tricode || '',
+      team10Name: config.team10Name || '', team10Logo: config.team10Logo || '', team10Tricode: config.team10Tricode || '',
       virtiusSessionId: config.virtiusSessionId || '',
+      clipApiUrl: config.clipApiUrl || '',
     });
     setVirtiusSessionId(config.virtiusSessionId || '');
     setVirtiusError(null);
@@ -321,6 +337,17 @@ export default function HomePage() {
     const compId = formData.compId.toLowerCase().trim();
     const gender = formData.gender || getGenderFromCompType(formData.compType) || 'mens';
 
+    // Resolve team key using aliases first, fall back to buildTeamKey
+    function resolveTeamKey(teamName) {
+      if (!teamName) return '';
+      const schoolKey = resolveSchoolKey(teamName);
+      if (schoolKey) {
+        const genderSuffix = gender === 'womens' ? 'womens' : 'mens';
+        return `${schoolKey}-${genderSuffix}`;
+      }
+      return buildTeamKey(teamName, gender);
+    }
+
     const config = {
       compType: formData.compType,
       gender,
@@ -330,34 +357,47 @@ export default function HomePage() {
       venue: formData.venue,
       location: formData.location,
       virtiusSessionId: formData.virtiusSessionId || '',
+      clipApiUrl: formData.clipApiUrl || '',
       team1Name: formData.team1Name,
       team1Logo: formData.team1Logo || 'https://via.placeholder.com/200/00274C/FFCB05?text=T1',
       team1Tricode: formData.team1Tricode || '',
-      team1Key: formData.team1Name ? buildTeamKey(formData.team1Name, gender) : '',
+      team1Key: resolveTeamKey(formData.team1Name),
       team2Name: formData.team2Name,
       team2Logo: formData.team2Logo || 'https://via.placeholder.com/200/BB0000/FFFFFF?text=T2',
       team2Tricode: formData.team2Tricode || '',
-      team2Key: formData.team2Name ? buildTeamKey(formData.team2Name, gender) : '',
+      team2Key: resolveTeamKey(formData.team2Name),
       team3Name: formData.team3Name,
       team3Logo: formData.team3Logo || 'https://via.placeholder.com/200/006400/FFFFFF?text=T3',
       team3Tricode: formData.team3Tricode || '',
-      team3Key: formData.team3Name ? buildTeamKey(formData.team3Name, gender) : '',
+      team3Key: resolveTeamKey(formData.team3Name),
       team4Name: formData.team4Name,
       team4Logo: formData.team4Logo || 'https://via.placeholder.com/200/800080/FFFFFF?text=T4',
       team4Tricode: formData.team4Tricode || '',
-      team4Key: formData.team4Name ? buildTeamKey(formData.team4Name, gender) : '',
+      team4Key: resolveTeamKey(formData.team4Name),
       team5Name: formData.team5Name,
       team5Logo: formData.team5Logo || 'https://via.placeholder.com/200/FF6600/FFFFFF?text=T5',
       team5Tricode: formData.team5Tricode || '',
-      team5Key: formData.team5Name ? buildTeamKey(formData.team5Name, gender) : '',
+      team5Key: resolveTeamKey(formData.team5Name),
       team6Name: formData.team6Name,
       team6Logo: formData.team6Logo || 'https://via.placeholder.com/200/000080/FFFFFF?text=T6',
       team6Tricode: formData.team6Tricode || '',
-      team6Key: formData.team6Name ? buildTeamKey(formData.team6Name, gender) : '',
+      team6Key: resolveTeamKey(formData.team6Name),
       team7Name: formData.team7Name,
       team7Logo: formData.team7Logo || 'https://via.placeholder.com/200/000080/FFFFFF?text=T7',
       team7Tricode: formData.team7Tricode || '',
-      team7Key: formData.team7Name ? buildTeamKey(formData.team7Name, gender) : '',
+      team7Key: resolveTeamKey(formData.team7Name),
+      team8Name: formData.team8Name,
+      team8Logo: formData.team8Logo || 'https://via.placeholder.com/200/008080/FFFFFF?text=T8',
+      team8Tricode: formData.team8Tricode || '',
+      team8Key: resolveTeamKey(formData.team8Name),
+      team9Name: formData.team9Name,
+      team9Logo: formData.team9Logo || 'https://via.placeholder.com/200/800000/FFFFFF?text=T9',
+      team9Tricode: formData.team9Tricode || '',
+      team9Key: resolveTeamKey(formData.team9Name),
+      team10Name: formData.team10Name,
+      team10Logo: formData.team10Logo || 'https://via.placeholder.com/200/4B0082/FFFFFF?text=T10',
+      team10Tricode: formData.team10Tricode || '',
+      team10Key: resolveTeamKey(formData.team10Name),
       hosts: 'Host Name',
       team1Ave: '0.000', team1High: '0.000', team1Con: '0%', team1Coaches: 'Coach Name',
       team2Ave: '0.000', team2High: '0.000', team2Con: '0%', team2Coaches: 'Coach Name',
@@ -365,6 +405,10 @@ export default function HomePage() {
       team4Ave: '0.000', team4High: '0.000', team4Con: '0%', team4Coaches: 'Coach Name',
       team5Ave: '0.000', team5High: '0.000', team5Con: '0%', team5Coaches: 'Coach Name',
       team6Ave: '0.000', team6High: '0.000', team6Con: '0%', team6Coaches: 'Coach Name',
+      team7Ave: '0.000', team7High: '0.000', team7Con: '0%', team7Coaches: 'Coach Name',
+      team8Ave: '0.000', team8High: '0.000', team8Con: '0%', team8Coaches: 'Coach Name',
+      team9Ave: '0.000', team9High: '0.000', team9Con: '0%', team9Coaches: 'Coach Name',
+      team10Ave: '0.000', team10High: '0.000', team10Con: '0%', team10Coaches: 'Coach Name',
     };
 
     if (editingCompId) {
@@ -414,6 +458,10 @@ export default function HomePage() {
     try {
       const result = await refreshTeamData(editingCompId);
       setRefreshResult(result?.success ? 'success' : 'error');
+      // Update local form state with refreshed config (logos, coaches, etc.)
+      if (result?.success && result.updatedConfig) {
+        setFormData(prev => ({ ...prev, ...result.updatedConfig }));
+      }
     } catch (err) {
       console.error('Failed to refresh team data:', err);
       setRefreshResult('error');
@@ -436,7 +484,8 @@ export default function HomePage() {
   const getTeams = (config) => {
     return [
       config?.team1Name, config?.team2Name, config?.team3Name,
-      config?.team4Name, config?.team5Name, config?.team6Name, config?.team7Name
+      config?.team4Name, config?.team5Name, config?.team6Name, config?.team7Name,
+      config?.team8Name, config?.team9Name, config?.team10Name
     ].filter(Boolean);
   };
 
@@ -1248,6 +1297,22 @@ function CompetitionModal({
             )}
           </div>
 
+          {/* Clip Engine Integration (optional) */}
+          <div className="mb-6 p-4 bg-zinc-800/50 border border-cyan-500/20 rounded-lg">
+            <div className="text-xs text-cyan-400 mb-2 uppercase tracking-wide">Clip Engine (optional)</div>
+            <div>
+              <label className="block text-xs text-zinc-400 mb-1">Clips API URL</label>
+              <input
+                type="text"
+                value={formData.clipApiUrl || ''}
+                onChange={(e) => setFormData({ ...formData, clipApiUrl: e.target.value })}
+                placeholder="https://example.ngrok-free.dev/clip-api/meets/sJ3UJjy6mj/deliveries"
+                className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm placeholder-zinc-500 focus:outline-none focus:border-cyan-500"
+              />
+              <p className="text-xs text-zinc-500 mt-1">Paste the full deliveries URL. Used by playout segments automatically.</p>
+            </div>
+          </div>
+
           <FormGroup label="Competition ID (no spaces, lowercase)">
             <input
               type="text"
@@ -1441,6 +1506,42 @@ function CompetitionModal({
               teamLogo={formData.team7Logo}
               onNameChange={(val) => setFormData({ ...formData, team7Name: val })}
               onLogoChange={(val) => setFormData({ ...formData, team7Logo: val })}
+              gender={formData.gender}
+              getTeamLogo={getTeamLogo}
+              required
+            />
+          )}
+          {teamCount >= 8 && (
+            <TeamLogoInput
+              teamNum={8}
+              teamName={formData.team8Name}
+              teamLogo={formData.team8Logo}
+              onNameChange={(val) => setFormData({ ...formData, team8Name: val })}
+              onLogoChange={(val) => setFormData({ ...formData, team8Logo: val })}
+              gender={formData.gender}
+              getTeamLogo={getTeamLogo}
+              required
+            />
+          )}
+          {teamCount >= 9 && (
+            <TeamLogoInput
+              teamNum={9}
+              teamName={formData.team9Name}
+              teamLogo={formData.team9Logo}
+              onNameChange={(val) => setFormData({ ...formData, team9Name: val })}
+              onLogoChange={(val) => setFormData({ ...formData, team9Logo: val })}
+              gender={formData.gender}
+              getTeamLogo={getTeamLogo}
+              required
+            />
+          )}
+          {teamCount >= 10 && (
+            <TeamLogoInput
+              teamNum={10}
+              teamName={formData.team10Name}
+              teamLogo={formData.team10Logo}
+              onNameChange={(val) => setFormData({ ...formData, team10Name: val })}
+              onLogoChange={(val) => setFormData({ ...formData, team10Logo: val })}
               gender={formData.gender}
               getTeamLogo={getTeamLogo}
               required
