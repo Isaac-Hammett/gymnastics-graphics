@@ -222,7 +222,7 @@ Create React hook for Firebase listener and control functions.
 
 ---
 
-### Task 8: Create ScoringFeedPanel component — NOT STARTED
+### Task 8: Create ScoringFeedPanel component — COMPLETE
 
 **Files:** `show-controller/src/components/ScoringFeedPanel.jsx` (new)
 
@@ -400,3 +400,7 @@ Test the complete data flow from Virtius API to Firebase to renderer blocks.
 - Producer activity reset added to existing `socket.use()` middleware for automatic reset on any socket event
 - Task 7: useScoringFeed hook follows useThemeErrors pattern — Firebase `onValue` listener with `update()` for writes, cleanup on unmount
 - useScoringFeed uses DEFAULT_STATE object for consistent defaults when Firebase path doesn't exist
+- Task 8: ScoringFeedPanel follows ScoreBugPanel collapsible pattern exactly — same bg-zinc-800 rounded-xl structure
+- ScoringFeedPanel uses separate Firebase listener for virtiusSessionId to hide panel when not configured
+- TimeAgo component reuses the HeartbeatIndicator pattern from ScoreBugPanel but simplified for scoring feed
+- Blue color scheme (text-blue-400, bg-blue-500/*, border-blue-500/*) distinguishes scoring feed from green score bug
