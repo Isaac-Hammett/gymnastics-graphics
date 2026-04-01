@@ -318,7 +318,7 @@ Phase 6 verifies visual parity between legacy and new renderers, validates routi
 
 ---
 
-### Task 12: Routing — Output Graphic Triggers, stage.html Clears — NOT STARTED
+### Task 12: Routing — Output Graphic Triggers, stage.html Clears — COMPLETE
 **Files:** None (verification only)
 **Resolves:** PRD Issue #35
 **Verify:** stage.html exit animation plays
@@ -328,11 +328,16 @@ Phase 6 verifies visual parity between legacy and new renderers, validates routi
 2. Trigger event-bar (output graphic)
 3. Verify stage.html clears with animation, output.html shows event-bar
 
+**Verification performed 2026-04-01:**
+- Triggered `leaderboard-vt` with `renderer: "stage"` → stage.html rendered VAULT header + leaderboard table
+- Triggered `event-bar` with `renderer: "output"` → stage.html cleared, output.html showed event-bar lower-third
+- Screenshots: `task-12-stage-showing-leaderboard.png`, `local-task-12.png` (stage cleared), `local-task-12-output.png` (output showing event-bar)
+
 **Checklist:**
-- [ ] stage.html plays 200ms fade-out exit animation
-- [ ] output.html shows event-bar after stage clears
-- [ ] No overlap
-- [ ] No console errors
+- [x] stage.html plays 200ms fade-out exit animation — `dismissCurrentGraphic()` calls `playExitAnimations(blocks, { type: 'fade-out', duration: 200 })` (stage.html line 578); stage cleared completely after output graphic triggered
+- [x] output.html shows event-bar after stage clears — event-bar rendered with "TEST ARENA" header, WCGNIC logo, "TEST CITY, ST" location (themed with Behind the Chalk)
+- [x] No overlap — stage.html empty while output.html shows event-bar; confirmed via tab switching
+- [x] No console errors — stage.html: 0 errors (only favicon 404); output.html: 0 errors
 
 ---
 
