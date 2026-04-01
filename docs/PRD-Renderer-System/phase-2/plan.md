@@ -149,7 +149,7 @@ The simplified 2-key lookup from the Phase 2 doc will cause visible regressions 
 
 ---
 
-### Task 4: Deploy + Visual Parity Verification — NOT STARTED
+### Task 4: Deploy + Visual Parity Verification — COMPLETE
 **Files:**
 - Production server: `/var/www/commentarygraphic/stage/blocks/` (deploy new block files)
 
@@ -212,3 +212,5 @@ Tasks 2 and 3 are independent of each other but both depend on Task 1 (header-ba
 - LEARNING: `ready()` is called by `waitForReady()` with NO arguments and BEFORE `render()`. Don't try to query DOM elements in `ready()` — if the block has no async setup (e.g., no Firebase listener), just `return Promise.resolve()`. Logo loading can't be checked in `ready()` because the img element doesn't exist yet.
 - LEARNING: Block CSS uses `.block-{type}` prefix (e.g., `.block-leaderboard-table`) to scope all styles. Internal element classes use a short prefix (e.g., `lb-` for leaderboard-table, `hb-` for header-bar).
 - LEARNING: athlete-grid block uses `ag-` prefix for internal classes. The headshot fallback uses onerror handler: `onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"` which hides the img and shows the next sibling (initials div). The initials div is rendered after the img with `style="display:none;"` initially.
+- LEARNING: Deploy pattern for stage directory: `tar -czf`, upload via `ssh_upload_file`, extract on server. macOS tar adds LIBARCHIVE.xattr warnings (harmless). After extract, run `sudo chmod -R 644 /path/stage && sudo find /path/stage -type d -exec chmod 755 {} +` to fix permissions. Phase 1 nginx config already handles `/stage/` location block — no nginx changes needed for Phase 2.
+- LEARNING: favicon.ico 404 errors in console are harmless and don't indicate a problem with the stage engine.
