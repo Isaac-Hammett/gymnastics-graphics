@@ -78,7 +78,7 @@
 
 ---
 
-### Task 4: Create CollapsibleSubcategory shared component — NOT STARTED
+### Task 4: Create CollapsibleSubcategory shared component — COMPLETE
 
 **Issue:** No collapsible UI exists in the codebase. Phase 5 requires subcategories to be collapsible.
 
@@ -293,6 +293,7 @@
 - LEARNING: Tasks 1-3 are coupled — categories.json changes break manifest validation until manifests are updated. Do all three together.
 - LEARNING: Manifest validation runs during `npm run build:registry` and will fail if manifests reference removed subcategories.
 - LEARNING: For data/config changes (categories.json, manifests), verify with build output and grep. Screenshot verification is only needed for UI changes (Tasks 4-7+).
+- LEARNING: CollapsibleSubcategory follows the pattern from TalentProfilePage's CollapsibleSection, but uses ChevronRightIcon instead of ChevronDownIcon for horizontal-to-vertical rotation style. Keyboard accessibility via handleKeyDown for Enter/Space.
 
 ---
 
@@ -303,7 +304,7 @@
 | 1 | Update categories.json with missing subcategories | COMPLETE |
 | 2 | Update coaches.json manifest subcategory | COMPLETE |
 | 3 | Update frame-*.json manifests subcategory | COMPLETE |
-| 4 | Create CollapsibleSubcategory shared component | NOT STARTED |
+| 4 | Create CollapsibleSubcategory shared component | COMPLETE |
 | 5 | Update UrlGeneratorPage.jsx with collapsible subcategories | NOT STARTED |
 | 6 | Update GraphicsControl.jsx to use CATEGORIES from registry | NOT STARTED |
 | 7 | Add collapsible subcategories to GraphicsControl.jsx | NOT STARTED |
