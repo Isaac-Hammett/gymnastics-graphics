@@ -1287,8 +1287,8 @@ Implementation is split into phases, each with its own detailed document.
 | Phase | Name | Scope | Doc | Status |
 |-------|------|-------|-----|--------|
 | 1 | Foundation | stage.html, full-screen-card skeleton, layout system, preview mode, animation engine | `Phase-1-Foundation.md` | **COMPLETE** — deployed 2026-03-31 |
-| 2 | Content Blocks | header-bar, leaderboard-table, athlete-grid blocks | `Phase-2-Content-Blocks.md` | NOT STARTED |
-| 3 | Scoring Ingestion | Coordinator polling service, Firebase scoring paths, producer controls | `Phase-3-Scoring-Ingestion.md` | NOT STARTED |
+| 2 | Content Blocks | header-bar, leaderboard-table, athlete-grid blocks | `Phase-2-Content-Blocks.md` | **COMPLETE** — deployed 2026-03-31 |
+| 3 | Scoring Ingestion | Coordinator polling service, Firebase scoring paths, producer controls | `Phase-3-Scoring-Ingestion.md` | **COMPLETE** — deployed 2026-03-31 |
 | 4 | Tool Integration | Registry updates, URL Generator, Web Graphics Panel, Rundown routing | `Phase-4-Tool-Integration.md` | NOT STARTED |
 | 5 | Reorganization | New category structure in registry, URL Generator sidebar, Graphics Panel sidebar | `Phase-5-Reorganization.md` | NOT STARTED |
 | 6 | Verification & Cutover | Side-by-side comparisons, production test, old code removal | `Phase-6-Verification-Cutover.md` | NOT STARTED |
