@@ -175,7 +175,7 @@ Phase 4 connects the stage engine (built in Phases 1-3) to all producer tools. T
 
 ---
 
-### Task 10: Update graphicsRegistry.js to import generated file — NOT STARTED
+### Task 10: Update graphicsRegistry.js to import generated file — COMPLETE
 **Files:** `show-controller/src/lib/graphicsRegistry.js`
 **Resolves:** PRD lines 427-428
 **Verify:**
@@ -477,6 +477,17 @@ The `perTeam: true` field causes expansion in `getGraphicsForCompetition()`:
 - `team-roster` → `team1-roster`, `team2-roster`, etc.
 - Uses `labelTemplate: "{teamName} Roster"` for dynamic labels
 - Expansion happens at runtime, not in manifest generation
+
+### Task 10 Learnings
+
+- **graphicsRegistry.js refactored to import from generated file** — removed ~1200 lines of hand-written GRAPHICS data, replaced with single import from `graphicsRegistry.generated.js`
+- **All 8 helper functions preserved unchanged** — getAllGraphics, getGraphicById, getGraphicsByCategory, getCategories, isGraphicAvailable, getGraphicsForCompetition, getRecommendedGraphic, isTransparentGraphic
+- **CATEGORIES now exported alongside GRAPHICS** — both named exports and in default export object
+- **No backward compatibility issues** — import/export pattern works seamlessly with Vite bundler
+- **Old registry had ~66 graphics, new has 55** — difference is due to:
+  - Event frames consolidated: old had individual `floor`, `pommel`, `rings`, etc. entries; new has single `event-frame` with title param
+  - Stream graphics: old had `stream-starting` and `stream-thanks` separate; new has single `stream` with title param
+  - These will be reconciled when URL Generator sidebar is updated (Task 17)
 
 ### URL Builder Simplification
 
