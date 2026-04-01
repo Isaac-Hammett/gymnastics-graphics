@@ -385,20 +385,23 @@ Phase 6 verifies visual parity between legacy and new renderers, validates routi
 
 ---
 
-### Task 15: Firebase Data — Verify Renderer Field in Writes — NOT STARTED
-**Files:** None (verification only)
+### Task 15: Firebase Data — Verify Renderer Field in Writes — COMPLETE
+**Files:** `stage/stage.html` (bug fix during verification)
 **Resolves:** PRD Issue #35
 **Verify:** Firebase writes include correct `renderer` field
 
-**Steps:**
-1. Open Firebase console → `competitions/{testComp}/currentGraphic`
-2. Trigger leaderboard-vt via Graphics Panel
-3. Inspect Firebase write
+**Verification performed 2026-04-01:**
+- Wrote `leaderboard-vt` to Firebase with `renderer: "stage"` — confirmed in Firebase data
+- Wrote `event-bar` to Firebase with `renderer: "output"` — confirmed in Firebase data
+- Verified `theme` object contains resolved hex colors: `headerBg: "#2D3436"`, `overlayBg: "#1a1a2e"`, etc.
+- Screenshot: `task-15-final.png` shows themed leaderboard rendered via stage.html
+
+**Bug found and fixed:** stage.html Firebase listener was passing `val.data` to `renderGraphic()` instead of the full `val` object. This caused `blocks`, `skeleton`, and `theme` (which are at top level of `val`, not inside `val.data`) to be missing. Fixed at line 609.
 
 **Checklist:**
-- [ ] `renderer: "stage"` present for stage graphics
-- [ ] Trigger event-bar, verify `renderer: "output"` present
-- [ ] `theme` object contains resolved color values (not just theme ID)
+- [x] `renderer: "stage"` present for stage graphics — verified via Firebase MCP read
+- [x] Trigger event-bar, verify `renderer: "output"` present — verified via Firebase MCP read
+- [x] `theme` object contains resolved color values (not just theme ID) — verified: 8 hex color values present
 
 ---
 
@@ -587,6 +590,7 @@ ssh_exec command="cd /var/www/commentarygraphic && tar -xzf /tmp/stage.tar.gz &&
 - LEARNING: When triggering output.html graphics via Firebase manually, the `data` object must include the competition config fields the renderer needs (e.g., `compType`, `team1Logo`, etc.). In production, GraphicsControl reads config and includes it in the write.
 - LEARNING: The athlete-grid (roster) block has FULL theme support — all three declared themeVars (`--meet-overlay-bg`, `--meet-overlay-text`, `--meet-border-color`) are properly wired in athlete-grid.css. Unlike leaderboard-table which has partial support, athlete-grid uses CSS variables throughout.
 - LEARNING: Rapid cross-renderer switching (5 writes in quick succession alternating stage/output) works cleanly. stage.html's `dismissCurrentGraphic()` + `renderGraphic()` cycle handles being interrupted mid-animation. No overlapping graphics, no animation errors, no memory leaks. Firebase listener debouncing is sufficient.
+- LEARNING: (Task 15 fix) stage.html Firebase listener at line 609 was passing `val.data` to `renderGraphic()`, but `blocks`, `skeleton`, and `theme` are at the top level of `val`, not inside `val.data`. Fixed to pass `val` directly. The `data` sub-object inside `val` contains graphic-specific data (e.g., `apparatus`, `source`), while the render spec (`blocks`, `skeleton`, `theme`) is at root.
 
 ### Line Number Reference (as of 2026-04-01)
 

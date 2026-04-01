@@ -606,7 +606,8 @@
         await dismissCurrentGraphic();
 
         // Render the new graphic
-        await renderGraphic(val.graphic, val.data);
+        // Pass the full val object (contains blocks, skeleton, theme at top level)
+        await renderGraphic(val.graphic, val);
       });
     }
 
