@@ -4,6 +4,8 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "prebuild": "node ../scripts/buildGraphicsRegistry.js",
+    "predev": "node ../scripts/buildGraphicsRegistry.js",
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",

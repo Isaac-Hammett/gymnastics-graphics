@@ -192,14 +192,14 @@ Phase 4 connects the stage engine (built in Phases 1-3) to all producer tools. T
 
 ---
 
-### Task 11: Integrate build script into npm scripts — NOT STARTED
+### Task 11: Integrate build script into npm scripts — COMPLETE
 **Files:** `show-controller/package.json`, `package.json` (root)
 **Resolves:** PRD lines 435-437
 **Verify:**
-- [ ] `show-controller/package.json` has `"prebuild": "node ../scripts/buildGraphicsRegistry.js"`
-- [ ] `npm run build` in show-controller runs the script first
-- [ ] `npm run dev` in show-controller runs the script first (optional but nice)
-- [ ] Build fails if script fails
+- [x] `show-controller/package.json` has `"prebuild": "node ../scripts/buildGraphicsRegistry.js"`
+- [x] `npm run build` in show-controller runs the script first
+- [x] `npm run dev` in show-controller runs the script first (optional but nice)
+- [x] Build fails if script fails
 
 **Notes:**
 - npm runs `prebuild` automatically before `build`
@@ -583,3 +583,11 @@ This avoids bundler complexity while keeping single source of truth.
 - **Internal fields cleaned:** The `_sourceFile` field used during validation is stripped before writing to output files
 - **Total graphics count: 55** — 11 stage + 29 overlay + 15 output (matches Task 5 count)
 - **React build passes** — the generated file imports successfully into the show-controller build
+
+### Task 11 Learnings
+
+- **npm pre-scripts work automatically** — `prebuild` runs before `build`, `predev` runs before `dev`
+- **Relative path from show-controller:** The script path is `node ../scripts/buildGraphicsRegistry.js` because npm runs scripts from the package.json directory
+- **Exit code propagation:** When the build script exits with code 1 (validation failure), npm propagates the failure and stops the build
+- **Both hooks added:** Added both `prebuild` and `predev` to ensure registry is always up-to-date during development
+- **Root package.json unchanged:** No changes needed to root package.json since `npm run build` in root already delegates to `cd show-controller && npm run build` which now triggers the prebuild hook
