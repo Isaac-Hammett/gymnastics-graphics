@@ -239,17 +239,40 @@
     function applyTheme(skeletonElement, theme) {
       if (!theme || !skeletonElement) return;
 
+      // Firebase stores colors under theme.colors with v3.0 field names
+      // Map to CSS custom properties (same mapping as theme-loader.js)
+      const colors = theme.colors || {};
       const colorMap = {
+        // v3.0 field names (8 colors)
+        headerBar: '--meet-header-bg',
+        contentArea: '--meet-content-bg',
+        bodyBackground: '--meet-overlay-bg',
+        borderDivider: '--meet-border-color',
+        badge: '--meet-badge-bg',
+        badgeText: '--meet-badge-text',
+        textOnHeader: '--meet-header-text',
+        textOnContent: '--meet-overlay-text',
+        // v2.0 backward compat aliases
         headerBg: '--meet-header-bg',
-        contentBg: '--meet-content-bg',
         headerText: '--meet-header-text',
-        overlayBg: '--meet-overlay-bg',
-        overlayText: '--meet-overlay-text',
         borderColor: '--meet-border-color',
         badgeBg: '--meet-badge-bg',
-        badgeText: '--meet-badge-text'
+        overlayBg: '--meet-overlay-bg',
+        overlayText: '--meet-overlay-text'
       };
 
+      for (const [key, cssVar] of Object.entries(colorMap)) {
+        if (colors[key]) skeletonElement.style.setProperty(cssVar, colors[key]);
+      }
+
+      // Logos from theme.logos
+      const logos = theme.logos || {};
+      if (logos.meetLogo) {
+        skeletonElement.style.setProperty('--meet-logo-url', 'url(' + logos.meetLogo + ')');
+      }
+
+      // Images from theme.images
+      const images = theme.images || {};
       const imageMap = {
         headerBgImage: '--meet-header-bg-image',
         headerBgImageFit: '--meet-header-bg-image-fit',
@@ -258,16 +281,19 @@
         bodyBgImage: '--meet-body-bg-image',
         bodyTexture: '--meet-body-texture',
         bodyTextureOpacity: '--meet-body-texture-opacity',
-        bodyTextureBlend: '--meet-body-texture-blend',
-        logo: '--meet-logo-url',
-        logoSize: '--meet-logo-size'
+        bodyTextureBlend: '--meet-body-texture-blend'
       };
 
-      for (const [key, cssVar] of Object.entries(colorMap)) {
-        if (theme[key]) skeletonElement.style.setProperty(cssVar, theme[key]);
-      }
       for (const [key, cssVar] of Object.entries(imageMap)) {
-        if (theme[key]) skeletonElement.style.setProperty(cssVar, theme[key]);
+        if (images[key]) {
+          // Wrap URLs in url() for CSS
+          const val = images[key];
+          if (key.endsWith('Image') || key === 'bodyTexture') {
+            skeletonElement.style.setProperty(cssVar, 'url(' + val + ')');
+          } else {
+            skeletonElement.style.setProperty(cssVar, val);
+          }
+        }
       }
     }
 
