@@ -207,19 +207,19 @@ Phase 4 connects the stage engine (built in Phases 1-3) to all producer tools. T
 
 ---
 
-### Task 12: Create resolveTheme() helper (client-side) — NOT STARTED
+### Task 12: Create resolveTheme() helper (client-side) — COMPLETE
 **Files:** `show-controller/src/lib/themeResolver.js` (new)
 **Resolves:** PRD Architecture Decision 10 (lines 271-330), Phase 4 spec gap A
 **Verify:**
-- [ ] File exports `resolveTheme(db, themeId, graphicId)` async function
-- [ ] Returns null if no themeId
-- [ ] Fetches theme from `themes/{themeId}`
-- [ ] Returns null if theme not found
-- [ ] Returns flat object with all 8 color fields
-- [ ] Merges per-graphic overrides from `theme.overrides[graphicId]`
-- [ ] Includes image fields (headerBgImage, bodyBgImage, etc.)
-- [ ] Includes logo fields (meetLogo, causeLogo)
-- [ ] Handles v2.0 field names with fallback (headerBg → headerBar)
+- [x] File exports `resolveTheme(db, themeId, graphicId)` async function
+- [x] Returns null if no themeId
+- [x] Fetches theme from `themes/{themeId}`
+- [x] Returns null if theme not found
+- [x] Returns flat object with all 8 color fields
+- [x] Merges per-graphic overrides from `theme.overrides[graphicId]`
+- [x] Includes image fields (headerBgImage, bodyBgImage, etc.)
+- [x] Includes logo fields (meetLogo, causeLogo)
+- [x] Handles v2.0 field names with fallback (headerBg → headerBar)
 
 **Notes:**
 - See theme-resolution-patterns.md (lines 149-220) for complete mapping
@@ -591,3 +591,14 @@ This avoids bundler complexity while keeping single source of truth.
 - **Exit code propagation:** When the build script exits with code 1 (validation failure), npm propagates the failure and stops the build
 - **Both hooks added:** Added both `prebuild` and `predev` to ensure registry is always up-to-date during development
 - **Root package.json unchanged:** No changes needed to root package.json since `npm run build` in root already delegates to `cd show-controller && npm run build` which now triggers the prebuild hook
+
+### Task 12 Learnings
+
+- **Client-side themeResolver uses Firebase Web SDK** — imports `{ db, ref, get }` from `./firebase`, same pattern as other show-controller files
+- **Flexible db parameter** — accepts custom db instance or falls back to default `db` import for testability
+- **Two exports:** `resolveTheme(db, themeId, graphicId)` async function + `themeToCssVars(resolved)` helper for converting to CSS variable map
+- **8 color fields with v2.0 fallbacks** — prioritizes v3.0 field names (headerBar, contentArea, etc.) with fallback to v2.0 names (headerBg, accentPrimary, etc.)
+- **Per-graphic overrides merged into flat object** — `resolved.headerBg` reflects override value if present, otherwise theme default
+- **Layout fields in separate object** — `resolved.layout` contains layout overrides (barBottom, venueFontSize, etc.) to keep color/image fields at top level
+- **Image field handling** — copies 13 image fields from both theme.images and overrides, with overrides taking precedence
+- **No local screenshot needed** — this is a pure library file with no UI; build passing confirms it compiles correctly
