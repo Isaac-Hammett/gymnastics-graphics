@@ -1,0 +1,21 @@
+{
+  "id": "leaderboard-ph",
+  "label": "Pommel Horse",
+  "category": "full-screen-cards",
+  "subcategory": "leaderboards",
+  "renderer": "stage",
+  "skeleton": "full-screen-card",
+  "blocks": ["header-bar", "leaderboard-table"],
+  "gender": "mens",
+  "transparent": false,
+  "keywords": ["pommel", "horse", "ph", "leaderboard", "scores", "ranking"],
+  "params": {
+    "apparatus": { "type": "string", "default": "PH" }
+  },
+  "defaultData": {
+    "blocks": [
+      { "type": "header-bar", "data": { "title": "POMMEL HORSE" } },
+      { "type": "leaderboard-table", "data": { "source": "scoring/leaderboard/PH", "gender": "mens" } }
+    ]
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "id": "team-roster",
+  "label": "Team Roster",
+  "labelTemplate": "{teamName} Roster",
+  "category": "full-screen-cards",
+  "subcategory": "team-info",
+  "renderer": "stage",
+  "skeleton": "full-screen-card",
+  "blocks": ["header-bar", "athlete-grid"],
+  "gender": "both",
+  "transparent": false,
+  "perTeam": true,
+  "keywords": ["roster", "team", "athletes", "headshots", "lineup"],
+  "defaultData": {
+    "blocks": [
+      { "type": "header-bar", "data": { "title": null } },
+      { "type": "athlete-grid", "data": { "teamKey": null } }
+    ]
+  }
+}
