@@ -138,7 +138,7 @@ Phase 4 connects the stage engine (built in Phases 1-3) to all producer tools. T
 
 ---
 
-### Task 8: Add themeVars CSS validation (warnings) — NOT STARTED
+### Task 8: Add themeVars CSS validation (warnings) — COMPLETE
 **Files:** `scripts/buildGraphicsRegistry.js`
 **Resolves:** PRD lines 521-526, 836-851
 **Verify:**
@@ -554,3 +554,12 @@ This avoids bundler complexity while keeping single source of truth.
 - **Block validation is JS-only** — blocks must have a `.js` file (the JS file loads its own CSS via `<link>`)
 - **Validation order matters** — skeleton/block existence checks come AFTER the required field checks to avoid confusing errors when `skeleton` or `blocks` is missing entirely
 - **All 11 stage manifests pass** — they all reference `full-screen-card` skeleton and existing blocks (header-bar, leaderboard-table, athlete-grid)
+
+### Task 8 Learnings
+
+- **Three new helper functions:** `extractThemeVars(blockName)` parses JS for themeVars array, `extractCssThemeVars(blockName)` extracts `var(--meet-*)` patterns from CSS, `validateBlockThemeVars(blockName)` compares them
+- **Regex-based parsing:** Uses `/themeVars\s*:\s*\[([\s\S]*?)\]/` to find the array, then extracts quoted strings. No eval() needed.
+- **CSS pattern:** `/var\s*\(\s*--meet-[a-z-]+/g` finds all `--meet-*` variable references in var() calls
+- **Block deduplication:** Uses `validatedBlocks` Set to avoid warning about the same block multiple times when it's used in multiple manifests
+- **Skips sample blocks:** Blocks starting with `_` (like `_sample-block`) are skipped
+- **Current warnings (8 total):** header-bar declares `--meet-logo-url` and `--meet-logo-size` not in CSS; leaderboard-table declares 5 vars not in CSS; athlete-grid declares `--meet-border-color` not in CSS. These are either future CSS expansion or documentation-only declarations.
