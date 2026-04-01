@@ -1,0 +1,18 @@
+{
+  "id": "summary-fx",
+  "label": "FX",
+  "category": "event-summary",
+  "subcategory": "apparatus",
+  "renderer": "output",
+  "file": "event-summary",
+  "transparent": false,
+  "gender": "both",
+  "keywords": ["summary", "apparatus", "floor", "fx", "scores", "event"],
+  "params": {
+    "summaryMode": { "type": "string", "default": "apparatus" },
+    "summaryApparatus": { "type": "string", "default": "fx" },
+    "summaryFormat": { "type": "string", "default": "head-to-head" },
+    "summaryTheme": { "type": "string", "default": "default" },
+    "comp": { "type": "string", "source": "competition", "required": true }
+  }
+}

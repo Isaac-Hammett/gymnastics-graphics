@@ -1,0 +1,18 @@
+{
+  "id": "now-competing",
+  "label": "Now Competing",
+  "category": "standalone",
+  "renderer": "output",
+  "file": "now-competing",
+  "transparent": false,
+  "gender": "both",
+  "keywords": ["now", "competing", "athlete", "live", "current", "performer"],
+  "params": {
+    "athleteName": { "type": "string", "source": "user", "required": true },
+    "athleteTeam": { "type": "string", "source": "user" },
+    "athleteEvent": { "type": "string", "source": "user" },
+    "athleteLogo": { "type": "string", "source": "competition" },
+    "team1Logo": { "type": "string", "source": "competition" },
+    "comp": { "type": "string", "source": "competition", "required": true }
+  }
+}

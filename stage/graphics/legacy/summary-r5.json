@@ -1,0 +1,18 @@
+{
+  "id": "summary-r5",
+  "label": "R5",
+  "category": "event-summary",
+  "subcategory": "rotations",
+  "renderer": "output",
+  "file": "event-summary",
+  "transparent": false,
+  "gender": "mens",
+  "keywords": ["summary", "rotation", "r5", "5", "scores", "event"],
+  "params": {
+    "summaryMode": { "type": "string", "default": "rotation" },
+    "summaryRotation": { "type": "number", "default": 5 },
+    "summaryFormat": { "type": "string", "source": "competition" },
+    "summaryTheme": { "type": "string", "default": "default" },
+    "comp": { "type": "string", "source": "competition", "required": true }
+  }
+}

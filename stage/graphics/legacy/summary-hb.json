@@ -1,0 +1,18 @@
+{
+  "id": "summary-hb",
+  "label": "HB",
+  "category": "event-summary",
+  "subcategory": "apparatus",
+  "renderer": "output",
+  "file": "event-summary",
+  "transparent": false,
+  "gender": "mens",
+  "keywords": ["summary", "apparatus", "high", "bar", "hbar", "hb", "scores", "event"],
+  "params": {
+    "summaryMode": { "type": "string", "default": "apparatus" },
+    "summaryApparatus": { "type": "string", "default": "hb" },
+    "summaryFormat": { "type": "string", "default": "head-to-head" },
+    "summaryTheme": { "type": "string", "default": "default" },
+    "comp": { "type": "string", "source": "competition", "required": true }
+  }
+}

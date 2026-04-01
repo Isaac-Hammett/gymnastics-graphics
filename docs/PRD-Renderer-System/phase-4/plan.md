@@ -70,15 +70,15 @@ Phase 4 connects the stage engine (built in Phases 1-3) to all producer tools. T
 
 ---
 
-### Task 4: Create legacy output.html manifest files — NOT STARTED
+### Task 4: Create legacy output.html manifest files — COMPLETE
 **Files:** `stage/graphics/legacy/summary-*.json`, `stage/graphics/legacy/now-competing.json` (15 files)
 **Resolves:** PRD Architecture Decision 12 (lines 399-423)
 **Verify:**
-- [ ] Manifests for summary-r1 through summary-r6 (6 files)
-- [ ] Manifests for summary-fx through summary-bb (8 files)
-- [ ] Manifest for now-competing
-- [ ] All have `renderer: "output"` and `file: "{graphic-name}"` (no .html)
-- [ ] Params match existing graphicsRegistry.js entries
+- [x] Manifests for summary-r1 through summary-r6 (6 files)
+- [x] Manifests for summary-fx through summary-bb (8 files)
+- [x] Manifest for now-competing
+- [x] All have `renderer: "output"` and `file: "{graphic-name}"` (no .html)
+- [x] Params match existing graphicsRegistry.js entries
 
 **Notes:**
 - Event summary has complex params: virtiusSessionId, summaryMode, summaryRotation/summaryApparatus, summaryNumTeams, summaryFormat, summaryTheme, summaryGender
@@ -516,3 +516,13 @@ This avoids bundler complexity while keeping single source of truth.
 - **perTeam graphics:** 5 overlays use perTeam: team-stats, coaches, athlete-spotlight, who-to-watch, who-to-watch-title
 - **All overlays have meetTheme param:** Added `"meetTheme": { "type": "string", "source": "theme" }` to all themed graphics
 - **Validation script:** Created `/tmp/validate-manifests.js` for quick validation — can be incorporated into build script later
+
+### Task 4 Learnings
+
+- **15 legacy output.html manifests created** in `stage/graphics/legacy/` — 6 rotation summaries (r1-r6) + 8 apparatus summaries (fx, ph, sr, vt, pb, hb, ub, bb) + 1 now-competing
+- **Event summary uses `file: "event-summary"`** (no .html extension) — all 14 summary variants share the same file reference
+- **Gender filtering:** summary-r5, summary-r6, summary-ph, summary-sr, summary-pb, summary-hb use `"gender": "mens"` (R5/R6 are men's-only rotations, PH/SR/PB/HB are men's-only apparatus)
+- **Gender filtering:** summary-ub, summary-bb use `"gender": "womens"` (women's-only apparatus)
+- **Rotation params vs apparatus params:** Rotation summaries use `summaryMode: "rotation"` + `summaryRotation: N`; apparatus summaries use `summaryMode: "apparatus"` + `summaryApparatus: "xx"` + `summaryFormat: "head-to-head"`
+- **now-competing is NOT in graphicsRegistry.js** — it's dynamically triggered by GraphicsControl.jsx's sendNowCompeting() function, but still needs a manifest for the build script to recognize it
+- **Total manifest count after Task 4: 44 files** in `stage/graphics/legacy/` (29 overlays from Task 3 + 15 output.html graphics from Task 4)

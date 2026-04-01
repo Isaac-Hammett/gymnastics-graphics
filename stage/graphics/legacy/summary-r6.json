@@ -1,0 +1,18 @@
+{
+  "id": "summary-r6",
+  "label": "R6",
+  "category": "event-summary",
+  "subcategory": "rotations",
+  "renderer": "output",
+  "file": "event-summary",
+  "transparent": false,
+  "gender": "mens",
+  "keywords": ["summary", "rotation", "r6", "6", "scores", "event"],
+  "params": {
+    "summaryMode": { "type": "string", "default": "rotation" },
+    "summaryRotation": { "type": "number", "default": 6 },
+    "summaryFormat": { "type": "string", "source": "competition" },
+    "summaryTheme": { "type": "string", "default": "default" },
+    "comp": { "type": "string", "source": "competition", "required": true }
+  }
+}

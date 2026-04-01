@@ -1,0 +1,18 @@
+{
+  "id": "summary-bb",
+  "label": "BB",
+  "category": "event-summary",
+  "subcategory": "apparatus",
+  "renderer": "output",
+  "file": "event-summary",
+  "transparent": false,
+  "gender": "womens",
+  "keywords": ["summary", "apparatus", "balance", "beam", "bb", "scores", "event"],
+  "params": {
+    "summaryMode": { "type": "string", "default": "apparatus" },
+    "summaryApparatus": { "type": "string", "default": "bb" },
+    "summaryFormat": { "type": "string", "default": "head-to-head" },
+    "summaryTheme": { "type": "string", "default": "default" },
+    "comp": { "type": "string", "source": "competition", "required": true }
+  }
+}
