@@ -746,3 +746,139 @@ After each manifest or categories.json change:
 ### Skeletons & Blocks Section
 
 Phase 4 added this section. It appears at the bottom of the URL Generator sidebar. Don't break it during reorganization.
+
+## Phase 6 Findings
+
+### File Naming Clarification
+
+**CRITICAL:** The Phase 6 doc incorrectly references `renderer.html` and `renderer/` directory throughout. The actual files are:
+- `stage/stage.html` (NOT `renderer/renderer.html`)
+- `stage/` directory (NOT `renderer/`)
+
+All URLs should use `stage/stage.html?comp={compId}` pattern.
+
+### output.html Leaderboard CSS Line Numbers (as of 2026-04-01)
+
+Three CSS sections to remove:
+
+1. **Main leaderboard CSS (lines 330-497):**
+   - `.leaderboard-table` and all variants
+   - `.place-indicator`, `.stick-bonus`, `.apparatus-badge`
+   - `.leaderboard-team-logo`, `.leaderboard-medal`
+   - Loading/error states
+
+2. **Theme overrides (lines 1207-1326):**
+   - `[data-meet-theme] .leaderboard-*` selectors
+   - `[data-meet-theme] .graphic-virtuis-leaderboard`
+   - Uses `--virtuis-leaderboard-*` CSS variable prefixes
+
+3. **Texture overlay (lines 1624-1641):**
+   - `[data-meet-theme] .leaderboard-header::before` pseudo-element
+
+### output.html Leaderboard JS Line Numbers
+
+**REMOVE:**
+- `fetchAndRenderLeaderboard()`: lines 8414-8759 (~346 lines)
+- `fetchAndRenderCombinedAALeaderboard()`: lines 8762-8922 (~161 lines)
+- `'virtius-leaderboard'` renderer: lines 13911-14011 (~101 lines)
+- `'combined-aa-leaderboard'` renderer: lines 14013-14065 (~53 lines)
+
+**KEEP (shared helpers):**
+- Line 8125: `APPARATUS_FLIGHT_REGEX` — used by apparatus finals
+- Lines 8104-8122: `waitForHeadshots()` — used by event-summary, team-stats
+- Lines 8129-8159: `getSchoolInfoFromName()` — used by event finals
+- Lines 8183-8226: `loadFirebaseTeamLogos()` — used by 15+ graphics
+- Lines 8230-8267: `getTeamLogoUrl()` — used by 20+ graphics
+- Lines 8276-8284: `getEventLevelLogo()` — used by event graphics
+
+### Routing Logic Summary
+
+**stage.html (lines 596-610):**
+```javascript
+if (!val || val.renderer !== 'stage') {
+  await dismissCurrentGraphic();  // 200ms fade-out
+  return;
+}
+```
+
+**output.html (lines 14246-14255):**
+```javascript
+if (renderer === 'stage') {
+  output.innerHTML = '';
+  hideAnimatedBackground();
+  if (lastLiveGraphicId && window.themeClearOverrides) {
+    window.themeClearOverrides(lastLiveGraphicId);
+    lastLiveGraphicId = null;
+  }
+  return;
+}
+```
+
+### Exit Animation Timing
+
+- **stage.html:** 200ms fade-out, cubic-bezier(0.16, 1, 0.3, 1)
+- **output.html:** Immediate clear (no animation)
+
+This asymmetry is intentional — legacy graphics never had exit animations.
+
+### Error Reporting Path
+
+Stage engine errors go to `competitions/{compId}/production/stageErrors/{timestamp}`:
+```json
+{
+  "type": "block_load_error",
+  "graphic": "leaderboard-vt",
+  "block": "leaderboard-table",
+  "message": "Failed to load block",
+  "url": "current page URL",
+  "timestamp": "ISO string"
+}
+```
+
+### overlays/team-roster.html Structure
+
+Total: ~580 lines
+- CSS: lines 13-269 (38 CSS variables)
+- HTML: lines 271-282 (minimal DOM)
+- JS: lines 284-576 (Firebase reads, headshot lookup, rendering)
+
+**Firebase paths read:**
+- `teamsDatabase/headshots/` — all headshots
+- `competitions/{compId}/config` — team slot info
+- `teamsDatabase/teams/{teamKey}/roster` — athlete names
+
+**URL parameters:**
+- `compId` — competition ID
+- `teamSlot` — which team (1-7)
+- `logo` — direct logo URL (preview mode)
+- `teamName` — direct name (preview mode)
+
+### URL Migration Table
+
+| Old URL | New URL |
+|---------|---------|
+| `overlays/team-roster.html?compId={id}&teamSlot=1` | `stage/stage.html?comp={id}&graphic=team-roster-1` |
+| `overlays/team-roster.html?compId={id}&teamSlot=2` | `stage/stage.html?comp={id}&graphic=team-roster-2` |
+| etc. | etc. |
+
+### Deploy Checklist Addition
+
+Add to CLAUDE.md:
+```bash
+# Stage engine deploy
+tar -czf /tmp/claude/stage.tar.gz stage/
+ssh_upload_file localPath=/tmp/claude/stage.tar.gz remotePath=/tmp/stage.tar.gz target=3.87.107.201
+ssh_exec command="cd /var/www/commentarygraphic && tar -xzf /tmp/stage.tar.gz && find stage -name '._*' -delete && find stage -type f -exec chmod 644 {} +"
+```
+
+### Theme Support Status
+
+**Known limitation:** The new leaderboard-table.css and athlete-grid.css declare `themeVars` but have mostly hardcoded colors. Theme variables are not fully wired yet. Phase 6 verification should document this if colors don't match themed legacy graphics.
+
+### Verification Order
+
+1. Side-by-side visual comparisons FIRST (Tasks 1-10)
+2. Routing verification (Tasks 11-15)
+3. Production test (Task 16)
+4. Code removal ONLY AFTER production passes (Tasks 17-19)
+5. Deploy documentation update LAST (Tasks 20-21)

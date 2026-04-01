@@ -1291,7 +1291,7 @@ Implementation is split into phases, each with its own detailed document.
 | 3 | Scoring Ingestion | Coordinator polling service, Firebase scoring paths, producer controls | `Phase-3-Scoring-Ingestion.md` | **COMPLETE** — deployed 2026-03-31 |
 | 4 | Tool Integration | Registry updates, URL Generator, Web Graphics Panel, Rundown routing | `Phase-4-Tool-Integration.md` | **COMPLETE** — deployed 2026-04-01 |
 | 5 | Reorganization | New category structure in registry, URL Generator sidebar, Graphics Panel sidebar | `Phase-5-Reorganization.md` | NOT STARTED |
-| 6 | Verification & Cutover | Side-by-side comparisons, production test, old code removal | `Phase-6-Verification-Cutover.md` | NOT STARTED |
+| 6 | Verification & Cutover | Side-by-side comparisons, production test, old code removal | `Phase-6-Verification-Cutover.md` | **COMPLETE** — deployed 2026-04-01 |
 
 ---
 
