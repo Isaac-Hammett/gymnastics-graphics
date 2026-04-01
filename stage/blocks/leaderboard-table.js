@@ -18,19 +18,19 @@ window.BlockLeaderboardTable = {
   ],
 
   sampleData: {
-    apparatus: 'VT',
-    gender: 'womens',
+    apparatus: 'FX',
+    gender: 'mens',
     rows: [
-      { rank: 1, name: 'Jade Carey', team: 'Arizona', teamLogo: '', score: 9.975, apparatus: 'VT' },
-      { rank: 2, name: 'Sunisa Lee', team: 'Auburn', teamLogo: '', score: 9.950, apparatus: 'VT' },
-      { rank: 2, name: 'Jordan Chiles', team: 'UCLA', teamLogo: '', score: 9.950, apparatus: 'VT' },
-      { rank: 4, name: 'Trinity Thomas', team: 'Florida', teamLogo: '', score: 9.925, apparatus: 'VT' },
-      { rank: 5, name: 'Leanne Wong', team: 'Florida', teamLogo: '', score: 9.900, apparatus: 'VT' },
-      { rank: 5, name: 'Kaliya Lincoln', team: 'UCLA', teamLogo: '', score: 9.900, apparatus: 'VT' },
-      { rank: 7, name: 'Skye Blakely', team: 'LSU', teamLogo: '', score: 9.875, apparatus: 'VT' },
-      { rank: 8, name: 'Hezly Rivera', team: 'LSU', teamLogo: '', score: 9.850, apparatus: 'VT' },
-      { rank: 9, name: 'Simone Biles', team: 'World Champions', teamLogo: '', score: 9.825, apparatus: 'VT' },
-      { rank: 10, name: 'Morgan Hurd', team: 'Stanford', teamLogo: '', score: 9.800, apparatus: 'VT' }
+      { rank: 1, name: 'Brody Malone', team: 'Stanford', teamLogo: '', score: 14.700, apparatus: 'FX', diff: 6.3, exec: 8.500, stickBonus: true },
+      { rank: 2, name: 'Paul Juda', team: 'Michigan', teamLogo: '', score: 14.500, apparatus: 'FX', diff: 6.2, exec: 8.400, stickBonus: false },
+      { rank: 2, name: 'Asher Hong', team: 'Stanford', teamLogo: '', score: 14.500, apparatus: 'FX', diff: 6.1, exec: 8.500, stickBonus: true },
+      { rank: 4, name: 'Fred Richard', team: 'Michigan', teamLogo: '', score: 14.350, apparatus: 'FX', diff: 6.0, exec: 8.450, stickBonus: false },
+      { rank: 5, name: 'Khoi Young', team: 'Stanford', teamLogo: '', score: 14.200, apparatus: 'FX', diff: 5.9, exec: 8.400, stickBonus: true },
+      { rank: 6, name: 'Shane Wiskus', team: 'Minnesota', teamLogo: '', score: 14.100, apparatus: 'FX', diff: 5.8, exec: 8.400, stickBonus: false },
+      { rank: 7, name: 'Riley Loos', team: 'Oklahoma', teamLogo: '', score: 14.000, apparatus: 'FX', diff: 5.7, exec: 8.400, stickBonus: true },
+      { rank: 8, name: 'Curran Phillips', team: 'Stanford', teamLogo: '', score: 13.900, apparatus: 'FX', diff: 5.6, exec: 8.400, stickBonus: false },
+      { rank: 9, name: 'Cameron Bock', team: 'Michigan', teamLogo: '', score: 13.800, apparatus: 'FX', diff: 5.5, exec: 8.400, stickBonus: false },
+      { rank: 10, name: 'Colt Walker', team: 'Oklahoma', teamLogo: '', score: 13.700, apparatus: 'FX', diff: 5.4, exec: 8.400, stickBonus: true }
     ]
   },
 
