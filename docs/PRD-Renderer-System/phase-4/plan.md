@@ -385,7 +385,7 @@ Phase 4 connects the stage engine (built in Phases 1-3) to all producer tools. T
 
 ---
 
-### Task 22: Add migration status report to build script — NOT STARTED
+### Task 22: Add migration status report to build script — COMPLETE
 **Files:** `scripts/buildGraphicsRegistry.js`
 **Resolves:** PRD Block Catalog note (line 1184), Phase 4 doc Task 10
 **Verify:**
@@ -691,3 +691,14 @@ This avoids bundler complexity while keeping single source of truth.
 - **4 copy buttons now:** Output URL, Theme URL (conditional on meetTheme), Clip URL, Stage URL — all with consistent styling pattern
 - **No visual separator needed:** The teal color naturally distinguishes the Stage URL button from the others (cyan for Clip, purple for Theme, zinc for Output)
 - **Local verification limited:** Producer View requires auth, so verification done via build pass + code review
+
+### Task 22 Learnings
+
+- **CLI argument parsing:** Added `STATUS_MODE` flag that checks for `--status` or `-s` arguments via `process.argv.slice(2)`
+- **Planned catalogs:** Created `PLANNED_BLOCKS` (12 blocks) and `PLANNED_SKELETONS` (4 skeletons) arrays to track migration progress against the full PRD block catalog
+- **ASCII progress bar function:** `progressBar(current, total, width)` generates `[█████░░░░░░░░░░░░░░░] 3/12` style bars
+- **Color codes in terminal:** Uses ANSI escape codes (`\x1b[32m` green, `\x1b[31m` red, `\x1b[33m` yellow, `\x1b[90m` gray, `\x1b[0m` reset) for colored output
+- **Blocked graphics detection:** `findBlockedGraphics()` finds stage manifests with missing blocks — currently empty because all 11 stage manifests use existing blocks
+- **One-line summary format:** `Migration: 11/55 graphics, 3/12 blocks, 1/4 skeletons` appears at end of normal build output
+- **Status report shows per-category breakdown:** Groups graphics by category, shows migrated vs legacy counts with progress bars
+- **Extra items handling:** Shows "Extra blocks (not in catalog)" for any blocks that exist but aren't in the planned list

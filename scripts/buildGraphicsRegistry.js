@@ -5,6 +5,7 @@
  *
  * Builds the graphics registry from manifest files in stage/graphics/.
  * Run by: node scripts/buildGraphicsRegistry.js
+ *         node scripts/buildGraphicsRegistry.js --status
  *
  * Auto-generated registry is used by:
  * - show-controller (via import)
@@ -15,6 +16,10 @@
 
 const fs = require('fs');
 const path = require('path');
+
+// CLI argument parsing
+const args = process.argv.slice(2);
+const STATUS_MODE = args.includes('--status') || args.includes('-s');
 
 // Paths
 const PROJECT_ROOT = path.resolve(__dirname, '..');
@@ -27,6 +32,30 @@ const OUTPUT_JSON_FILE = path.join(PROJECT_ROOT, 'stage', 'graphics-registry.jso
 
 // Track validated blocks to avoid duplicate warnings
 const validatedBlocks = new Set();
+
+// Block and skeleton catalogs for migration status
+// These are the PLANNED blocks/skeletons from the PRD block catalog
+const PLANNED_BLOCKS = [
+  'header-bar',
+  'leaderboard-table',
+  'athlete-grid',
+  'score-card',
+  'team-summary',
+  'apparatus-scores',
+  'event-bar',
+  'medal-table',
+  'sponsor-grid',
+  'athlete-stats',
+  'rotation-progress',
+  'team-comparison'
+];
+
+const PLANNED_SKELETONS = [
+  'full-screen-card',
+  'lower-third',
+  'full-bleed',
+  'split-screen'
+];
 
 /**
  * Recursively find all JSON files in a directory, excluding categories.json
@@ -440,8 +469,285 @@ function build() {
   }
 
   console.log(`\nTotal manifests: ${manifests.length}`);
+
+  // One-line migration summary
+  console.log(`\n${getMigrationSummary(manifests)}`);
   console.log('\nBuild complete.');
 }
 
+/**
+ * Generate ASCII progress bar
+ * @param {number} current - Current count
+ * @param {number} total - Total count
+ * @param {number} width - Bar width in characters
+ * @returns {string} Progress bar string
+ */
+function progressBar(current, total, width = 20) {
+  const percent = total > 0 ? current / total : 0;
+  const filled = Math.round(percent * width);
+  const empty = width - filled;
+  const bar = '█'.repeat(filled) + '░'.repeat(empty);
+  return `[${bar}] ${current}/${total}`;
+}
+
+/**
+ * Get list of existing blocks (excluding _sample-block)
+ */
+function getExistingBlocks() {
+  const blocks = [];
+  if (!fs.existsSync(BLOCKS_DIR)) return blocks;
+
+  const entries = fs.readdirSync(BLOCKS_DIR);
+  for (const entry of entries) {
+    if (entry.endsWith('.js') && !entry.startsWith('_')) {
+      blocks.push(entry.replace('.js', ''));
+    }
+  }
+  return blocks;
+}
+
+/**
+ * Get list of existing skeletons
+ */
+function getExistingSkeletons() {
+  const skeletons = [];
+  if (!fs.existsSync(SKELETONS_DIR)) return skeletons;
+
+  const entries = fs.readdirSync(SKELETONS_DIR);
+  const seen = new Set();
+  for (const entry of entries) {
+    if (entry.endsWith('.html') || entry.endsWith('.css')) {
+      const name = entry.replace(/\.(html|css)$/, '');
+      if (!seen.has(name)) {
+        seen.add(name);
+        skeletons.push(name);
+      }
+    }
+  }
+  return skeletons;
+}
+
+/**
+ * Find blocked graphics (stage manifest but missing blocks)
+ */
+function findBlockedGraphics(manifests) {
+  const blocked = [];
+
+  for (const manifest of manifests) {
+    if (manifest.renderer === 'stage' && manifest.blocks) {
+      const missingBlocks = [];
+      for (const blockName of manifest.blocks) {
+        if (!blockExists(blockName)) {
+          missingBlocks.push(blockName);
+        }
+      }
+      if (missingBlocks.length > 0) {
+        blocked.push({
+          id: manifest.id,
+          missingBlocks
+        });
+      }
+    }
+  }
+
+  return blocked;
+}
+
+/**
+ * Print detailed migration status report
+ */
+function printStatusReport() {
+  console.log('\n╔═══════════════════════════════════════════════════════════════╗');
+  console.log('║              RENDERER SYSTEM MIGRATION STATUS                 ║');
+  console.log('╚═══════════════════════════════════════════════════════════════╝\n');
+
+  // Load categories
+  if (!fs.existsSync(CATEGORIES_FILE)) {
+    console.error('ERROR: Categories file not found');
+    process.exit(1);
+  }
+  const categories = loadJSON(CATEGORIES_FILE);
+  if (!categories) {
+    console.error('ERROR: Failed to parse categories.json');
+    process.exit(1);
+  }
+
+  // Find all manifests
+  const manifestFiles = findManifestFiles(GRAPHICS_DIR);
+  const manifests = [];
+  for (const filePath of manifestFiles) {
+    const manifest = loadJSON(filePath);
+    if (manifest) {
+      manifest._sourceFile = path.relative(PROJECT_ROOT, filePath);
+      manifests.push(manifest);
+    }
+  }
+
+  // === BLOCKS SECTION ===
+  console.log('┌───────────────────────────────────────────────────────────────┐');
+  console.log('│  BLOCKS                                                       │');
+  console.log('└───────────────────────────────────────────────────────────────┘');
+
+  const existingBlocks = getExistingBlocks();
+  const builtBlocksCount = existingBlocks.length;
+  const plannedBlocksCount = PLANNED_BLOCKS.length;
+
+  console.log(`\n  Progress: ${progressBar(builtBlocksCount, plannedBlocksCount)}`);
+  console.log();
+
+  for (const block of PLANNED_BLOCKS) {
+    const exists = existingBlocks.includes(block);
+    const icon = exists ? '✓' : '✗';
+    const color = exists ? '\x1b[32m' : '\x1b[31m';
+    const reset = '\x1b[0m';
+    console.log(`  ${color}${icon}${reset} ${block}`);
+  }
+
+  // Show any extra blocks not in planned list
+  const extraBlocks = existingBlocks.filter(b => !PLANNED_BLOCKS.includes(b));
+  if (extraBlocks.length > 0) {
+    console.log('\n  Extra blocks (not in catalog):');
+    for (const block of extraBlocks) {
+      console.log(`  \x1b[33m+\x1b[0m ${block}`);
+    }
+  }
+  console.log();
+
+  // === SKELETONS SECTION ===
+  console.log('┌───────────────────────────────────────────────────────────────┐');
+  console.log('│  SKELETONS                                                    │');
+  console.log('└───────────────────────────────────────────────────────────────┘');
+
+  const existingSkeletons = getExistingSkeletons();
+  const builtSkeletonsCount = existingSkeletons.length;
+  const plannedSkeletonsCount = PLANNED_SKELETONS.length;
+
+  console.log(`\n  Progress: ${progressBar(builtSkeletonsCount, plannedSkeletonsCount)}`);
+  console.log();
+
+  for (const skeleton of PLANNED_SKELETONS) {
+    const exists = existingSkeletons.includes(skeleton);
+    const icon = exists ? '✓' : '✗';
+    const color = exists ? '\x1b[32m' : '\x1b[31m';
+    const reset = '\x1b[0m';
+    console.log(`  ${color}${icon}${reset} ${skeleton}`);
+  }
+
+  // Show any extra skeletons not in planned list
+  const extraSkeletons = existingSkeletons.filter(s => !PLANNED_SKELETONS.includes(s));
+  if (extraSkeletons.length > 0) {
+    console.log('\n  Extra skeletons (not in catalog):');
+    for (const skeleton of extraSkeletons) {
+      console.log(`  \x1b[33m+\x1b[0m ${skeleton}`);
+    }
+  }
+  console.log();
+
+  // === GRAPHICS SECTION ===
+  console.log('┌───────────────────────────────────────────────────────────────┐');
+  console.log('│  GRAPHICS BY CATEGORY                                         │');
+  console.log('└───────────────────────────────────────────────────────────────┘');
+
+  // Count graphics by category and renderer
+  const stageGraphics = manifests.filter(m => m.renderer === 'stage');
+  const legacyGraphics = manifests.filter(m => m.renderer !== 'stage');
+  const totalGraphics = manifests.length;
+  const migratedCount = stageGraphics.length;
+
+  console.log(`\n  Overall: ${progressBar(migratedCount, totalGraphics)} migrated to stage engine`);
+  console.log();
+
+  // Group by category
+  const byCategory = {};
+  for (const m of manifests) {
+    const cat = m.category || 'unknown';
+    if (!byCategory[cat]) {
+      byCategory[cat] = { stage: [], legacy: [] };
+    }
+    if (m.renderer === 'stage') {
+      byCategory[cat].stage.push(m.id);
+    } else {
+      byCategory[cat].legacy.push(m.id);
+    }
+  }
+
+  // Sort categories by order from categories.json
+  const sortedCategories = Object.keys(byCategory).sort((a, b) => {
+    const orderA = categories[a]?.order || 999;
+    const orderB = categories[b]?.order || 999;
+    return orderA - orderB;
+  });
+
+  for (const cat of sortedCategories) {
+    const data = byCategory[cat];
+    const catLabel = categories[cat]?.label || cat;
+    const total = data.stage.length + data.legacy.length;
+    const migrated = data.stage.length;
+
+    console.log(`  ${catLabel}:`);
+    console.log(`    ${progressBar(migrated, total, 15)}`);
+
+    if (data.stage.length > 0) {
+      console.log(`    \x1b[32m✓ Migrated:\x1b[0m ${data.stage.join(', ')}`);
+    }
+    if (data.legacy.length > 0) {
+      const legacyStr = data.legacy.length > 5
+        ? data.legacy.slice(0, 5).join(', ') + ` (+${data.legacy.length - 5} more)`
+        : data.legacy.join(', ');
+      console.log(`    \x1b[90m○ Legacy:\x1b[0m ${legacyStr}`);
+    }
+    console.log();
+  }
+
+  // === BLOCKED GRAPHICS SECTION ===
+  const blockedGraphics = findBlockedGraphics(manifests);
+  if (blockedGraphics.length > 0) {
+    console.log('┌───────────────────────────────────────────────────────────────┐');
+    console.log('│  BLOCKED GRAPHICS (manifest ready, blocks missing)           │');
+    console.log('└───────────────────────────────────────────────────────────────┘');
+    console.log();
+
+    for (const item of blockedGraphics) {
+      console.log(`  \x1b[33m⚠\x1b[0m ${item.id}`);
+      console.log(`    Missing: ${item.missingBlocks.join(', ')}`);
+    }
+    console.log();
+  }
+
+  // === SUMMARY ===
+  console.log('╔═══════════════════════════════════════════════════════════════╗');
+  console.log('║  SUMMARY                                                      ║');
+  console.log('╚═══════════════════════════════════════════════════════════════╝');
+  console.log();
+  console.log(`  Graphics:  ${migratedCount}/${totalGraphics} migrated (${Math.round(migratedCount/totalGraphics*100)}%)`);
+  console.log(`  Blocks:    ${builtBlocksCount}/${plannedBlocksCount} built (${Math.round(builtBlocksCount/plannedBlocksCount*100)}%)`);
+  console.log(`  Skeletons: ${builtSkeletonsCount}/${plannedSkeletonsCount} built (${Math.round(builtSkeletonsCount/plannedSkeletonsCount*100)}%)`);
+  if (blockedGraphics.length > 0) {
+    console.log(`  Blocked:   ${blockedGraphics.length} graphics waiting on blocks`);
+  }
+  console.log();
+}
+
+/**
+ * Generate one-line migration summary for normal build output
+ */
+function getMigrationSummary(manifests) {
+  const existingBlocks = getExistingBlocks();
+  const existingSkeletons = getExistingSkeletons();
+
+  const stageCount = manifests.filter(m => m.renderer === 'stage').length;
+  const totalCount = manifests.length;
+  const blocksBuilt = existingBlocks.length;
+  const blocksPlanned = PLANNED_BLOCKS.length;
+  const skeletonsBuilt = existingSkeletons.length;
+  const skeletonsPlanned = PLANNED_SKELETONS.length;
+
+  return `Migration: ${stageCount}/${totalCount} graphics, ${blocksBuilt}/${blocksPlanned} blocks, ${skeletonsBuilt}/${skeletonsPlanned} skeletons`;
+}
+
 // Run
-build();
+if (STATUS_MODE) {
+  printStatusReport();
+} else {
+  build();
+}
