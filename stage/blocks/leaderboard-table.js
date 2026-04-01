@@ -20,14 +20,15 @@ window.BlockLeaderboardTable = {
   sampleData: {
     apparatus: 'AA',
     gender: 'mens',
+    // Sample data demonstrates ties: ranks 1, 2, 2, 4 (gap ranking)
     rows: [
       { rank: 1, name: 'Brody Malone', team: 'Stanford', teamLogo: '', score: 86.450 },
       { rank: 2, name: 'Paul Juda', team: 'Michigan', teamLogo: '', score: 85.900 },
-      { rank: 3, name: 'Asher Hong', team: 'Stanford', teamLogo: '', score: 85.750 },
+      { rank: 2, name: 'Asher Hong', team: 'Stanford', teamLogo: '', score: 85.900 },
       { rank: 4, name: 'Fred Richard', team: 'Michigan', teamLogo: '', score: 85.400 },
       { rank: 5, name: 'Khoi Young', team: 'Stanford', teamLogo: '', score: 84.850 },
-      { rank: 6, name: 'Shane Wiskus', team: 'Minnesota', teamLogo: '', score: 84.600 },
-      { rank: 7, name: 'Riley Loos', team: 'Oklahoma', teamLogo: '', score: 84.350 },
+      { rank: 5, name: 'Shane Wiskus', team: 'Minnesota', teamLogo: '', score: 84.850 },
+      { rank: 5, name: 'Riley Loos', team: 'Oklahoma', teamLogo: '', score: 84.850 },
       { rank: 8, name: 'Colt Walker', team: 'Oklahoma', teamLogo: '', score: 84.100 },
       { rank: 9, name: 'Curran Phillips', team: 'Stanford', teamLogo: '', score: 83.900 },
       { rank: 10, name: 'Cameron Bock', team: 'Michigan', teamLogo: '', score: 83.650 }
