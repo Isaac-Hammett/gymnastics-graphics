@@ -1,0 +1,32 @@
+{
+  "id": "who-to-watch-title",
+  "label": "Who to Watch — Title Card",
+  "labelTemplate": "{teamName} — Who to Watch Title Card",
+  "category": "full-bleed",
+  "subcategory": "slates",
+  "renderer": "overlay",
+  "file": "who-to-watch-title.html",
+  "transparent": false,
+  "gender": "both",
+  "perTeam": true,
+  "keywords": ["who to watch", "title card", "spotlight", "featured", "athlete", "full screen", "espn"],
+  "params": {
+    "teamSlot": { "type": "number", "required": true },
+    "athleteName": { "type": "string", "required": true },
+    "teamName": { "type": "string", "source": "competition" },
+    "logo": { "type": "string", "source": "competition" },
+    "headline": { "type": "string" },
+    "body": { "type": "string" },
+    "imageUrl": { "type": "string" },
+    "imageMode": { "type": "string", "default": "portrait" },
+    "badge": { "type": "string", "default": "WHO TO WATCH" },
+    "nameFontSize": { "type": "number", "default": 64 },
+    "bodyFontSize": { "type": "number", "default": 30 },
+    "headlineFontSize": { "type": "number", "default": 28 },
+    "textOffsetY": { "type": "number", "default": 0 },
+    "imageScale": { "type": "number", "default": 100 },
+    "imageOffsetX": { "type": "number", "default": 0 },
+    "imageOffsetY": { "type": "number", "default": 0 },
+    "meetTheme": { "type": "string", "source": "theme" }
+  }
+}

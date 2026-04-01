@@ -1,0 +1,23 @@
+{
+  "id": "who-to-watch",
+  "label": "Who to Watch",
+  "labelTemplate": "{teamName} — Who to Watch",
+  "category": "lower-thirds",
+  "subcategory": "spotlight",
+  "renderer": "overlay",
+  "file": "who-to-watch.html",
+  "transparent": true,
+  "gender": "both",
+  "perTeam": true,
+  "keywords": ["who to watch", "highlight", "featured", "spotlight", "standout", "athlete", "star", "lower-third"],
+  "params": {
+    "teamSlot": { "type": "number", "required": true },
+    "logo": { "type": "string", "source": "competition", "required": true },
+    "athleteName": { "type": "string", "required": true },
+    "headshot": { "type": "string" },
+    "subtitle": { "type": "string" },
+    "statLabel": { "type": "string", "default": "Season High" },
+    "statValue": { "type": "string" },
+    "meetTheme": { "type": "string", "source": "theme" }
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "id": "frame-dual",
+  "label": "Dual View",
+  "category": "video-frames",
+  "subcategory": "camera-layouts",
+  "renderer": "overlay",
+  "file": "frame-dual.html",
+  "transparent": true,
+  "gender": "both",
+  "minTeams": 2,
+  "maxTeams": 7,
+  "keywords": ["dual", "two", "2", "view", "frame", "overlay", "camera"],
+  "params": {
+    "team1Logo": { "type": "string", "source": "competition" },
+    "team2Logo": { "type": "string", "source": "competition" },
+    "meetTheme": { "type": "string", "source": "theme" }
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "id": "team-bug",
+  "label": "Team Bug",
+  "category": "standalone",
+  "renderer": "overlay",
+  "file": "team-bug.html",
+  "transparent": true,
+  "gender": "both",
+  "keywords": ["team", "bug", "score", "scorebug", "persistent"],
+  "params": {
+    "compId": { "type": "string", "source": "competition", "required": true }
+  }
+}

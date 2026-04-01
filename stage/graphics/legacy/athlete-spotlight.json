@@ -1,0 +1,27 @@
+{
+  "id": "athlete-spotlight",
+  "label": "Athlete Spotlight",
+  "labelTemplate": "{teamName} Spotlight",
+  "category": "lower-thirds",
+  "subcategory": "spotlight",
+  "renderer": "overlay",
+  "file": "athlete-spotlight.html",
+  "transparent": true,
+  "gender": "both",
+  "perTeam": true,
+  "keywords": ["athlete", "spotlight", "featured", "intro", "headshot", "player", "gymnast", "lower-third"],
+  "params": {
+    "teamSlot": { "type": "number", "required": true },
+    "logo": { "type": "string", "source": "competition", "required": true },
+    "event": { "type": "string", "required": true, "default": "FLOOR EXERCISE" },
+    "athlete1Name": { "type": "string", "required": true },
+    "athlete1Headshot": { "type": "string" },
+    "athlete1Year": { "type": "enum", "options": ["1", "2", "3", "4", "5"] },
+    "athlete1Hometown": { "type": "string" },
+    "athlete2Name": { "type": "string", "required": true },
+    "athlete2Headshot": { "type": "string" },
+    "athlete2Year": { "type": "enum", "options": ["1", "2", "3", "4", "5"] },
+    "athlete2Hometown": { "type": "string" },
+    "meetTheme": { "type": "string", "source": "theme" }
+  }
+}

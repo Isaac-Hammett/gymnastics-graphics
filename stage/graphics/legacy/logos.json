@@ -1,0 +1,22 @@
+{
+  "id": "logos",
+  "label": "Team Logos",
+  "category": "standalone",
+  "renderer": "overlay",
+  "file": "logos.html",
+  "transparent": false,
+  "gender": "both",
+  "minTeams": 1,
+  "maxTeams": 7,
+  "keywords": ["logo", "logos", "team", "teams", "intro", "introduction"],
+  "params": {
+    "team1Logo": { "type": "string", "source": "competition" },
+    "team2Logo": { "type": "string", "source": "competition" },
+    "team3Logo": { "type": "string", "source": "competition" },
+    "team4Logo": { "type": "string", "source": "competition" },
+    "team5Logo": { "type": "string", "source": "competition" },
+    "team6Logo": { "type": "string", "source": "competition" },
+    "team7Logo": { "type": "string", "source": "competition" },
+    "meetTheme": { "type": "string", "source": "theme" }
+  }
+}

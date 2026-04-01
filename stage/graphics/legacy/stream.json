@@ -1,0 +1,24 @@
+{
+  "id": "stream",
+  "label": "Stream",
+  "category": "full-bleed",
+  "subcategory": "stream",
+  "renderer": "overlay",
+  "file": "stream.html",
+  "transparent": false,
+  "gender": "both",
+  "keywords": ["stream", "starting", "thanks", "watching", "begin", "end"],
+  "params": {
+    "title": { "type": "string", "default": "STREAM STARTING SOON" },
+    "logo": { "type": "string", "source": "competition" },
+    "logo2": { "type": "string", "source": "competition" },
+    "logo3": { "type": "string", "source": "competition" },
+    "logo4": { "type": "string", "source": "competition" },
+    "logo5": { "type": "string", "source": "competition" },
+    "logo6": { "type": "string", "source": "competition" },
+    "logo7": { "type": "string", "source": "competition" },
+    "eventName": { "type": "string", "source": "competition" },
+    "meetDate": { "type": "string", "source": "competition" },
+    "meetTheme": { "type": "string", "source": "theme" }
+  }
+}

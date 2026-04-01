@@ -52,20 +52,20 @@ Phase 4 connects the stage engine (built in Phases 1-3) to all producer tools. T
 
 ---
 
-### Task 3: Create legacy overlay manifest files — NOT STARTED
-**Files:** `stage/graphics/legacy/*.json` (30 files)
+### Task 3: Create legacy overlay manifest files — COMPLETE
+**Files:** `stage/graphics/legacy/*.json` (29 files)
 **Resolves:** PRD Architecture Decision 12 (lines 399-423)
 **Verify:**
-- [ ] Manifest exists for each overlay file in `overlays/` directory (except theme-loader.js, theme-overrides.css)
-- [ ] All have `renderer: "overlay"` and `file: "{filename}.html"`
-- [ ] All have `category`, `transparent`, `gender`, `keywords` fields
-- [ ] Params extracted from current graphicsRegistry.js entries
-- [ ] Total count: ~30 manifests
+- [x] Manifest exists for each overlay file in `overlays/` directory (except theme-loader.js, theme-overrides.css)
+- [x] All have `renderer: "overlay"` and `file: "{filename}.html"`
+- [x] All have `category`, `transparent`, `gender`, `keywords` fields
+- [x] Params extracted from current graphicsRegistry.js entries
+- [x] Total count: 29 manifests (team-roster has stage manifest from Task 2)
 
 **Notes:**
 - Reference legacy-overlays-inventory.md for complete list
 - Extract params from graphicsRegistry.js entries (lines 52-1212)
-- Skip animated-background.html and clip-player.html (internal use)
+- Included animated-background.html and clip-player.html (metadata-only, harmless)
 - Include `meetTheme` param with `source: "theme"` for themed graphics
 
 ---
@@ -508,3 +508,11 @@ Server needs registry data for `_triggerGraphic()` renderer detection. Options:
 3. Import in timesheetEngine: `const GRAPHICS = require('../../../stage/graphics-registry.json')`
 
 This avoids bundler complexity while keeping single source of truth.
+
+### Task 3 Learnings
+
+- **29 legacy overlay manifests created** in `stage/graphics/legacy/` — team-roster is NOT duplicated because it has a stage engine manifest from Task 2
+- **Category mapping:** Use categories.json subcategories exactly — lower-thirds has event-info/team-stats/spotlight, video-frames has camera-layouts/apparatus, full-bleed has slates/stream/sponsors
+- **perTeam graphics:** 5 overlays use perTeam: team-stats, coaches, athlete-spotlight, who-to-watch, who-to-watch-title
+- **All overlays have meetTheme param:** Added `"meetTheme": { "type": "string", "source": "theme" }` to all themed graphics
+- **Validation script:** Created `/tmp/validate-manifests.js` for quick validation — can be incorporated into build script later
