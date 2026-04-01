@@ -266,16 +266,16 @@ Phase 4 connects the stage engine (built in Phases 1-3) to all producer tools. T
 
 ---
 
-### Task 15: Update timesheetEngine.js for stage renderer routing — NOT STARTED
+### Task 15: Update timesheetEngine.js for stage renderer routing — COMPLETE
 **Files:** `server/lib/timesheetEngine.js`
 **Resolves:** PRD lines 1028-1033, Phase 4 doc Task 6
 **Verify:**
-- [ ] Import `resolveTheme` from `./themeResolver`
-- [ ] Import registry data (see notes)
-- [ ] In _triggerGraphic(): look up registry entry, compute `firebaseRenderer`
-- [ ] If `firebaseRenderer === 'stage'`: call `resolveTheme()` and build render spec
-- [ ] Write `renderer: firebaseRenderer` in graphicData object
-- [ ] Server-side theme resolution works
+- [x] Import `resolveTheme` from `./themeResolver`
+- [x] Import registry data (see notes)
+- [x] In _triggerGraphic(): look up registry entry, compute `firebaseRenderer`
+- [x] If `firebaseRenderer === 'stage'`: call `resolveTheme()` and build render spec
+- [x] Write `renderer: firebaseRenderer` in graphicData object
+- [x] Server-side theme resolution works
 
 **Notes:**
 - Registry data needs to be accessible on server — either:
@@ -619,3 +619,14 @@ This avoids bundler complexity while keeping single source of truth.
 - **resolveTheme() takes null for db** — client-side version accepts `null` as first arg to use the default Firebase db instance
 - **graphicPayload pattern:** Built the payload object first, then conditionally added stage-specific fields. This keeps the code clean and avoids duplicate set() calls.
 - **clearGraphic() unchanged** — both stage.html and output.html clear on `graphic: 'clear'`, so no renderer field needed in clearGraphic()
+
+### Task 15 Learnings
+
+- **ES module JSON loading:** timesheetEngine.js uses ES modules, so loaded `stage/graphics-registry.json` via `readFileSync` + `JSON.parse` at module level (synchronous import pattern)
+- **Path resolution:** Used `fileURLToPath(import.meta.url)` pattern to get `__dirname` in ES modules — same pattern as `configLoader.js`
+- **Registry lookup:** Created `getGraphicById(graphicId)` helper that returns entry from `graphicsRegistry.graphics[graphicId]` — the JSON has a `graphics` object keyed by ID
+- **Graceful fallback:** If registry fails to load, logs warning and defaults all graphics to `'output'` renderer
+- **Stage engine payload:** For stage graphics, adds `skeleton`, `blocks`, and `theme` fields to graphicData object alongside `renderer: 'stage'`
+- **Block data from registry:** Uses `registryEntry.defaultData?.blocks` to get block data with default values, or falls back to `registryEntry.blocks?.map(type => ({ type, data: {} }))`
+- **meetTheme extraction:** The `meetTheme` is already part of the `data` object (extracted from `config.meetTheme` earlier in the function)
+- **Theme resolution error handling:** Wrapped in try/catch — if theme resolution fails, continues without theme (stage engine uses fallback colors)
