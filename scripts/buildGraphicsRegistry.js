@@ -23,6 +23,9 @@ const CATEGORIES_FILE = path.join(GRAPHICS_DIR, 'categories.json');
 const SKELETONS_DIR = path.join(PROJECT_ROOT, 'stage', 'skeletons');
 const BLOCKS_DIR = path.join(PROJECT_ROOT, 'stage', 'blocks');
 
+// Track validated blocks to avoid duplicate warnings
+const validatedBlocks = new Set();
+
 /**
  * Recursively find all JSON files in a directory, excluding categories.json
  */
@@ -75,6 +78,87 @@ function skeletonExists(skeletonName) {
 function blockExists(blockName) {
   const jsPath = path.join(BLOCKS_DIR, `${blockName}.js`);
   return fs.existsSync(jsPath);
+}
+
+/**
+ * Extract themeVars array from a block JS file using regex
+ * Returns array of variable names or empty array if not found
+ */
+function extractThemeVars(blockName) {
+  const jsPath = path.join(BLOCKS_DIR, `${blockName}.js`);
+  if (!fs.existsSync(jsPath)) return [];
+
+  try {
+    const content = fs.readFileSync(jsPath, 'utf8');
+    // Match themeVars: [...] pattern
+    const match = content.match(/themeVars\s*:\s*\[([\s\S]*?)\]/);
+    if (!match) return [];
+
+    // Extract quoted strings from the array
+    const arrayContent = match[1];
+    const varMatches = arrayContent.match(/'[^']+'/g) || arrayContent.match(/"[^"]+"/g) || [];
+    return varMatches.map(v => v.replace(/['"]/g, ''));
+  } catch (err) {
+    return [];
+  }
+}
+
+/**
+ * Extract --meet-* CSS variable references from a block CSS file
+ * Returns array of variable names used in var() calls
+ */
+function extractCssThemeVars(blockName) {
+  const cssPath = path.join(BLOCKS_DIR, `${blockName}.css`);
+  if (!fs.existsSync(cssPath)) return [];
+
+  try {
+    const content = fs.readFileSync(cssPath, 'utf8');
+    // Match var(--meet-*) patterns
+    const matches = content.match(/var\s*\(\s*--meet-[a-z-]+/g) || [];
+    // Extract just the variable names
+    const vars = matches.map(m => {
+      const varMatch = m.match(/--meet-[a-z-]+/);
+      return varMatch ? varMatch[0] : null;
+    }).filter(Boolean);
+    // Deduplicate
+    return [...new Set(vars)];
+  } catch (err) {
+    return [];
+  }
+}
+
+/**
+ * Validate themeVars for a block - compare declared vs used
+ * Returns array of warning messages (empty = no warnings)
+ */
+function validateBlockThemeVars(blockName) {
+  const warnings = [];
+
+  // Skip if already validated
+  if (validatedBlocks.has(blockName)) return [];
+  validatedBlocks.add(blockName);
+
+  // Skip _sample-block
+  if (blockName.startsWith('_')) return [];
+
+  const declaredVars = extractThemeVars(blockName);
+  const usedVars = extractCssThemeVars(blockName);
+
+  // Check for variables declared but not used in CSS
+  for (const varName of declaredVars) {
+    if (!usedVars.includes(varName)) {
+      warnings.push(`Block '${blockName}': themeVars declares '${varName}' but it's not used in ${blockName}.css`);
+    }
+  }
+
+  // Check for variables used in CSS but not declared
+  for (const varName of usedVars) {
+    if (!declaredVars.includes(varName)) {
+      warnings.push(`Block '${blockName}': CSS uses '${varName}' but it's not declared in themeVars`);
+    }
+  }
+
+  return warnings;
 }
 
 /**
@@ -229,7 +313,31 @@ function build() {
 
   console.log('All manifests valid.\n');
 
-  // Step 5: Summary output
+  // Step 5: Validate themeVars for stage blocks (warnings only)
+  console.log('Checking themeVars CSS consistency...');
+  const themeVarsWarnings = [];
+
+  for (const manifest of manifests) {
+    if (manifest.renderer === 'stage' && manifest.blocks) {
+      for (const blockName of manifest.blocks) {
+        const warnings = validateBlockThemeVars(blockName);
+        themeVarsWarnings.push(...warnings);
+      }
+    }
+  }
+
+  if (themeVarsWarnings.length > 0) {
+    console.log('\n=== THEME VARS WARNINGS ===\n');
+    for (const warning of themeVarsWarnings) {
+      console.log(`  WARNING: ${warning}`);
+    }
+    console.log(`\nTotal warnings: ${themeVarsWarnings.length}`);
+    console.log('Note: Warnings do not fail the build.\n');
+  } else {
+    console.log('All block themeVars consistent with CSS.\n');
+  }
+
+  // Step 6: Summary output
   console.log('Manifest summary:');
 
   // Count by renderer type
