@@ -134,6 +134,7 @@ export default function GraphicsControl({ competitionId }) {
   const [copied, setCopied] = useState(false);
   const [copiedTheme, setCopiedTheme] = useState(false);
   const [copiedClip, setCopiedClip] = useState(false);
+  const [copiedStage, setCopiedStage] = useState(false);
   const [summaryTheme, setSummaryTheme] = useState('default');
   const [liveAthletes, setLiveAthletes] = useState([]); // Athletes currently competing - now read from Firebase
   const [scoreBugPolling, setScoreBugPolling] = useState(false); // Whether scoreBug overlay is polling
@@ -670,6 +671,7 @@ export default function GraphicsControl({ competitionId }) {
 
   const themeOutputUrl = compId && config?.meetTheme ? `${OUTPUT_BASE_URL}?comp=${compId}&meetTheme=${config.meetTheme}` : '';
   const clipOutputUrl = compId ? `${OUTPUT_BASE_URL}?comp=${compId}&mode=clip${config?.meetTheme ? `&meetTheme=${config.meetTheme}` : ''}` : '';
+  const stageOutputUrl = compId ? `https://commentarygraphic.com/stage/stage.html?comp=${compId}` : '';
 
   const copyThemeUrl = () => {
     if (!themeOutputUrl) return;
@@ -683,6 +685,13 @@ export default function GraphicsControl({ competitionId }) {
     navigator.clipboard.writeText(clipOutputUrl);
     setCopiedClip(true);
     setTimeout(() => setCopiedClip(false), 2000);
+  };
+
+  const copyStageUrl = () => {
+    if (!stageOutputUrl) return;
+    navigator.clipboard.writeText(stageOutputUrl);
+    setCopiedStage(true);
+    setTimeout(() => setCopiedStage(false), 2000);
   };
 
   return (
@@ -761,6 +770,26 @@ export default function GraphicsControl({ competitionId }) {
               <>
                 <ClipboardDocumentIcon className="w-4 h-4" />
                 Copy Clip URL
+              </>
+            )}
+          </button>
+          <button
+            onClick={copyStageUrl}
+            className={`w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+              copiedStage
+                ? 'bg-green-600 text-white'
+                : 'bg-teal-700 hover:bg-teal-600 text-zinc-100'
+            }`}
+          >
+            {copiedStage ? (
+              <>
+                <CheckIcon className="w-4 h-4" />
+                Copied!
+              </>
+            ) : (
+              <>
+                <ClipboardDocumentIcon className="w-4 h-4" />
+                Copy Stage URL
               </>
             )}
           </button>

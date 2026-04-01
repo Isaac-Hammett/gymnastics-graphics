@@ -456,3 +456,192 @@ Use blue for scoring feed (distinct from green scoreBug):
 **Initial state emission:** Added after playout state emission (around line 4757)
 
 **Key check for duplicate wiring:** `service.listenerCount('started')` to avoid wiring events twice
+
+## Phase 4 Findings
+
+### Manifest Format — Three Renderer Types
+
+| Manifest `renderer` | Firebase `renderer` | Routed To |
+|---------------------|---------------------|-----------|
+| `"stage"` | `"stage"` | stage.html |
+| `"overlay"` | `"output"` | output.html (iframe to overlays/) |
+| `"output"` | `"output"` | output.html (internal render) |
+
+**Critical:** Manifest `"overlay"` maps to Firebase `"output"` — both legacy paths use the same Firebase value. The distinction is maintained by the `file` field in the manifest (present for overlay, absent for output.html graphics).
+
+### graphicsRegistry.js Current State
+
+- **66 graphics** across 8 categories
+- Only `"overlay"` and `"output"` renderer values exist today (no `"stage"` yet)
+- Helper functions: `getAllGraphics()`, `getGraphicById()`, `getCategories()`, `getCategoryGraphics()`
+- `perTeam` expansion at lines 1294-1309 — loop generates team1-*, team2-*, etc.
+- `filterGraphicsByCompetition(compId, graphics)` filters by `minTeams`/`maxTeams`
+
+### urlBuilder.js Current State
+
+- **21 switch cases** in `getGraphicUrl()` for URL generation
+- **14 builder functions** (e.g., `buildEventBarUrl()`, `buildSponsorsUrl()`)
+- Hardcoded URL patterns — will be replaced by manifest-driven `buildUrlFromManifest()`
+- Some graphics have special URL params (e.g., `sponsors-cycle` needs `cycleSpeed`, `lockedIndex`)
+
+### UrlGeneratorPage.jsx Sidebar
+
+- **Hardcoded `baseGraphicTitles`** object at lines 54-118
+- Sidebar renders from `Object.entries(baseGraphicTitles)`
+- Phase 4 replaces with dynamic sidebar from generated registry
+- Badge colors: teal for `"stage"`, gray for `"overlay"`/`"output"`
+
+### GraphicsControl.jsx — 7 Set Call Sites (Verified)
+
+| Line | Function | Renderer |
+|------|----------|----------|
+| 308 | `sendCustomGraphic` | `'output'` |
+| 467 | `sendGraphic` | Compute from registry |
+| 487 | `sendRotationSlate` | `'output'` |
+| 499 | `sendAutoRotationSlate` | `'output'` |
+| 558 | `sendEventSummary` | `'output'` |
+| 569 | `clearGraphic` | None (both engines clear on `graphic: 'clear'`) |
+| 591 | `sendNowCompeting` | `'output'` |
+
+6 already have `renderer` field. The registry-based computation in `sendGraphic()` will use `getGraphicById(graphicId).renderer`.
+
+### timesheetEngine.js — No Renderer Field Yet
+
+`_triggerGraphic()` and `_writeCurrentGraphic()` do NOT include `renderer` field. Phase 4 adds:
+```javascript
+const firebaseRenderer = manifest?.renderer === 'overlay' ? 'output' : (manifest?.renderer || 'output');
+graphicData.renderer = firebaseRenderer;
+```
+
+### stage/ Directory Structure
+
+```
+stage/
+├── skeletons/
+│   └── full-screen-card.html
+├── blocks/
+│   ├── header-bar.js
+│   ├── leaderboard-table.js
+│   └── athlete-grid.js
+├── graphics/           # NEW (manifests go here)
+│   ├── stage-engine/   # Stage engine graphics
+│   └── legacy/         # Legacy overlay/output manifests
+└── stage.html
+```
+
+### categories.json Structure
+
+```json
+{
+  "full-screen-cards": { "label": "Full-Screen Cards", "order": 1, "subcategories": {...} },
+  "lower-thirds": { "label": "Lower-Thirds", "order": 2, "subcategories": {...} },
+  "full-bleed": { "label": "Full-Bleed", "order": 3, "subcategories": {...} },
+  "video-frames": { "label": "Video Frames", "order": 4, "subcategories": {...} },
+  "standalone": { "label": "Standalone", "order": 5, "subcategories": {} },
+  "event-summary": { "label": "Event Summary", "order": 6, "subcategories": {...} }
+}
+```
+
+### Build Script Output
+
+Generated registry JSON at `stage/graphics-registry.json`:
+- Imported by show-controller build
+- Imported by server for timesheet
+- Contains all manifest data + computed fields (e.g., expanded perTeam variants)
+
+### resolveTheme() Helper Locations
+
+| Location | API |
+|----------|-----|
+| `show-controller/src/lib/themeResolver.js` | `import { get, ref } from 'firebase/database'` |
+| `server/lib/themeResolver.js` | `db.ref().once('value')` (Admin SDK) |
+
+Both implementations share the same v3.0→v2.0 field mapping and per-graphic override application logic.
+
+### Sidebar Badge Colors
+
+| Renderer | Color | Rationale |
+|----------|-------|-----------|
+| `stage` | Teal (`bg-teal-500/20 text-teal-400 border-teal-500/30`) | New, modern — stands out |
+| `overlay` | Gray (`bg-zinc-700 text-zinc-400`) | Legacy, neutral |
+| `output` | Gray (`bg-zinc-700 text-zinc-400`) | Legacy, neutral |
+
+As graphics migrate stage→overlay/output, sidebar becomes progressively more teal.
+
+### Preview Indicator Pattern
+
+Below iframe preview:
+```
+Rendering via stage.html       [teal text]
+https://commentarygraphic.com/stage/stage.html?...
+```
+or
+```
+Rendering via overlays/event-bar.html   [gray text]
+https://commentarygraphic.com/overlays/event-bar.html?...
+```
+
+### themeVars Validation (Build Script)
+
+Each block declares `themeVars: ['--meet-header-bg', '--meet-content-bg', ...]`. The build script:
+1. Reads block CSS file
+2. Extracts all `--meet-*` variable references
+3. Compares against declared `themeVars`
+4. Emits WARNING (not error) for undeclared variables
+
+This is a warning-only check because:
+- Some variables come from theme-overrides.css cascade
+- Missing declaration isn't fatal, just a documentation gap
+
+### Legacy Overlay Count
+
+**30 overlay HTML files** need manifests in `stage/graphics/legacy/`:
+- lower-thirds: 9 (event-bar, warm-up, replay, hosts, coaches, team-stats, etc.)
+- video-frames: 8 (event-frame, frame-quad, frame-tri-*, etc.)
+- full-bleed: 5 (rotation-slate, stream, interview-card, etc.)
+- sponsors: 3 (sponsors-thanks, sponsors-cycle, sponsors-bug)
+- standalone: 4 (logos, event-calendar, team-bug, clip-player)
+- full-screen-cards: 1 (team-roster)
+
+### Legacy Output Count
+
+**~25 output.html graphics** need manifests (including variants):
+- leaderboards: 9 (VT, FX, PH, SR, PB, HB, UB, BB, AA)
+- combined-aa-leaderboard: 1
+- event-summary: ~12 (R1-R6 + per-apparatus variants)
+- now-competing: 1
+- Additional variants based on gender/format
+
+### npm Script Integration
+
+```json
+{
+  "scripts": {
+    "build:registry": "node scripts/buildGraphicsRegistry.js",
+    "prebuild": "npm run build:registry"
+  }
+}
+```
+
+Ensures registry is always regenerated before main build.
+
+### Server Import Pattern
+
+```javascript
+// server/index.js or server/lib/timesheetEngine.js
+const graphicsRegistry = require('../../stage/graphics-registry.json');
+
+function getManifestById(graphicId) {
+  return graphicsRegistry.graphics.find(g => g.id === graphicId);
+}
+```
+
+### Dependency Order (Critical)
+
+1. **categories.json** — must exist before build script runs
+2. **Manifests** — must exist before build script runs
+3. **Build script** — generates registry from manifests
+4. **Generated registry** — must exist before show-controller build
+5. **UI updates** — depend on generated registry being importable
+
+Never skip steps. Build failures cascade.
