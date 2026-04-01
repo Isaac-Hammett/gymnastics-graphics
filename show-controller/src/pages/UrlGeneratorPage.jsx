@@ -978,6 +978,35 @@ export default function UrlGeneratorPage() {
           </button>
         </div>
 
+        {/* Renderer indicator */}
+        {(() => {
+          const registryEntry = GRAPHICS[currentGraphic];
+          const renderer = registryEntry?.renderer || 'output';
+          const file = registryEntry?.file;
+          const isStage = renderer === 'stage';
+          const rendererLabel = isStage
+            ? 'stage.html'
+            : renderer === 'overlay' && file
+              ? `overlays/${file}`
+              : 'output.html';
+          return (
+            <div className="px-4 py-2 border-b border-zinc-800 bg-zinc-950">
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-zinc-500">Rendering via</span>
+                <span className={`text-xs font-medium ${isStage ? 'text-teal-400' : 'text-zinc-400'}`}>
+                  {rendererLabel}
+                </span>
+              </div>
+              <div
+                className="text-[10px] text-zinc-600 mt-1 truncate max-w-full"
+                title={currentUrl}
+              >
+                {currentUrl}
+              </div>
+            </div>
+          );
+        })()}
+
         <div className="flex-1 flex items-center justify-center bg-zinc-950 p-4 min-w-0 min-h-0">
           <div
             ref={previewContainerRef}

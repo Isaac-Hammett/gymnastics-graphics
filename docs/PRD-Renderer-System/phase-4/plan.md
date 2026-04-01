@@ -354,14 +354,14 @@ Phase 4 connects the stage engine (built in Phases 1-3) to all producer tools. T
 
 ---
 
-### Task 20: Add preview iframe renderer indicator — NOT STARTED
+### Task 20: Add preview iframe renderer indicator — COMPLETE
 **Files:** `show-controller/src/pages/UrlGeneratorPage.jsx`
 **Resolves:** PRD lines 1009-1015, Phase 4 doc Task 9
 **Verify:**
-- [ ] Above preview iframe: label showing "Rendering via stage.html" / "overlays/{file}.html" / "output.html"
-- [ ] Label text color: teal for stage, gray for others
-- [ ] Full URL displayed below label (truncated with tooltip if long)
-- [ ] Updates when graphic selection changes
+- [x] Above preview iframe: label showing "Rendering via stage.html" / "overlays/{file}.html" / "output.html"
+- [x] Label text color: teal for stage, gray for others
+- [x] Full URL displayed below label (truncated with tooltip if long)
+- [x] Updates when graphic selection changes
 
 **Notes:**
 - Insert above the preview container (around line 823)
@@ -671,3 +671,14 @@ This avoids bundler complexity while keeping single source of truth.
 - **Badge color matches URL Generator:** Teal (`bg-teal-500/20 text-teal-400`) for stage, gray (`bg-zinc-600 text-zinc-400`) for overlay/output
 - **No shared component extracted** — inline badge implementation is simple enough; extracting a shared RendererBadge component would be overkill for 2 usages
 - **Local verification limited:** Producer view requires auth, so verification was done via build pass + code review. Visual testing would require valid Firebase auth credentials
+
+### Task 20 Learnings
+
+- **Renderer indicator added above preview iframe** — displays "Rendering via {renderer}" with the full URL below
+- **IIFE pattern for inline computation:** Used `{(() => { ... return JSX; })()}` to compute renderer label inline without adding state or useMemo
+- **Three renderer label patterns:**
+  - `stage` → "stage.html" (teal color)
+  - `overlay` → "overlays/{file}" (gray color) — uses manifest's `file` field
+  - `output` (or missing) → "output.html" (gray color)
+- **URL truncation with tooltip:** Used `truncate max-w-full` + `title={currentUrl}` for hover tooltip on long URLs
+- **Local verification limited:** URL Generator requires auth, so verification done via build pass + code review
