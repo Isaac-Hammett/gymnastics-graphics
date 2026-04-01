@@ -19,7 +19,19 @@ window.BlockAthleteGrid = {
       { name: 'Grace Anderson' },
       { name: 'Hannah Martinez' },
       { name: 'Isabella Thompson' },
-      { name: 'Julia Garcia' }
+      { name: 'Julia Garcia' },
+      { name: 'Katherine Lee' },
+      { name: 'Lauren Wilson' },
+      { name: 'Madison Taylor' },
+      { name: 'Natalie Moore' },
+      { name: 'Olivia Jackson' },
+      { name: 'Paige White' },
+      { name: 'Quinn Harris' },
+      { name: 'Rachel Clark' },
+      { name: 'Samantha Lewis' },
+      { name: 'Taylor Robinson' },
+      { name: 'Uma Walker' },
+      { name: 'Victoria Hall' }
     ]
   },
 
