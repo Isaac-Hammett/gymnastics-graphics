@@ -132,7 +132,7 @@ Add Firebase listener for `scoringFeed` config changes to restart polling with n
 
 ---
 
-### Task 5: Implement auto-stop triggers — NOT STARTED
+### Task 5: Implement auto-stop triggers — COMPLETE
 
 **Files:** `server/lib/scoringIngestionService.js`
 
@@ -388,3 +388,7 @@ Test the complete data flow from Virtius API to Firebase to renderer blocks.
 - Config listener handles: `pollInterval` changes (restarts loop), `enabled: false` (stops service), `forceRefresh` timestamp (immediate poll)
 - `_configListenerRef` and `_configListenerCallback` stored for proper cleanup in `stop()`
 - "Setting `enabled: true` resumes polling" requires Task 6 integration — the coordinator needs to detect the config change and call `start()` on a stopped service
+- Task 5 adds auto-stop with 3 triggers: (1) competition status listener for "completed"/"archived", (2) meet status check in `_poll()` for "completed"/"finished", (3) producer timeout (30 min) with 60s check interval
+- `_autoStop(reason)` calls `stop()` first, then writes `enabled: false`, `status: 'stopped'`, `errorMessage: 'Auto-stopped: {reason}'` to Firebase, then emits `'autoStopped'` event
+- `_cleanupAutoStop()` removes the competition status listener and clears the producer timeout timer — called from `stop()` to prevent leaks
+- Constants: `PRODUCER_TIMEOUT_MS = 30 * 60 * 1000`, `PRODUCER_TIMEOUT_CHECK_INTERVAL_MS = 60 * 1000`
