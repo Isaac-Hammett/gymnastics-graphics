@@ -803,19 +803,30 @@ export default function GraphicsControl({ competitionId }) {
               <div key={section} className="mb-4">
                 <div className="text-xs text-zinc-500 uppercase mb-2">{section}</div>
                 <div className="grid grid-cols-3 gap-1.5">
-                  {sectionButtons.map((btn) => (
-                    <button
-                      key={btn.id}
-                      onClick={() => sendGraphic(btn.id, btn.title, btn.leaderboardEvent)}
-                      className={`px-2 py-2 rounded text-xs font-medium transition-colors ${
-                        currentGraphicId === btn.id
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-zinc-700 hover:bg-zinc-600 text-zinc-300'
-                      }`}
-                    >
-                      {btn.label}
-                    </button>
-                  ))}
+                  {sectionButtons.map((btn) => {
+                    const isActive = currentGraphicId === btn.id;
+                    const badgeClasses = btn.renderer === 'stage'
+                      ? 'bg-teal-500/20 text-teal-400'
+                      : 'bg-zinc-600 text-zinc-400';
+                    return (
+                      <button
+                        key={btn.id}
+                        onClick={() => sendGraphic(btn.id, btn.title, btn.leaderboardEvent)}
+                        className={`px-2 py-2 rounded text-xs font-medium transition-colors flex items-center gap-1 ${
+                          isActive
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-zinc-700 hover:bg-zinc-600 text-zinc-300'
+                        }`}
+                      >
+                        <span className="flex-1 truncate text-left">{btn.label}</span>
+                        {btn.renderer && (
+                          <span className={`text-[8px] px-1 py-0.5 rounded shrink-0 ${badgeClasses} ${isActive ? 'opacity-80' : ''}`}>
+                            {btn.renderer === 'stage' ? 'stg' : btn.renderer === 'overlay' ? 'ovl' : 'out'}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
                 {/* Rotation Slate buttons - shown after In-Meet section */}
                 {section === 'In-Meet' && (
