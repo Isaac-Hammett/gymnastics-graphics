@@ -276,7 +276,7 @@ Add the scoring feed panel to the producer sidebar.
 
 ---
 
-### Task 10: Create ScoringFeedBadge component — NOT STARTED
+### Task 10: Create ScoringFeedBadge component — COMPLETE
 
 **Files:** `show-controller/src/components/ScoringFeedBadge.jsx` (new)
 
@@ -405,3 +405,4 @@ Test the complete data flow from Virtius API to Firebase to renderer blocks.
 - TimeAgo component reuses the HeartbeatIndicator pattern from ScoreBugPanel but simplified for scoring feed
 - Blue color scheme (text-blue-400, bg-blue-500/*, border-blue-500/*) distinguishes scoring feed from green score bug
 - Task 9: Integration is straightforward — import + render with `compId={compId} collapsed={true}` props. Panel hides itself when no virtiusSessionId configured.
+- Task 10: ScoringFeedBadge follows inline badge pattern from CommentaryStatusBadge — uses Firebase listener for virtiusSessionId visibility, useScoringFeed hook for state/actions, and includes confirm dialog before disabling. Green pulsing dot for LIVE state uses Tailwind animate-ping.
