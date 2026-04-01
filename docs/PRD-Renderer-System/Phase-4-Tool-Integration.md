@@ -562,7 +562,7 @@ Phase 4 is complete when:
 - [ ] URL Generator builds overlay/output.html URLs from manifest `params` schema (no per-graphic switch cases)
 - [ ] URL Generator sidebar populated from `categories.json` ordering + manifest `category`/`subcategory` — no hand-maintained titles list
 - [ ] Sidebar categories appear in the order defined by `categories.json` `order` field
-- [ ] Copyable stage.html URL appears in Web Graphics Panel
+- [x] Copyable stage.html URL appears in Web Graphics Panel — **DONE 2026-04-01** (Task 21)
 
 **Rundown & Theme:**
 - [ ] Rundown system includes `renderer` field and resolved theme when triggering stage engine graphics

@@ -370,14 +370,14 @@ Phase 4 connects the stage engine (built in Phases 1-3) to all producer tools. T
 
 ---
 
-### Task 21: Add copyable stage.html URL to Web Graphics Panel — NOT STARTED
+### Task 21: Add copyable stage.html URL to Web Graphics Panel — COMPLETE
 **Files:** `show-controller/src/components/GraphicsControl.jsx`
 **Resolves:** PRD lines 178-183, Phase 4 doc Task 5
 **Verify:**
-- [ ] "Copy Stage URL" button appears in header
-- [ ] Copies: `https://commentarygraphic.com/stage/stage.html?comp={compId}`
-- [ ] Visual feedback on copy (checkmark or tooltip)
-- [ ] Existing output.html copy buttons unchanged
+- [x] "Copy Stage URL" button appears in header
+- [x] Copies: `https://commentarygraphic.com/stage/stage.html?comp={compId}`
+- [x] Visual feedback on copy (checkmark or tooltip)
+- [x] Existing output.html copy buttons unchanged
 
 **Notes:**
 - Add alongside existing copy buttons
@@ -682,3 +682,12 @@ This avoids bundler complexity while keeping single source of truth.
   - `output` (or missing) → "output.html" (gray color)
 - **URL truncation with tooltip:** Used `truncate max-w-full` + `title={currentUrl}` for hover tooltip on long URLs
 - **Local verification limited:** URL Generator requires auth, so verification done via build pass + code review
+
+### Task 21 Learnings
+
+- **Copy Stage URL button added to GraphicsControl.jsx** — follows existing pattern for Copy Output/Theme/Clip URL buttons
+- **Teal color for stage button:** Uses `bg-teal-700 hover:bg-teal-600` to visually match stage renderer badges
+- **URL format:** `https://commentarygraphic.com/stage/stage.html?comp={compId}` — hardcoded domain (not using OUTPUT_BASE_URL since that's for output.html)
+- **4 copy buttons now:** Output URL, Theme URL (conditional on meetTheme), Clip URL, Stage URL — all with consistent styling pattern
+- **No visual separator needed:** The teal color naturally distinguishes the Stage URL button from the others (cyan for Clip, purple for Theme, zinc for Output)
+- **Local verification limited:** Producer View requires auth, so verification done via build pass + code review
