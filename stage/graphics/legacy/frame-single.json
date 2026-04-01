@@ -1,0 +1,17 @@
+{
+  "id": "frame-single",
+  "label": "Single",
+  "category": "video-frames",
+  "subcategory": "camera-layouts",
+  "renderer": "overlay",
+  "file": "frame-single.html",
+  "transparent": true,
+  "gender": "both",
+  "minTeams": 1,
+  "maxTeams": 7,
+  "keywords": ["single", "one", "1", "frame", "overlay", "camera"],
+  "params": {
+    "team1Logo": { "type": "string", "source": "competition" },
+    "meetTheme": { "type": "string", "source": "theme" }
+  }
+}

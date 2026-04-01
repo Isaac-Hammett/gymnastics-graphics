@@ -1,0 +1,19 @@
+{
+  "id": "team-coaches",
+  "label": "Team Coaches",
+  "labelTemplate": "{teamName} Coaches",
+  "category": "lower-thirds",
+  "subcategory": "team-stats",
+  "renderer": "overlay",
+  "file": "coaches.html",
+  "transparent": true,
+  "gender": "both",
+  "perTeam": true,
+  "keywords": ["coach", "coaches", "staff", "head coach", "assistant", "lower-third"],
+  "params": {
+    "teamSlot": { "type": "number", "required": true },
+    "logo": { "type": "string", "source": "competition", "required": true },
+    "coaches": { "type": "string", "source": "competition" },
+    "meetTheme": { "type": "string", "source": "theme" }
+  }
+}

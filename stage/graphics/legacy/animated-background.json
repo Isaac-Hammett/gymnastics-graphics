@@ -1,0 +1,14 @@
+{
+  "id": "animated-background",
+  "label": "Animated Background",
+  "category": "standalone",
+  "renderer": "overlay",
+  "file": "animated-background.html",
+  "transparent": false,
+  "gender": "both",
+  "keywords": ["animated", "background", "motion", "effects"],
+  "params": {
+    "style": { "type": "enum", "options": ["gradient", "particles", "waves"], "default": "gradient" },
+    "meetTheme": { "type": "string", "source": "theme" }
+  }
+}

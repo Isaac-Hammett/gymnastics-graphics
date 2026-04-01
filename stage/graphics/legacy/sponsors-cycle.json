@@ -1,0 +1,18 @@
+{
+  "id": "sponsors-cycle",
+  "label": "Sponsor Cycle",
+  "category": "full-bleed",
+  "subcategory": "sponsors",
+  "renderer": "overlay",
+  "file": "sponsors-cycle.html",
+  "transparent": false,
+  "gender": "both",
+  "keywords": ["sponsor", "sponsors", "cycle", "rotate", "cycling"],
+  "params": {
+    "logo": { "type": "string", "source": "competition" },
+    "sponsors": { "type": "string", "source": "computed" },
+    "cycleSpeed": { "type": "number", "default": 5000 },
+    "lockedIndex": { "type": "number", "default": -1 },
+    "meetTheme": { "type": "string", "source": "theme" }
+  }
+}

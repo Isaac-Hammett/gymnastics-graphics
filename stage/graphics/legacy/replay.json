@@ -1,0 +1,15 @@
+{
+  "id": "replay",
+  "label": "Replay",
+  "category": "lower-thirds",
+  "subcategory": "event-info",
+  "renderer": "overlay",
+  "file": "replay.html",
+  "transparent": true,
+  "gender": "both",
+  "keywords": ["replay", "instant", "instant replay", "review", "lower-third"],
+  "params": {
+    "team1Logo": { "type": "string", "source": "competition", "required": true },
+    "meetTheme": { "type": "string", "source": "theme" }
+  }
+}

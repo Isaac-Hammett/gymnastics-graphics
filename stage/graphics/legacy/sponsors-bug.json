@@ -1,0 +1,15 @@
+{
+  "id": "sponsors-bug",
+  "label": "Sponsor Bug",
+  "category": "full-bleed",
+  "subcategory": "sponsors",
+  "renderer": "overlay",
+  "file": "sponsors-bug.html",
+  "transparent": true,
+  "gender": "both",
+  "keywords": ["sponsor", "bug", "persistent", "corner", "watermark"],
+  "params": {
+    "sponsors": { "type": "string", "source": "computed" },
+    "meetTheme": { "type": "string", "source": "theme" }
+  }
+}

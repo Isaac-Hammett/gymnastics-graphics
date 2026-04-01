@@ -1,0 +1,16 @@
+{
+  "id": "event-frame",
+  "label": "Event Frame",
+  "category": "video-frames",
+  "subcategory": "apparatus",
+  "renderer": "overlay",
+  "file": "event-frame.html",
+  "transparent": true,
+  "gender": "both",
+  "keywords": ["event", "frame", "apparatus", "title", "floor", "vault", "beam", "bars", "pommel", "rings"],
+  "params": {
+    "title": { "type": "string", "default": "FLOOR EXERCISE" },
+    "logo": { "type": "string", "source": "competition" },
+    "meetTheme": { "type": "string", "source": "theme" }
+  }
+}

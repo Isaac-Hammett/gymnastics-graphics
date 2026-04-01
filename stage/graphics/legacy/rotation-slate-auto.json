@@ -1,0 +1,15 @@
+{
+  "id": "rotation-slate-auto",
+  "label": "Rotation Slate (Auto)",
+  "category": "full-bleed",
+  "subcategory": "slates",
+  "renderer": "overlay",
+  "file": "rotation-slate-auto.html",
+  "transparent": false,
+  "gender": "both",
+  "keywords": ["rotation", "slate", "auto", "live", "current"],
+  "params": {
+    "compId": { "type": "string", "source": "competition", "required": true },
+    "meetTheme": { "type": "string", "source": "theme" }
+  }
+}

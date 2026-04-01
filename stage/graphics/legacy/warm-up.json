@@ -1,0 +1,16 @@
+{
+  "id": "warm-up",
+  "label": "Warm Up",
+  "category": "lower-thirds",
+  "subcategory": "event-info",
+  "renderer": "overlay",
+  "file": "warm-up.html",
+  "transparent": true,
+  "gender": "both",
+  "keywords": ["warm", "warmup", "warm-up", "practice", "lower-third"],
+  "params": {
+    "team1Logo": { "type": "string", "source": "competition", "required": true },
+    "venue": { "type": "string", "source": "competition" },
+    "meetTheme": { "type": "string", "source": "theme" }
+  }
+}

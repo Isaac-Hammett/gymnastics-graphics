@@ -1,0 +1,18 @@
+{
+  "id": "frame-team-header",
+  "label": "Team Header Dual",
+  "category": "video-frames",
+  "subcategory": "camera-layouts",
+  "renderer": "overlay",
+  "file": "frame-team-header.html",
+  "transparent": true,
+  "gender": "both",
+  "minTeams": 2,
+  "maxTeams": 7,
+  "keywords": ["dual", "two", "2", "header", "team", "frame", "overlay", "camera"],
+  "params": {
+    "team1Logo": { "type": "string", "source": "competition" },
+    "team2Logo": { "type": "string", "source": "competition" },
+    "meetTheme": { "type": "string", "source": "theme" }
+  }
+}

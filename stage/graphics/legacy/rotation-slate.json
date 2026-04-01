@@ -1,0 +1,18 @@
+{
+  "id": "rotation-slate",
+  "label": "Rotation Slate",
+  "category": "full-bleed",
+  "subcategory": "slates",
+  "renderer": "overlay",
+  "file": "rotation-slate.html",
+  "transparent": false,
+  "gender": "both",
+  "keywords": ["rotation", "slate", "intro", "title", "round", "start"],
+  "params": {
+    "logo": { "type": "string", "source": "competition" },
+    "meetName": { "type": "string", "source": "competition" },
+    "rotation": { "type": "enum", "options": ["1", "2", "3", "4", "5", "6", "7"], "default": "1", "required": true },
+    "layout": { "type": "enum", "options": ["classic", "centered", "minimal", "banner", "jumbo", "hero", "split", "bold", "watermark", "frame", "stacked", "cinema", "corner", "wide", "side", "stripe", "overlap"], "default": "classic" },
+    "meetTheme": { "type": "string", "source": "theme" }
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "id": "event-calendar",
+  "label": "Event Calendar",
+  "category": "standalone",
+  "renderer": "overlay",
+  "file": "event-calendar.html",
+  "transparent": false,
+  "gender": "both",
+  "keywords": ["event", "events", "calendar", "schedule", "dates", "upcoming", "promo", "future", "season"],
+  "params": {
+    "logo": { "type": "string", "source": "competition" },
+    "title": { "type": "string", "default": "Event Calendar" },
+    "events": { "type": "string", "required": true },
+    "columns": { "type": "enum", "options": ["auto", "1", "2"], "default": "auto" },
+    "meetTheme": { "type": "string", "source": "theme" }
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "id": "team-stats",
+  "label": "Team Stats",
+  "labelTemplate": "{teamName} Stats",
+  "category": "lower-thirds",
+  "subcategory": "team-stats",
+  "renderer": "overlay",
+  "file": "team-stats.html",
+  "transparent": true,
+  "gender": "both",
+  "perTeam": true,
+  "keywords": ["stats", "statistics", "average", "high", "score", "team", "nqs", "lower-third"],
+  "params": {
+    "teamSlot": { "type": "number", "required": true },
+    "teamName": { "type": "string", "source": "competition", "required": true },
+    "logo": { "type": "string", "source": "competition", "required": true },
+    "statType": { "type": "enum", "options": ["avg", "nqs", "high"], "default": "avg" },
+    "statLabel": { "type": "string", "default": "AVG" },
+    "statValue": { "type": "string" },
+    "high": { "type": "string" },
+    "meetTheme": { "type": "string", "source": "theme" }
+  }
+}

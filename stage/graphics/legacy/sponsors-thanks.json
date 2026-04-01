@@ -1,0 +1,16 @@
+{
+  "id": "sponsors-thanks",
+  "label": "Sponsor Thank You",
+  "category": "full-bleed",
+  "subcategory": "sponsors",
+  "renderer": "overlay",
+  "file": "sponsors-thanks.html",
+  "transparent": false,
+  "gender": "both",
+  "keywords": ["sponsor", "sponsors", "partner", "partners", "thank you"],
+  "params": {
+    "logo": { "type": "string", "source": "competition" },
+    "sponsors": { "type": "string", "source": "computed" },
+    "meetTheme": { "type": "string", "source": "theme" }
+  }
+}

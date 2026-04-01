@@ -1,0 +1,14 @@
+{
+  "id": "clip-player",
+  "label": "Clip Player",
+  "category": "standalone",
+  "renderer": "overlay",
+  "file": "clip-player.html",
+  "transparent": false,
+  "gender": "both",
+  "keywords": ["clip", "player", "video", "playback"],
+  "params": {
+    "clipUrl": { "type": "string", "required": true },
+    "autoplay": { "type": "boolean", "default": true }
+  }
+}

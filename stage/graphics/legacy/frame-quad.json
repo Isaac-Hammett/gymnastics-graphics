@@ -1,0 +1,20 @@
+{
+  "id": "frame-quad",
+  "label": "Quad View",
+  "category": "video-frames",
+  "subcategory": "camera-layouts",
+  "renderer": "overlay",
+  "file": "frame-quad.html",
+  "transparent": true,
+  "gender": "both",
+  "minTeams": 4,
+  "maxTeams": 7,
+  "keywords": ["quad", "four", "4", "frame", "overlay", "camera"],
+  "params": {
+    "team1Logo": { "type": "string", "source": "competition" },
+    "team2Logo": { "type": "string", "source": "competition" },
+    "team3Logo": { "type": "string", "source": "competition" },
+    "team4Logo": { "type": "string", "source": "competition" },
+    "meetTheme": { "type": "string", "source": "theme" }
+  }
+}

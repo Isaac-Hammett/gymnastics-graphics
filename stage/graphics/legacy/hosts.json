@@ -1,0 +1,15 @@
+{
+  "id": "hosts",
+  "label": "Hosts",
+  "category": "lower-thirds",
+  "subcategory": "spotlight",
+  "renderer": "overlay",
+  "file": "hosts.html",
+  "transparent": true,
+  "gender": "both",
+  "keywords": ["host", "hosts", "commentator", "commentators", "announcer", "announcers", "lower-third"],
+  "params": {
+    "hosts": { "type": "string", "required": true },
+    "meetTheme": { "type": "string", "source": "theme" }
+  }
+}
