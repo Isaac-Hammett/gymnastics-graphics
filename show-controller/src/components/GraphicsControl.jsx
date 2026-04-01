@@ -851,7 +851,7 @@ export default function GraphicsControl({ competitionId }) {
               const isActive = currentGraphicId === btn.id;
               const badgeClasses = btn.renderer === 'stage'
                 ? 'bg-teal-500/20 text-teal-400'
-                : 'bg-zinc-600 text-zinc-400';
+                : 'bg-zinc-700 text-zinc-400';
               return (
                 <button
                   key={btn.id}
@@ -865,7 +865,7 @@ export default function GraphicsControl({ competitionId }) {
                   <span className="flex-1 truncate text-left">{btn.label}</span>
                   {btn.renderer && (
                     <span className={`text-[8px] px-1 py-0.5 rounded shrink-0 ${badgeClasses} ${isActive ? 'opacity-80' : ''}`}>
-                      {btn.renderer === 'stage' ? 'stg' : btn.renderer === 'overlay' ? 'ovl' : 'out'}
+                      {btn.renderer}
                     </span>
                   )}
                 </button>
