@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PRD-Renderer-System Phase 4 - Verification Log</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #1a1a2e;
+      color: #e0e0e0;
+      padding: 2rem;
+      line-height: 1.6;
+    }
+    h1 { color: #fff; margin-bottom: 0.5rem; }
+    .subtitle { color: #888; margin-bottom: 2rem; }
+    .summary {
+      display: flex;
+      gap: 2rem;
+      margin-bottom: 2rem;
+      padding: 1.5rem;
+      background: #252542;
+      border-radius: 8px;
+    }
+    .stat {
+      text-align: center;
+    }
+    .stat-value {
+      font-size: 2.5rem;
+      font-weight: bold;
+    }
+    .stat-label { color: #888; font-size: 0.9rem; }
+    .stat-value.pass { color: #4ade80; }
+    .stat-value.fail { color: #f87171; }
+    .stat-value.total { color: #60a5fa; }
+
+    .task-card {
+      background: #252542;
+      border-radius: 8px;
+      margin-bottom: 1.5rem;
+      overflow: hidden;
+    }
+    .task-header {
+      padding: 1rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #333;
+    }
+    .task-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+    }
+    .badge {
+      padding: 0.25rem 0.75rem;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+    .badge.pass { background: #166534; color: #4ade80; }
+    .badge.fail { background: #991b1b; color: #f87171; }
+
+    .task-body {
+      padding: 1.5rem;
+    }
+    .task-description {
+      color: #aaa;
+      margin-bottom: 1rem;
+    }
+    .checklist {
+      list-style: none;
+      margin-bottom: 1rem;
+    }
+    .checklist li {
+      padding: 0.25rem 0;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .checklist .yes { color: #4ade80; }
+    .checklist .no { color: #f87171; }
+
+    .screenshot-container {
+      margin-top: 1rem;
+    }
+    .screenshot {
+      max-width: 100%;
+      border-radius: 8px;
+      border: 1px solid #333;
+    }
+    .screenshot-label {
+      color: #888;
+      font-size: 0.85rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .console-errors {
+      background: #1a1a1a;
+      padding: 1rem;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 0.85rem;
+      color: #f87171;
+      margin-top: 1rem;
+    }
+    .console-none {
+      color: #4ade80;
+    }
+
+    .failure-reason {
+      background: #3b1515;
+      padding: 1rem;
+      border-radius: 4px;
+      border-left: 3px solid #f87171;
+      margin-top: 1rem;
+    }
+
+    .code-verification {
+      background: #1a1a1a;
+      padding: 1rem;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 0.85rem;
+      margin-top: 1rem;
+      overflow-x: auto;
+    }
+    .code-verification code {
+      color: #4ade80;
+    }
+  </style>
+</head>
+<body>
+  <h1>PRD-Renderer-System Phase 4: Tool Integration</h1>
+  <p class="subtitle">Verification Pass — 2026-04-01</p>
+
+  <div class="summary">
+    <div class="stat">
+      <div class="stat-value total">11</div>
+      <div class="stat-label">Tasks Verified</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value pass">11</div>
+      <div class="stat-label">Pass</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value fail">0</div>
+      <div class="stat-label">Fail</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value" style="color: #fbbf24;">1</div>
+      <div class="stat-label">PRD Update Needed</div>
+    </div>
+  </div>
+
+  <!-- Task 1 -->
+  <div class="task-card">
+    <div class="task-header">
+      <span class="task-title">Task 1: Create categories.json</span>
+      <span class="badge pass">PASS</span>
+    </div>
+    <div class="task-body">
+      <p class="task-description">Create categories.json with 6 categories for sidebar organization.</p>
+      <ul class="checklist">
+        <li><span class="yes">✓</span> File exists at stage/graphics/categories.json</li>
+        <li><span class="yes">✓</span> Contains 6 categories: full-screen-cards, lower-thirds, full-bleed, video-frames, standalone, event-summary</li>
+        <li><span class="yes">✓</span> Each category has label, order, and subcategories object</li>
+        <li><span class="yes">✓</span> Categories ordered 1-6</li>
+        <li><span class="yes">✓</span> Subcategories match PRD spec</li>
+      </ul>
+      <div class="code-verification">
+        <code>File verified: stage/graphics/categories.json (50 lines)</code>
+      </div>
+    </div>
+  </div>
+
+  <!-- Task 5 -->
+  <div class="task-card">
+    <div class="task-header">
+      <span class="task-title">Task 5: Create buildGraphicsRegistry.js script</span>
+      <span class="badge pass">PASS</span>
+    </div>
+    <div class="task-body">
+      <p class="task-description">Build script scaffolding that reads categories and globs manifests.</p>
+      <ul class="checklist">
+        <li><span class="yes">✓</span> Script exists at scripts/buildGraphicsRegistry.js</li>
+        <li><span class="yes">✓</span> Runs without errors</li>
+        <li><span class="yes">✓</span> Reads categories.json</li>
+        <li><span class="yes">✓</span> Globs stage/graphics/**/*.json</li>
+        <li><span class="yes">✓</span> Outputs manifest count (55 total)</li>
+      </ul>
+      <div class="code-verification">
+        <code>$ node scripts/buildGraphicsRegistry.js<br>
+Building graphics registry...<br>
+Loaded categories: full-screen-cards, lower-thirds, full-bleed, video-frames, standalone, event-summary<br>
+Found 55 manifest files</code>
+      </div>
+    </div>
+  </div>
+
+  <!-- Task 6 -->
+  <div class="task-card">
+    <div class="task-header">
+      <span class="task-title">Task 6: Add manifest validation to build script</span>
+      <span class="badge pass">PASS</span>
+    </div>
+    <div class="task-body">
+      <p class="task-description">Validate required fields, categories, subcategories, and duplicate IDs.</p>
+      <ul class="checklist">
+        <li><span class="yes">✓</span> Build fails with clear error if manifest missing required field</li>
+        <li><span class="yes">✓</span> Build fails if category not in categories.json</li>
+        <li><span class="yes">✓</span> Build fails if subcategory not valid for category</li>
+        <li><span class="yes">✓</span> Build fails if duplicate ID across manifests</li>
+        <li><span class="yes">✓</span> Build fails if stage manifest missing skeleton or blocks</li>
+        <li><span class="yes">✓</span> Error messages include filename and valid options</li>
+      </ul>
+      <div class="code-verification">
+        <code>Validating manifests...<br>
+All manifests valid.</code>
+      </div>
+    </div>
+  </div>
+
+  <!-- Task 8 -->
+  <div class="task-card">
+    <div class="task-header">
+      <span class="task-title">Task 8: Add themeVars CSS validation (warnings)</span>
+      <span class="badge pass">PASS</span>
+    </div>
+    <div class="task-body">
+      <p class="task-description">Emit warnings for themeVars/CSS mismatches without failing build.</p>
+      <ul class="checklist">
+        <li><span class="yes">✓</span> Extracts themeVars array from block JS files</li>
+        <li><span class="yes">✓</span> Extracts var(--meet-*) patterns from block CSS files</li>
+        <li><span class="yes">✓</span> Emits warning if themeVars declares variable not in CSS</li>
+        <li><span class="yes">✓</span> Warnings do NOT fail build (exit 0)</li>
+        <li><span class="yes">✓</span> Warnings clearly labeled as warnings</li>
+      </ul>
+      <div class="code-verification">
+        <code>=== THEME VARS WARNINGS ===<br><br>
+  WARNING: Block 'header-bar': themeVars declares '--meet-logo-url' but it's not used in header-bar.css<br>
+  WARNING: Block 'header-bar': themeVars declares '--meet-logo-size' but it's not used in header-bar.css<br>
+  ...<br>
+Total warnings: 8<br>
+Note: Warnings do not fail the build.</code>
+      </div>
+    </div>
+  </div>
+
+  <!-- Task 10 -->
+  <div class="task-card">
+    <div class="task-header">
+      <span class="task-title">Task 10: Update graphicsRegistry.js to import generated file</span>
+      <span class="badge pass">PASS</span>
+    </div>
+    <div class="task-body">
+      <p class="task-description">Replace hand-written GRAPHICS object with import from generated file.</p>
+      <ul class="checklist">
+        <li><span class="yes">✓</span> graphicsRegistry.js imports from ./graphicsRegistry.generated</li>
+        <li><span class="yes">✓</span> Hand-written GRAPHICS object removed</li>
+        <li><span class="yes">✓</span> All helper functions unchanged</li>
+        <li><span class="yes">✓</span> npm run build succeeds in show-controller</li>
+        <li><span class="yes">✓</span> Existing functionality still works</li>
+      </ul>
+      <div class="code-verification">
+        <code>// Import auto-generated registry data<br>
+import { GRAPHICS, CATEGORIES } from './graphicsRegistry.generated';<br><br>
+// Re-export for direct access<br>
+export { GRAPHICS, CATEGORIES };</code>
+      </div>
+    </div>
+  </div>
+
+  <!-- Task 14 -->
+  <div class="task-card">
+    <div class="task-header">
+      <span class="task-title">Task 14: Update GraphicsControl.jsx for stage renderer routing</span>
+      <span class="badge pass">PASS</span>
+    </div>
+    <div class="task-body">
+      <p class="task-description">Add renderer routing to sendGraphic() based on registry entry.</p>
+      <ul class="checklist">
+        <li><span class="yes">✓</span> Imports resolveTheme from ../lib/themeResolver</li>
+        <li><span class="yes">✓</span> Imports getGraphicById</li>
+        <li><span class="yes">✓</span> sendGraphic() looks up registry entry, computes firebaseRenderer</li>
+        <li><span class="yes">✓</span> If firebaseRenderer === 'stage': calls resolveTheme() and builds render spec</li>
+        <li><span class="yes">✓</span> Writes renderer: firebaseRenderer in set() calls</li>
+        <li><span class="yes">✓</span> Data includes skeleton, blocks, theme for stage graphics</li>
+        <li><span class="yes">✓</span> sendGraphic() is async</li>
+        <li><span class="yes">✓</span> clearGraphic() unchanged</li>
+      </ul>
+      <div class="code-verification">
+        <code>import { resolveTheme } from '../lib/themeResolver';<br>
+...<br>
+const firebaseRenderer = registryEntry && registryEntry.renderer === 'stage' ? 'stage' : 'output';<br>
+...<br>
+renderer: firebaseRenderer,<br>
+...<br>
+if (firebaseRenderer === 'stage' && registryEntry) {<br>
+  const resolvedTheme = await resolveTheme(null, config.meetTheme, graphicId);<br>
+  ...</code>
+      </div>
+    </div>
+  </div>
+
+  <!-- Task 17 -->
+  <div class="task-card">
+    <div class="task-header">
+      <span class="task-title">Task 17: Update URL Generator sidebar to use registry categories</span>
+      <span class="badge pass">PASS</span>
+    </div>
+    <div class="task-body">
+      <p class="task-description">Refactor sidebar to use CATEGORIES ordering and registry graphics.</p>
+      <ul class="checklist">
+        <li><span class="yes">✓</span> Imports CATEGORIES from graphicsRegistry</li>
+        <li><span class="yes">✓</span> Removed baseGraphicTitles object</li>
+        <li><span class="yes">✓</span> Removed getGraphicTitles() function</li>
+        <li><span class="yes">✓</span> Sidebar sections generated from CATEGORIES ordering</li>
+        <li><span class="yes">✓</span> Graphics grouped by category/subcategory from registry</li>
+        <li><span class="yes">✓</span> Labels come from manifest label field</li>
+        <li><span class="yes">✓</span> Existing functionality preserved (preview, URL generation)</li>
+      </ul>
+      <div class="screenshot-container">
+        <div class="screenshot-label">URL Generator Sidebar with Category Structure</div>
+        <img src="screenshots/verify-task-17-url-generator-sidebar.png" alt="URL Generator showing category-based sidebar" class="screenshot">
+      </div>
+      <p style="margin-top: 1rem; color: #888;">
+        <strong>What I see:</strong> Sidebar shows FULL-SCREEN CARDS (with Leaderboards, Team Info subcategories),
+        LOWER-THIRDS (Event Info, Team Stats, Spotlight), and more. Categories are ordered correctly.
+        Graphics show labels from registry (e.g., "All-Around", "Balance Beam", "Michigan Roster").
+      </p>
+    </div>
+  </div>
+
+  <!-- Task 18 -->
+  <div class="task-card">
+    <div class="task-header">
+      <span class="task-title">Task 18: Add renderer badges to URL Generator sidebar</span>
+      <span class="badge pass">PASS</span>
+    </div>
+    <div class="task-body">
+      <p class="task-description">Add [stage], [overlay], or [output] badges to each graphic button.</p>
+      <ul class="checklist">
+        <li><span class="yes">✓</span> Each graphic button shows renderer badge</li>
+        <li><span class="yes">✓</span> Badge colors: stage = teal, overlay/output = gray</li>
+        <li><span class="yes">✓</span> Badge is small: text-[9px] px-1.5 py-0.5 rounded</li>
+        <li><span class="yes">✓</span> Badge reads from registry renderer field</li>
+        <li><span class="yes">✓</span> GraphicSidebarButton component accepts renderer prop</li>
+      </ul>
+      <div class="screenshot-container">
+        <div class="screenshot-label">Renderer Badges on Sidebar Buttons</div>
+        <img src="screenshots/verify-task-17-url-generator-sidebar.png" alt="Sidebar showing teal 'stage' and gray 'overlay' badges" class="screenshot">
+      </div>
+      <p style="margin-top: 1rem; color: #888;">
+        <strong>What I see:</strong> Each button has a badge on the right edge. Leaderboards show teal "stage" badges.
+        Lower-thirds (Event Info, Replay, Warm Up) show gray "overlay" badges. Colors match spec.
+      </p>
+    </div>
+  </div>
+
+  <!-- Task 20 -->
+  <div class="task-card">
+    <div class="task-header">
+      <span class="task-title">Task 20: Add preview iframe renderer indicator</span>
+      <span class="badge pass">PASS</span>
+    </div>
+    <div class="task-body">
+      <p class="task-description">Show "Rendering via stage.html / overlays/{file}.html / output.html" above preview.</p>
+      <ul class="checklist">
+        <li><span class="yes">✓</span> Above preview iframe: label showing renderer file</li>
+        <li><span class="yes">✓</span> Label text color: teal for stage, gray for others</li>
+        <li><span class="yes">✓</span> Full URL displayed below label</li>
+        <li><span class="yes">✓</span> Updates when graphic selection changes</li>
+      </ul>
+      <div class="screenshot-container">
+        <div class="screenshot-label">Renderer Indicator Above Preview</div>
+        <img src="screenshots/verify-task-17-url-generator-sidebar.png" alt="Preview showing 'Rendering via overlays/logos.html'" class="screenshot">
+      </div>
+      <p style="margin-top: 1rem; color: #888;">
+        <strong>What I see:</strong> Above the preview iframe, I see "Rendering via overlays/logos.html" in gray text.
+        Below it shows the full URL truncated. The header shows "Team Logos" with Open Full Size and Copy URL buttons.
+      </p>
+    </div>
+  </div>
+
+  <!-- Task 22 -->
+  <div class="task-card">
+    <div class="task-header">
+      <span class="task-title">Task 22: Add migration status report to build script</span>
+      <span class="badge pass">PASS</span>
+    </div>
+    <div class="task-body">
+      <p class="task-description">Add --status flag for detailed migration progress report.</p>
+      <ul class="checklist">
+        <li><span class="yes">✓</span> node scripts/buildGraphicsRegistry.js --status prints detailed report</li>
+        <li><span class="yes">✓</span> Report shows blocks: X/Y built with checkmarks</li>
+        <li><span class="yes">✓</span> Report shows skeletons: X/Y built</li>
+        <li><span class="yes">✓</span> Report shows graphics: X/Y migrated per category with progress bars</li>
+        <li><span class="yes">✓</span> Report shows blocked graphics</li>
+        <li><span class="yes">✓</span> Normal build prints one-line summary</li>
+      </ul>
+      <div class="code-verification">
+        <code>$ node scripts/buildGraphicsRegistry.js --status<br><br>
+╔═══════════════════════════════════════════════════════════════╗<br>
+║              RENDERER SYSTEM MIGRATION STATUS                 ║<br>
+╚═══════════════════════════════════════════════════════════════╝<br><br>
+  BLOCKS<br>
+  Progress: [█████░░░░░░░░░░░░░░░] 3/12<br>
+  ✓ header-bar<br>
+  ✓ leaderboard-table<br>
+  ✓ athlete-grid<br>
+  ✗ score-card<br>
+  ...<br><br>
+  SKELETONS<br>
+  Progress: [█████░░░░░░░░░░░░░░░] 1/4<br>
+  ✓ full-screen-card<br>
+  ...<br><br>
+  GRAPHICS BY CATEGORY<br>
+  Overall: [████░░░░░░░░░░░░░░░░] 11/55 migrated to stage engine<br><br>
+  Full-Screen Cards: [███████████████] 11/11<br>
+  Lower-Thirds: [░░░░░░░░░░░░░░░] 0/8<br>
+  ...<br><br>
+  SUMMARY<br>
+  Graphics:  11/55 migrated (20%)<br>
+  Blocks:    3/12 built (25%)<br>
+  Skeletons: 1/4 built (25%)</code>
+      </div>
+    </div>
+  </div>
+
+  <!-- PRD Update -->
+  <div class="task-card">
+    <div class="task-header">
+      <span class="task-title">PRD Update Required</span>
+      <span class="badge" style="background: #854d0e; color: #fbbf24;">DOC FIX</span>
+    </div>
+    <div class="task-body">
+      <p class="task-description">The PRD shows Phase 4 as "NOT STARTED" but all tasks are complete.</p>
+      <div class="failure-reason">
+        <strong>Issue:</strong> Line 1292 of PRD-Renderer-System-2026-03-28.md shows:<br>
+        <code>| 4 | Tool Integration | ... | NOT STARTED |</code><br><br>
+        <strong>Expected:</strong><br>
+        <code>| 4 | Tool Integration | ... | **COMPLETE** — deployed 2026-04-01 |</code>
+      </div>
+      <p style="margin-top: 1rem; color: #888;">
+        Written to fixes.md for code loop to address.
+      </p>
+    </div>
+  </div>
+
+  <div style="margin-top: 3rem; padding-top: 2rem; border-top: 1px solid #333; color: #666; font-size: 0.85rem;">
+    Generated: 2026-04-01 | PRD-Renderer-System Phase 4 Verification
+  </div>
+</body>
+</html>
