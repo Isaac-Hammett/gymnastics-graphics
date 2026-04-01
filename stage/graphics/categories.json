@@ -1,0 +1,50 @@
+{
+  "full-screen-cards": {
+    "label": "Full-Screen Cards",
+    "order": 1,
+    "subcategories": {
+      "leaderboards": "Leaderboards",
+      "team-info": "Team Info",
+      "sponsors": "Sponsors"
+    }
+  },
+  "lower-thirds": {
+    "label": "Lower-Thirds",
+    "order": 2,
+    "subcategories": {
+      "event-info": "Event Info",
+      "team-stats": "Team Stats",
+      "spotlight": "Spotlight"
+    }
+  },
+  "full-bleed": {
+    "label": "Full-Bleed",
+    "order": 3,
+    "subcategories": {
+      "slates": "Slates",
+      "stream": "Stream",
+      "sponsors": "Sponsors"
+    }
+  },
+  "video-frames": {
+    "label": "Video Frames",
+    "order": 4,
+    "subcategories": {
+      "camera-layouts": "Camera Layouts",
+      "apparatus": "Apparatus"
+    }
+  },
+  "standalone": {
+    "label": "Standalone",
+    "order": 5,
+    "subcategories": {}
+  },
+  "event-summary": {
+    "label": "Event Summary",
+    "order": 6,
+    "subcategories": {
+      "rotations": "By Rotation",
+      "apparatus": "By Apparatus"
+    }
+  }
+}
