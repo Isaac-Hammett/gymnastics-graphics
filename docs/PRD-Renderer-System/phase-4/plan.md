@@ -323,7 +323,7 @@ Phase 4 connects the stage engine (built in Phases 1-3) to all producer tools. T
 
 ---
 
-### Task 18: Add renderer badges to URL Generator sidebar — NOT STARTED
+### Task 18: Add renderer badges to URL Generator sidebar — COMPLETE
 **Files:** `show-controller/src/pages/UrlGeneratorPage.jsx`
 **Resolves:** PRD lines 997-1007, Phase 4 doc Task 8
 **Verify:**
@@ -652,3 +652,12 @@ This avoids bundler complexity while keeping single source of truth.
 - **Cleaned up unused imports:** Removed `graphicButtons`, `getApparatusButtons`, `getPreMeetButtons`, `getLeaderboardButtons`, `getEventSummaryRotationButtons`, `getEventSummaryApparatusButtons`, `transparentGraphics` imports — now using `groupedGraphics` instead
 - **Labels now come from manifest `label` field** — GraphicSidebarButton receives `g.label` directly from registry entry
 - **Build passes** — no TypeScript/compilation errors, app loads correctly (verified via login page screenshot)
+
+### Task 18 Learnings
+
+- **GraphicSidebarButton already received `renderer` prop** — all call sites in UrlGeneratorPage.jsx were already passing `renderer={g.renderer}` from Task 17 refactor
+- **Badge implementation is minimal:** Added destructuring of `renderer` prop + conditional rendering of badge span with teal/gray color logic
+- **Styling matches plan spec exactly:** `text-[9px] px-1.5 py-0.5 rounded` for small badge, `bg-teal-500/20 text-teal-400` for stage, `bg-zinc-700 text-zinc-400` for overlay/output
+- **Added `opacity-80` when active** — badge is slightly dimmed when button is selected (blue background) to maintain visual hierarchy
+- **Added `flex-1 truncate` to label span** — ensures label doesn't push badge off-screen for long graphic names
+- **Conditional number display** — added `{number && ...}` guard since most graphics don't use the number prop (it was unused legacy)
