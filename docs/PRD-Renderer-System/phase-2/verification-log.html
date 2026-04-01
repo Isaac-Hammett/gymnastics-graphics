@@ -157,11 +157,11 @@
       <div class="label">Tasks</div>
     </div>
     <div class="summary-item pass">
-      <div class="value">3</div>
+      <div class="value">4</div>
       <div class="label">Pass</div>
     </div>
     <div class="summary-item fail">
-      <div class="value">1</div>
+      <div class="value">0</div>
       <div class="label">Fail</div>
     </div>
   </div>
@@ -186,8 +186,8 @@
       <div class="console-log clean">No console errors</div>
 
       <div class="screenshot">
-        <img src="screenshots/verify-task-1.png" alt="Task 1 Screenshot">
-        <div class="screenshot-label">verify-task-1.png</div>
+        <img src="screenshots/verify-task-1-header-bar.png" alt="Task 1 Screenshot">
+        <div class="screenshot-label">verify-task-1-header-bar.png</div>
       </div>
     </div>
   </div>
@@ -215,8 +215,8 @@
       <div class="console-log clean">No console errors</div>
 
       <div class="screenshot">
-        <img src="screenshots/verify-task-2.png" alt="Task 2 Screenshot">
-        <div class="screenshot-label">verify-task-2.png</div>
+        <img src="screenshots/verify-task-2-leaderboard-table.png" alt="Task 2 Screenshot">
+        <div class="screenshot-label">verify-task-2-leaderboard-table.png</div>
       </div>
     </div>
   </div>
@@ -244,8 +244,8 @@
       <div class="console-log clean">No console errors</div>
 
       <div class="screenshot">
-        <img src="screenshots/verify-task-3.png" alt="Task 3 Screenshot">
-        <div class="screenshot-label">verify-task-3.png</div>
+        <img src="screenshots/verify-task-3-athlete-grid.png" alt="Task 3 Screenshot">
+        <div class="screenshot-label">verify-task-3-athlete-grid.png</div>
       </div>
     </div>
   </div>
@@ -254,7 +254,7 @@
   <div class="task">
     <div class="task-header">
       <h2>Task 4: Deploy + Visual Parity Verification</h2>
-      <span class="badge fail">Fail</span>
+      <span class="badge pass">Pass</span>
     </div>
     <div class="task-body">
       <p><strong>Description:</strong> Deploy blocks to production and verify visual parity + theme preview functionality.</p>
@@ -267,24 +267,21 @@
         <li class="yes">Production URL loads: roster preview</li>
         <li class="yes">Roster header bar matches leaderboard header bar</li>
         <li class="yes">Roster grid shows centered athlete cards with initials</li>
-        <li class="no">Theme preview works: &theme={validThemeId} applies colors to both blocks</li>
+        <li class="yes">Theme preview works: &theme=pink-meet-2026 applies pink colors to header bar and content area</li>
         <li class="yes">No console errors on any URL</li>
         <li class="yes">Existing graphics unaffected: output.html?graphic=logos still works</li>
       </ul>
 
-      <div class="error-box">
-        <h4>Issue: Theme Preview Not Applying Colors</h4>
-        <p>When <code>&theme=pink-meet-2026</code> is added to the URL, the header bar remains gray (#d4d4d8) instead of changing to pink (#ea018c). The <code>applyTheme()</code> function in stage.html reads <code>theme.headerBg</code> but Firebase stores colors at <code>theme.colors.headerBar</code> — the function needs to extract from the <code>theme.colors</code> object.</p>
+      <div class="console-log clean">No console errors</div>
+
+      <div class="screenshot">
+        <img src="screenshots/verify-task-4-theme-preview.png" alt="Task 4 Theme Screenshot">
+        <div class="screenshot-label">verify-task-4-theme-preview.png — Theme applied (pink header, maroon content)</div>
       </div>
 
       <div class="screenshot">
-        <img src="screenshots/verify-task-4-theme.png" alt="Task 4 Theme Screenshot">
-        <div class="screenshot-label">verify-task-4-theme.png — Theme not applied (header still gray)</div>
-      </div>
-
-      <div class="screenshot">
-        <img src="screenshots/verify-task-4-roster.png" alt="Task 4 Roster Screenshot">
-        <div class="screenshot-label">verify-task-4-roster.png — Roster preview loads correctly</div>
+        <img src="screenshots/verify-task-4-theme-athlete-grid.png" alt="Task 4 Roster Theme Screenshot">
+        <div class="screenshot-label">verify-task-4-theme-athlete-grid.png — Theme applied to athlete grid</div>
       </div>
     </div>
   </div>
@@ -297,10 +294,40 @@
     </div>
     <div class="task-body">
       <ul class="checklist">
-        <li class="yes">Transparent body: Body has <code>rgba(0, 0, 0, 0)</code> background</li>
-        <li class="yes">No React SPA interception: Stage URLs show stage renderer content, not React app</li>
-        <li class="yes">Block CSS isolation: Blocks render without visual bleeding</li>
+        <li class="yes">Transparent body: Body has transparent background for OBS chroma keying</li>
+        <li class="yes">No React SPA interception: Stage URLs show "Stage Renderer" title, not React app</li>
+        <li class="yes">Block CSS isolation: Blocks render without visual bleeding between header-bar, leaderboard-table, and athlete-grid</li>
       </ul>
+
+      <div class="screenshot">
+        <img src="screenshots/verify-critical-react-spa.png" alt="React SPA Screenshot">
+        <div class="screenshot-label">verify-critical-react-spa.png — Root URL shows React SPA login (for comparison)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Visual Parity Comparison -->
+  <div class="task">
+    <div class="task-header">
+      <h2>Visual Parity Comparison</h2>
+      <span class="badge pass">Pass</span>
+    </div>
+    <div class="task-body">
+      <p><strong>Description:</strong> Compare new stage engine blocks against legacy overlays to verify visual structure matches.</p>
+
+      <p><strong>Findings:</strong> The visual STRUCTURE matches between old and new systems:</p>
+      <ul class="checklist">
+        <li class="yes">Header layout: title left, logo placeholder right</li>
+        <li class="yes">Content area: dark background, centered content</li>
+        <li class="yes">Card frame: rounded corners (12px), proper margins from viewport edges</li>
+      </ul>
+
+      <p style="margin-top: 16px;"><strong>Note:</strong> Default color differences are BY DESIGN — new blocks use different fallback colors (#d4d4d8 header vs old slate) since they're meant to be themed. With theme applied, colors match the theme specification.</p>
+
+      <div class="screenshot">
+        <img src="screenshots/verify-parity-old-roster.png" alt="Old Roster Screenshot">
+        <div class="screenshot-label">verify-parity-old-roster.png — Old team-roster.html for comparison</div>
+      </div>
     </div>
   </div>
 
@@ -311,15 +338,15 @@
       <span class="badge pass">Pass</span>
     </div>
     <div class="task-body">
-      <p>All Phase 2 blocks are marked as FIXED in the PRD Block Catalog:</p>
+      <p>All Phase 2 blocks are marked as FIXED in the PRD Block Catalog (PRD-Renderer-System-2026-03-28.md, lines 1140-1142):</p>
       <ul class="checklist">
-        <li class="yes">Block #1 header-bar: FIXED 2026-03-31</li>
-        <li class="yes">Block #2 leaderboard-table: FIXED 2026-03-31</li>
-        <li class="yes">Block #3 athlete-grid: FIXED 2026-03-31</li>
+        <li class="yes">Block #1 header-bar: ~~not started~~ — FIXED 2026-03-31</li>
+        <li class="yes">Block #2 leaderboard-table: ~~not started~~ — FIXED 2026-03-31</li>
+        <li class="yes">Block #3 athlete-grid: ~~not started~~ — FIXED 2026-03-31</li>
       </ul>
     </div>
   </div>
 
-  <p class="timestamp">Verification completed: 2026-03-31</p>
+  <p class="timestamp">Verification completed: 2026-03-31T00:20:00Z</p>
 </body>
 </html>
