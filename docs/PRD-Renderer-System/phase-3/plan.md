@@ -68,7 +68,7 @@ Add the API fetching and data transformation logic. This is the core business lo
 
 ---
 
-### Task 3: Implement polling loop with Firebase writes — NOT STARTED
+### Task 3: Implement polling loop with Firebase writes — COMPLETE
 
 **Files:** `server/lib/scoringIngestionService.js`
 
@@ -378,3 +378,8 @@ Test the complete data flow from Virtius API to Firebase to renderer blocks.
 - Men's events include `diff`, `exec`, `stickBonus`; women's events have these as `null`
 - `stickBonus` is derived from `bonus > 0` in the API response
 - Team logo caching via `_teamLogoCache` Map reduces Firebase reads for repeated lookups
+- Task 3 adds `start()`, `stop()`, `forcePoll()`, `_startPolling()`, `_stopPolling()`, `_poll()`, `_writeToFirebase()`, `_updateFeedStatus()`, `_broadcastState()` methods
+- Polling loop uses `setInterval` with guard pattern (`_stopPolling()` called inside `_startPolling()` to prevent double-start)
+- Firebase writes use `.set()` on child paths (e.g., `scoringRef.child('leaderboard/VT').set(...)`) — avoids `.update()` on root to prevent partial overwrites
+- `_poll()` catches all errors internally so the interval loop never crashes
+- `_broadcastState()` emits to socket room `competition:{compId}` with event name `scoring:stateChanged`
