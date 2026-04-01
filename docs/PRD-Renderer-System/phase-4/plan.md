@@ -105,7 +105,7 @@ Phase 4 connects the stage engine (built in Phases 1-3) to all producer tools. T
 
 ---
 
-### Task 6: Add manifest validation to build script — NOT STARTED
+### Task 6: Add manifest validation to build script — COMPLETE
 **Files:** `scripts/buildGraphicsRegistry.js`
 **Resolves:** PRD lines 516-526 (validation requirements)
 **Verify:**
@@ -533,3 +533,16 @@ This avoids bundler complexity while keeping single source of truth.
 - **Recursive file finding:** Use `fs.readdirSync` with `withFileTypes: true` to distinguish files from directories
 - **Manifest counts verified:** 11 stage + 29 overlay + 15 output = 55 total manifests
 - **Script structure:** Separate functions for `findManifestFiles()`, `loadJSON()`, and `build()` — makes adding validation straightforward in Task 6
+
+### Task 6 Learnings
+
+- **Validation collects ALL errors before failing** — displays every error, then exits with code 1. This avoids fix-one-rerun-fix-another cycles.
+- **Six validation checks implemented:**
+  1. Required fields: `id`, `label`, `category`, `renderer` (all manifests)
+  2. Category must exist in categories.json
+  3. Subcategory must exist in categories.json for that category (if subcategory is present)
+  4. Stage renderer requires `skeleton` field
+  5. Stage renderer requires non-empty `blocks` array
+  6. No duplicate IDs across all manifests
+- **Error messages include relative file paths** and list valid options (e.g., "Valid categories: full-screen-cards, lower-thirds, ...")
+- **Validation runs before summary output** — if validation fails, no summary is printed
