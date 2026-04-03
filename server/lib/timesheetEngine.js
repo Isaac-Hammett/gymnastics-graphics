@@ -1046,7 +1046,9 @@ class TimesheetEngine extends EventEmitter {
 
     // Look up renderer from graphics registry (Phase 4: renderer routing)
     // Custom graphics always use 'output' renderer
-    const registryEntry = graphicId.startsWith('custom-') ? null : getGraphicById(graphicId);
+    // For perTeam graphics (e.g., "team1-roster"), strip the number to find base ID ("team-roster")
+    const baseId = graphicId.replace(/^team\d+-/, 'team-');
+    const registryEntry = graphicId.startsWith('custom-') ? null : (getGraphicById(graphicId) || getGraphicById(baseId));
     // Manifest 'overlay' maps to Firebase 'output' — both legacy paths use output.html
     const firebaseRenderer = registryEntry?.renderer === 'stage' ? 'stage' : 'output';
 
@@ -1071,7 +1073,26 @@ class TimesheetEngine extends EventEmitter {
         // Build render spec for stage engine
         // Include skeleton, blocks, and theme data
         graphicData.skeleton = registryEntry.skeleton;
-        graphicData.blocks = registryEntry.defaultData?.blocks || registryEntry.blocks?.map(type => ({ type, data: {} })) || [];
+        let stageBlocks = registryEntry.defaultData?.blocks || registryEntry.blocks?.map(type => ({ type, data: {} })) || [];
+
+        // For per-team roster graphics, fill in team-specific data
+        const rosterMatch = graphicId.match(/^team(\d+)-roster$/);
+        if (rosterMatch) {
+          const teamNum = rosterMatch[1];
+          const teamName = data?.[`team${teamNum}Name`] || `Team ${teamNum}`;
+          // teamKey isn't in the data object — read from config
+          let teamKey = '';
+          try {
+            const keySnap = await db.ref(`competitions/${this.compId}/config/team${teamNum}Key`).once('value');
+            teamKey = keySnap.val() || '';
+          } catch (e) { /* fallback to empty */ }
+          stageBlocks = [
+            { type: 'header-bar', data: { title: teamName } },
+            { type: 'athlete-grid', data: { teamKey: teamKey } }
+          ];
+        }
+
+        graphicData.blocks = stageBlocks;
         if (resolvedTheme) {
           graphicData.theme = resolvedTheme;
         }

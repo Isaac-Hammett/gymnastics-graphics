@@ -246,10 +246,9 @@ function themeToCssVars(resolved) {
   return vars;
 }
 
-module.exports = {
+export {
   resolveTheme,
   themeToCssVars,
-  // Export for testing
   FALLBACK_COLORS,
   OVERRIDE_COLOR_MAPPING,
   IMAGE_FIELDS,

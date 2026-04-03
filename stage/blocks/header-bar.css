@@ -14,10 +14,10 @@
   content: '';
   position: absolute;
   inset: 0;
-  background-image: var(--header-bar-bg-image, none);
-  background-size: var(--header-bar-bg-image-fit, cover);
-  background-position: var(--header-bar-bg-image-position, center);
-  opacity: var(--header-bar-bg-image-opacity, 1);
+  background-image: var(--header-bar-bg-image, var(--meet-header-bg-image, none));
+  background-size: var(--header-bar-bg-image-fit, var(--meet-header-bg-image-fit, cover));
+  background-position: var(--header-bar-bg-image-position, var(--meet-header-bg-image-position, center));
+  opacity: var(--header-bar-bg-image-opacity, var(--meet-header-bg-image-opacity, 1));
   pointer-events: none;
   z-index: 0;
 }

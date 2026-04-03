@@ -600,36 +600,23 @@ export function generateGraphicURL(graphicId, formData, teamCount, baseUrl, opti
     });
   }
 
-  // Handle combined AA leaderboard (two session IDs)
+  // Handle combined AA leaderboard — route to stage.html renderer
   if (graphicId === 'combined-aa-leaderboard') {
-    const gender = compType?.startsWith('mens') ? 'mens' : 'womens';
-    return buildCombinedAALeaderboardURL({
-      virtiusSessionId,
-      virtiusSessionId2,
-      gender,
-      teams: getTeamsData(),
-      teamCount,
-      baseUrl: base,
-      meetTheme,
-    });
+    const params = new URLSearchParams();
+    if (compId) params.set('comp', compId);
+    params.set('graphic', graphicId);
+    if (meetTheme) params.set('theme', meetTheme);
+    return `${base}/stage/stage.html?${params.toString()}`;
   }
 
-  // Handle leaderboard graphics
+  // Handle leaderboard graphics — route to stage.html renderer
   const leaderboardMatch = graphicId.match(/^leaderboard-(.+)$/);
   if (leaderboardMatch) {
-    // eventCode is already the short code (fx, ph, sr, vt, pb, hb, ub, bb, aa)
-    const eventCode = leaderboardMatch[1];
-    const gender = compType?.startsWith('mens') ? 'mens' : 'womens';
-    return buildLeaderboardURL({
-      event: eventCode, // Pass short code directly - renderer expects fx, ph, etc.
-      virtiusSessionId,
-      gender,
-      teams: getTeamsData(),
-      teamCount,
-      compId,
-      baseUrl: base,
-      meetTheme,
-    });
+    const params = new URLSearchParams();
+    if (compId) params.set('comp', compId);
+    params.set('graphic', graphicId);
+    if (meetTheme) params.set('theme', meetTheme);
+    return `${base}/stage/stage.html?${params.toString()}`;
   }
 
   // Handle event summary graphics
