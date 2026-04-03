@@ -6,9 +6,14 @@ window.BlockHeaderBar = {
     logo: 'https://media.virti.us/upload/images/team/placeholder.png'
   },
 
-  render: function(container, data) {
+  render: function(container, data, context) {
     var title = (data && data.title) || 'TITLE';
+    // Logo priority: explicit data.logo > theme logos.meetLogo > theme --meet-logo-url
     var logoUrl = (data && data.logo) || '';
+    if (!logoUrl && context && context.theme) {
+      // Handle both raw Firebase format (logos.meetLogo) and resolved format (meetLogo)
+      logoUrl = context.theme.meetLogo || (context.theme.logos && context.theme.logos.meetLogo) || '';
+    }
 
     var html = '<span class="hb-title">' + _escapeHtml(title) + '</span>';
 

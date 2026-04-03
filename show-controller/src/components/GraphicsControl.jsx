@@ -477,7 +477,9 @@ export default function GraphicsControl({ competitionId }) {
     data.graphicId = graphicId;
 
     // Look up renderer from registry (defaults to 'output' if not found or not 'stage')
-    const registryEntry = getGraphicById(graphicId);
+    // For perTeam graphics (e.g., "team1-roster"), strip the number to find base ID ("team-roster")
+    const baseId = graphicId.replace(/^team\d+-/, 'team-');
+    const registryEntry = getGraphicById(graphicId) || getGraphicById(baseId);
     const firebaseRenderer = registryEntry && registryEntry.renderer === 'stage' ? 'stage' : 'output';
 
     // Build the currentGraphic payload
@@ -494,9 +496,25 @@ export default function GraphicsControl({ competitionId }) {
       // Resolve theme with per-graphic overrides
       const resolvedTheme = await resolveTheme(null, config.meetTheme, graphicId);
 
-      // Include stage engine render spec
+      // Include stage engine render spec — use defaultData.blocks (with per-block data)
+      // rather than bare block names, so stage.html knows titles and Firebase source paths
       graphicPayload.skeleton = registryEntry.skeleton;
-      graphicPayload.blocks = registryEntry.blocks;
+      let stageBlocks = (registryEntry.defaultData && registryEntry.defaultData.blocks)
+        || registryEntry.blocks;
+
+      // For per-team roster graphics, fill in team-specific data
+      const rosterMatch = graphicId.match(/^team(\d+)-roster$/);
+      if (rosterMatch) {
+        const teamNum = rosterMatch[1];
+        const teamName = config[`team${teamNum}Name`] || `Team ${teamNum}`;
+        const teamKey = config[`team${teamNum}Key`] || '';
+        stageBlocks = [
+          { type: 'header-bar', data: { title: teamName } },
+          { type: 'athlete-grid', data: { teamKey: teamKey } }
+        ];
+      }
+
+      graphicPayload.blocks = stageBlocks;
 
       // Include resolved theme if available
       if (resolvedTheme) {

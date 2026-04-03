@@ -173,6 +173,113 @@ tar -czf /tmp/claude/stage.tar.gz stage/
 
 ---
 
+## Stage Engine (New Renderer System)
+
+**The stage engine (`stage/stage.html`) is the new renderer for full-screen card graphics** — leaderboards and team rosters. It replaces the equivalent renderers that were in output.html.
+
+### Architecture
+
+| Layer | Files | Purpose |
+|-------|-------|---------|
+| **Engine** | `stage/stage.html` | Loads skeleton + blocks, routes params, applies themes |
+| **Skeleton** | `stage/skeletons/full-screen-card.html` + `.css` | Card frame (position, border-radius, shadow) |
+| **Blocks** | `stage/blocks/{name}.js` + `.css` | Reusable UI components (header-bar, leaderboard-table, athlete-grid) |
+| **Manifests** | `stage/graphics/{graphic-id}.json` | Per-graphic config (skeleton, blocks, defaultData) |
+
+### URL Modes
+
+| Mode | URL Pattern | Behavior |
+|------|-------------|----------|
+| **Standalone** | `stage.html?comp={id}&graphic={id}` | Fetches manifest, loads theme from competition config, renders once |
+| **Preview** | `stage.html?preview=full&skeleton={name}&block={list}` | Renders with sample data, shows Play/Dismiss toolbar |
+| **Live** | `stage.html?comp={id}` (no `graphic=`) | Listens to `currentGraphic` in Firebase, renders/dismisses dynamically |
+
+### Standalone Mode Flow
+
+1. Fetches theme from `competitions/{compId}/config/meetTheme` (or `?theme=` param)
+2. Fetches manifest from `stage/graphics/{graphicId}.json`
+3. Uses `manifest.defaultData.blocks` to know which blocks to load (e.g., header-bar + leaderboard-table)
+4. Applies theme CSS variables to skeleton element
+5. Renders each block, passing theme in context so blocks can read theme data (e.g., header-bar reads `context.theme.logos.meetLogo` for the logo)
+
+### Theme Integration
+
+Stage.html has its own `applyTheme()` function (separate from `theme-loader.js`) that maps theme data to CSS custom properties on the skeleton element. It handles **two theme formats**:
+
+| Format | Source | Structure |
+|--------|--------|-----------|
+| **Raw Firebase** | Standalone mode (fetched directly from `themes/{id}`) | `{ colors: { headerBar, ... }, logos: { meetLogo }, images: { headerBgImage } }` |
+| **Resolved** | Live mode (from `themeResolver.js` via GraphicsControl) | `{ headerBg, headerText, meetLogo, headerBgImage, ... }` (flat keys) |
+
+Detection: if the theme object has flat color keys (`headerBg`, `overlayBg`) without a `colors` sub-object, it's the resolved format.
+
+**Header-bar logo priority:** `data.logo` (explicit) > `context.theme.meetLogo` or `context.theme.logos.meetLogo` > no logo
+
+**Header-bar background image cascade:** `--header-bar-bg-image` > `--meet-header-bg-image` > `none` (same pattern for fit, position, opacity)
+
+### Live Mode — How Graphics Are Triggered
+
+When the producer clicks a graphic button in GraphicsControl, it writes to `competitions/{compId}/currentGraphic` in Firebase. The stage.html live mode listener picks this up and renders/dismisses.
+
+**What GraphicsControl writes for stage graphics:**
+
+```json
+{
+  "renderer": "stage",
+  "skeleton": "full-screen-card",
+  "blocks": [
+    { "type": "header-bar", "data": { "title": "VAULT" } },
+    { "type": "leaderboard-table", "data": { "source": "scoring/leaderboard/VT" } }
+  ],
+  "theme": { "headerBg": "#2D3436", "meetLogo": "https://...", ... }
+}
+```
+
+**Per-team graphics (rosters):** The `graphicId` is `team1-roster`, `team2-roster`, etc. GraphicsControl:
+1. Strips the number to find the base registry entry (`team-roster`)
+2. Fills in the actual team name as the header-bar title
+3. Fills in the `teamKey` (e.g., `navy-mens`) so athlete-grid fetches the real roster from Firebase
+
+### URL Generator Routing
+
+The URL Generator (`urlBuilder.js`) routes graphics to the correct renderer:
+
+| Graphic Pattern | Renderer | URL |
+|----------------|----------|-----|
+| `leaderboard-*` | stage.html | `stage/stage.html?comp={id}&graphic={graphicId}&theme={themeId}` |
+| `combined-aa-leaderboard` | stage.html | `stage/stage.html?comp={id}&graphic={graphicId}&theme={themeId}` |
+| `team{N}-roster` | stage.html | `stage/stage.html?comp={id}&graphic=team-roster-{N}&theme={themeId}` |
+| All other graphics | output.html or overlays/ | Legacy URL patterns |
+
+### Per-Team Registry Lookups — IMPORTANT
+
+The graphics registry stores per-team graphics under their **base ID** (e.g., `team-roster`, not `team1-roster`). When looking up a per-team graphic by its expanded ID, strip the team number first:
+
+```javascript
+const baseId = graphicId.replace(/^team\d+-/, 'team-');
+const entry = getGraphicById(graphicId) || getGraphicById(baseId);
+```
+
+This applies to: `team{N}-roster`, `team{N}-stats`, `team{N}-coaches`, `team{N}-spotlight`, etc.
+
+### Key Files
+
+| Component | File |
+|-----------|------|
+| Stage engine | `stage/stage.html` |
+| Skeleton | `stage/skeletons/full-screen-card.html` + `.css` |
+| Header bar block | `stage/blocks/header-bar.js` + `.css` |
+| Leaderboard block | `stage/blocks/leaderboard-table.js` + `.css` |
+| Roster block | `stage/blocks/athlete-grid.js` + `.css` |
+| Graphic manifests | `stage/graphics/*.json` |
+| URL routing | `show-controller/src/lib/urlBuilder.js` |
+| Theme resolver (client) | `show-controller/src/lib/themeResolver.js` |
+| Theme resolver (server) | `server/lib/themeResolver.js` (ESM — uses `export`, not `module.exports`) |
+| Graphics control (live trigger) | `show-controller/src/components/GraphicsControl.jsx` |
+| Timesheet engine (rundown trigger) | `server/lib/timesheetEngine.js` |
+
+---
+
 ## Unified Theme System
 
 **All graphics use a single theme code path via `theme-loader.js`.**
