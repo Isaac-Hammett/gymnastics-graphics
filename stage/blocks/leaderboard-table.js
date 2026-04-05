@@ -10,10 +10,10 @@
 window.BlockLeaderboardTable = {
   themeVars: [
     '--meet-content-bg',
+    '--meet-header-text',
     '--meet-overlay-bg',
     '--meet-overlay-text',
     '--meet-border-color',
-    '--meet-badge-bg',
     '--meet-badge-text'
   ],
 

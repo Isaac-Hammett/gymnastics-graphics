@@ -49,7 +49,7 @@ Replace 14 structural hardcoded colors with 3-layer cascade pattern. Keep 4 sema
 
 ---
 
-### Task 2: Update leaderboard-table.js themeVars declaration — NOT STARTED
+### Task 2: Update leaderboard-table.js themeVars declaration — COMPLETE
 **Issues:** PRD gap analysis (GAP 3, GAP 6), leaderboard theme mapping spec
 **Files:** `stage/blocks/leaderboard-table.js`
 
@@ -274,3 +274,4 @@ Tracks 1-3 and 4-6 are independent. Tasks 5 and 6 can run in parallel after Task
 - LEARNING: The odd row double-declaration pattern works by having two `background:` lines — the first uses a plain fallback (`#18181b`) for browsers that don't support `color-mix()`, and the second uses `color-mix()`. Browsers that support `color-mix()` override the first declaration.
 - LEARNING: Opacity-based muting (0.65, 0.45, 0.85) is used for rank, rank-sup, team, and diff/exec text instead of `color-mix()` to maximize OBS Chromium compatibility. Only the odd row bg uses `color-mix()`.
 - LEARNING: The 3-layer cascade naming convention is `--{blockId}-{suffix}` for layer 3, `--meet-{suffix}` for layer 2, and a hex fallback for layer 1. Example: `var(--leaderboard-table-overlay-text, var(--meet-overlay-text, #fff))`.
+- LEARNING: The build script (`scripts/buildGraphicsRegistry.js`) validates themeVars vs actual CSS usage and emits WARNINGS (not errors) for mismatches. A block with no warnings means its themeVars declaration is in sync with the CSS. The script runs as `prebuild` in show-controller.
