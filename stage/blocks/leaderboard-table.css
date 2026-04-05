@@ -1,7 +1,7 @@
 /* Leaderboard Table Block */
 .block-leaderboard-table {
   flex: 1;
-  background: var(--meet-overlay-bg, #000);
+  background: var(--leaderboard-table-overlay-bg, var(--meet-overlay-bg, #000));
   font-variant-numeric: tabular-nums;
   display: flex;
   flex-direction: column;
@@ -21,15 +21,15 @@
 
 /* Header Row */
 .block-leaderboard-table .lb-table thead {
-  background: #27272a;
+  background: var(--leaderboard-table-content-bg, var(--meet-content-bg, #27272a));
 }
 
 .block-leaderboard-table .lb-table th {
   padding: 16px 20px;
   text-align: left;
   font-weight: 600;
-  color: #a1a1aa;
-  border-bottom: 2px solid #3f3f46;
+  color: var(--leaderboard-table-header-text, var(--meet-header-text, #a1a1aa));
+  border-bottom: 2px solid var(--leaderboard-table-border-color, var(--meet-border-color, #3f3f46));
 }
 
 .block-leaderboard-table .lb-table th.lb-col-score,
@@ -49,21 +49,23 @@
 
 /* Body Rows */
 .block-leaderboard-table .lb-table tbody tr {
-  border-bottom: 1px solid #3f3f46;
+  border-bottom: 1px solid var(--leaderboard-table-border-color, var(--meet-border-color, #3f3f46));
 }
 
 .block-leaderboard-table .lb-table tbody tr:nth-child(odd) {
-  background: #18181b;
+  background: var(--leaderboard-table-row-odd-bg, #18181b);
+  background: var(--leaderboard-table-row-odd-bg,
+    color-mix(in srgb, var(--meet-overlay-bg, #18181b) 92%, white));
 }
 
 .block-leaderboard-table .lb-table tbody tr:nth-child(even) {
-  background: #0f0f10;
+  background: var(--leaderboard-table-overlay-bg, var(--meet-overlay-bg, #0f0f10));
 }
 
 /* Cells */
 .block-leaderboard-table .lb-table td {
   padding: 14px 20px;
-  color: #fff;
+  color: var(--leaderboard-table-overlay-text, var(--meet-overlay-text, #fff));
   font-weight: 500;
   vertical-align: middle;
 }
@@ -72,12 +74,14 @@
 .block-leaderboard-table .lb-col-rank {
   width: 70px;
   font-weight: 700;
-  color: #a1a1aa;
+  color: var(--leaderboard-table-overlay-text, var(--meet-overlay-text, #a1a1aa));
+  opacity: 0.65;
 }
 
 .block-leaderboard-table .lb-col-rank sup {
   font-size: 14px;
-  color: #71717a;
+  color: var(--leaderboard-table-overlay-text, var(--meet-overlay-text, #71717a));
+  opacity: 0.45;
 }
 
 /* Name Column */
@@ -109,7 +113,8 @@
 
 /* Team Column */
 .block-leaderboard-table .lb-col-team {
-  color: #d4d4d8;
+  color: var(--leaderboard-table-overlay-text, var(--meet-overlay-text, #d4d4d8));
+  opacity: 0.85;
 }
 
 .block-leaderboard-table .lb-team-logo {
@@ -120,7 +125,7 @@
   height: 36px;
   object-fit: contain;
   border-radius: 4px;
-  background: #27272a;
+  background: var(--leaderboard-table-content-bg, var(--meet-content-bg, #27272a));
 }
 
 /* Apparatus Column */
@@ -131,10 +136,10 @@
 .block-leaderboard-table .lb-apparatus-badge {
   display: inline-block;
   padding: 4px 12px;
-  border: 1px solid #52525b;
+  border: 1px solid var(--leaderboard-table-border-color, var(--meet-border-color, #52525b));
   border-radius: 4px;
   font-size: 20px;
-  color: #a1a1aa;
+  color: var(--leaderboard-table-badge-text, var(--meet-badge-text, #a1a1aa));
 }
 
 /* Score Column */
@@ -142,7 +147,7 @@
   text-align: right;
   font-weight: 700;
   font-size: 32px;
-  color: #fff;
+  color: var(--leaderboard-table-overlay-text, var(--meet-overlay-text, #fff));
 }
 
 /* Diff & Exec Columns */
@@ -151,7 +156,8 @@
   text-align: right;
   font-size: 26px;
   font-weight: 500;
-  color: #a1a1aa;
+  color: var(--leaderboard-table-overlay-text, var(--meet-overlay-text, #a1a1aa));
+  opacity: 0.65;
 }
 
 /* Stick Bonus Column */
