@@ -1284,58 +1284,54 @@ These graphics are controlled by the playout engine and rendered inline in outpu
 
 Implementation is split into phases, each with its own detailed document.
 
+### Strategy
+
+**Go deep before going wide.** Phases 1-6 built the stage engine and migrated 12 graphics (leaderboards + rosters). Before migrating the remaining ~60 graphics, we build out the full pipeline — animations, theme editor integration, rundown integration, visual editor, AI composition — so that every migrated graphic gets the full benefit of the system from day one.
+
+### Completed Phases
+
 | Phase | Name | Scope | Doc | Status |
 |-------|------|-------|-----|--------|
 | 1 | Foundation | stage.html, full-screen-card skeleton, layout system, preview mode, animation engine | `Phase-1-Foundation.md` | **COMPLETE** — deployed 2026-03-31 |
 | 2 | Content Blocks | header-bar, leaderboard-table, athlete-grid blocks | `Phase-2-Content-Blocks.md` | **COMPLETE** — deployed 2026-03-31 |
 | 3 | Scoring Ingestion | Coordinator polling service, Firebase scoring paths, producer controls | `Phase-3-Scoring-Ingestion.md` | **COMPLETE** — deployed 2026-03-31 |
 | 4 | Tool Integration | Registry updates, URL Generator, Web Graphics Panel, Rundown routing | `Phase-4-Tool-Integration.md` | **COMPLETE** — deployed 2026-04-01 |
-| 5 | Reorganization | New category structure in registry, URL Generator sidebar, Graphics Panel sidebar | `Phase-5-Reorganization.md` | NOT STARTED |
 | 6 | Verification & Cutover | Side-by-side comparisons, production test, old code removal | `Phase-6-Verification-Cutover.md` | **COMPLETE** — deployed 2026-04-01 |
 
----
+### Pipeline Buildout Phases (current focus)
 
-## Future Scope (Not in This PRD)
+Build the full end-to-end pipeline using the 12 existing graphics before migrating more.
 
-### Additional Skeletons
-- **lower-third** — for event-bar, warm-up, replay, team-stats, coaches, athlete-spotlight, who-to-watch. Fixed anchor point (bottom-left), variable width/height.
-- **full-bleed** — for rotation-slate, stream-starting, stream-thanks, who-to-watch-title, interview-card, sponsors-cycle
-- **video-frame** — for apparatus frames, camera layouts
+| Phase | Name | Scope | Doc | Status |
+|-------|------|-------|-----|--------|
+| 5 | Reorganization | New category structure in registry, URL Generator sidebar, Graphics Panel sidebar | `Phase-5-Reorganization.md` | NOT STARTED (spec ready) |
+| 7 | Polish | Leaderboard CSS theming (14 hardcoded colors → variables), Skeletons & Blocks preview section in URL Generator + Graphics Panel | `Phase-7-Polish.md` | IN PROGRESS (Task 1 complete) |
+| 8 | Advanced Animations | Broadcast-quality in-graphic animations: staggered row reveals, score count-ups, rank change slides, highlight pulses, data-driven transitions. Original designs (no legacy to match). | `Phase-8-Animations.md` | NOT STARTED |
+| 9 | Theme Editor Integration | Stage graphics previewable in Theme Editor with real-time per-graphic override support | `Phase-9-Theme-Editor.md` | NOT STARTED |
+| 10 | Rundown Integration | Stage graphics triggerable from rundown cues and playout segments, rundown editor knows about stage manifests | `Phase-10-Rundown.md` | NOT STARTED |
+| 11 | Graphics Editor | Visual composer for building/editing render specs: drag blocks into skeletons, arrange layouts, set animations, apply themes, save as templates | `Phase-11-Graphics-Editor.md` | NOT STARTED |
+| 12 | AI-Generated Graphics | Runtime storyline detection from live scoring data → auto-composed render specs → producer approve → play | `Phase-12-AI-Graphics.md` | NOT STARTED |
 
-### Additional Content Blocks
-- headline-stat (text headline + stat comparison)
-- coach-list (names + titles)
-- stat-row (team stats bar)
-- sponsor-grid (logo grid)
-- athlete-comparison (side-by-side athlete stats)
-- storyline-card (AI-generated narrative + supporting data)
+### Migration Phases (after pipeline is complete)
 
-### AI-Generated Graphics
-Once the render spec system is in place, the AI can compose specs at runtime:
-- Rundown system detects storylines from live scoring data
-- AI generates a render spec with appropriate skeleton + blocks + data
-- Producer previews, approves, and plays the graphic
-- No new HTML files needed — just a new spec
+Migrate remaining ~60 graphics from output.html/overlays to stage engine, one category at a time.
 
-### Visual Graphics Editor
-A dedicated page in the show-controller for visually building and editing graphics:
-- Drag blocks into skeletons, arrange layout visually
-- Apply themes in real time, override per-block
-- Set enter/exit animations with visual controls
-- Save as templates (reusable) or complete graphics (ready to play)
-- Output is always a render spec — works in OBS, URL Generator, Graphics Panel, Rundown
+| Phase | Name | Scope | Doc | Status |
+|-------|------|-------|-----|--------|
+| 13 | Full-Screen Card Migration | sponsors-thanks, team-stats, team-coaches → new blocks: sponsor-grid, stat-card, coach-list | `Phase-13-FSC-Migration.md` | NOT STARTED |
+| 14 | Lower-Thirds Migration | event-bar, warm-up, replay, athlete-spotlight, who-to-watch, hosts → new skeleton: lower-third | `Phase-14-Lower-Thirds.md` | NOT STARTED |
+| 15 | Full-Bleed Migration | rotation-slate, stream-starting/thanks, who-to-watch-title, sponsors-cycle → new skeleton: full-bleed | `Phase-15-Full-Bleed.md` | NOT STARTED |
+| 16 | Video Frames Migration | frame-quad, frame-tri-*, frame-dual, frame-single, frame-team-header, event frames → new skeleton: video-frame | `Phase-16-Video-Frames.md` | NOT STARTED |
+| 17 | Standalone + Event Summary | logos, sponsors-bug, event-calendar, event-summary (23+ layout variants) | `Phase-17-Standalone.md` | NOT STARTED |
+| 18 | Legacy Cleanup | Delete output.html graphic rendering code, delete migrated overlay files, single OBS browser source, remove dual-renderer routing | `Phase-18-Legacy-Cleanup.md` | NOT STARTED |
 
-### Advanced Animations
-- In-graphic animations (score count-up, staggered row reveal, highlight pulse)
-- Timeline sequences (choreographed multi-step shows)
-- Transition animations (crossfade, wipe between graphics)
-- Data-driven animations (score update flash, rank change slide)
+### Future Scope (beyond migration)
 
-### Combined All-Around Leaderboard
-Requires data from multiple Virtius sessions (e.g., prelims + finals). The single-session polling loop in Phase 3 cannot produce this. Needs a separate data pipeline that aggregates across sessions.
-
-### Event Summary
-Excluded from the skeleton system due to its unique structure and many layout versions. May get specialized treatment in a future PRD.
+| Feature | Description |
+|---------|-------------|
+| Combined All-Around Leaderboard | Multi-session data pipeline (prelims + finals aggregation) |
+| Advanced Transition Effects | Crossfade, wipe, morph between graphics |
+| Timeline Sequences | Choreographed multi-step graphic shows |
 
 ### Full Migration
 Eventually all graphics migrate to stage.html. output.html + overlays/ are retired. The stage engine becomes the only rendering engine.
