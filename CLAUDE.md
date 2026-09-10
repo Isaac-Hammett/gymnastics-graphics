@@ -1,5 +1,15 @@
 # Claude Code Memory - Gymnastics Graphics
 
+## System Map - START HERE
+
+**[SYSTEM-OVERVIEW.md](SYSTEM-OVERVIEW.md)** is the map of the whole codebase: 19 systems in 5 layers, each with a status (Proven / Built / Partial / Orphaned) and a sport-coupling rating (Generic / Sport-parameterized / Gymnastics-bound), four diagrams, and how the systems connect over Firebase, sockets, and HTTP. **[docs/system-map/](docs/system-map/README.md)** holds the full entry per system (every Firebase path, socket event, route, dependency, known gap, and the evidence behind its status).
+
+Read the overview before making architectural claims or starting a new feature. Two rules that came out of building it:
+- **PRD `Status:` lines are not a status source.** They are wrong in both directions. The `plan.md` / `implementation-plan.md` inside each PRD folder is usually accurate; the code and the live Firebase contents are authoritative.
+- **Producer View is the product.** The systems are its features. Surfaces (Home, Competition workspace, Producer View, Talent View, Settings) compose systems; they are not systems.
+
+Last surveyed: 2026-09-10. When a system changes materially, update its entry in `docs/system-map/` and the summary table in the overview.
+
 ## Git Workflow - IMPORTANT
 
 **Always work on `main` branch** - Push directly to `main` for production deployments.
@@ -514,7 +524,7 @@ In live mode, output.html renders different graphics (event-bar, warm-up, team-s
 
 **`lastLiveGraphicId`** is a module-level variable in output.html that tracks which graphic's overrides are currently applied. This ensures clean switching — no CSS variable bleeding between graphics.
 
-**Suffix coverage (40 total):** 8 color + 13 image + 19 layout suffixes. `clearOverrides()` iterates all 40 and calls `removeProperty()` for each.
+**Suffix coverage:** derived dynamically by `getAllOverrideSuffixes()` in `theme-loader.js` (8 color + 13 image + ~513 layout suffixes, about 534 total as of Phase 7). `clearOverrides()` iterates all of them and calls `removeProperty()` for each.
 
 **Key files:**
 
@@ -613,7 +623,7 @@ io.on('connection', async (socket) => {
 ### Verify Coordinator is Working
 ```bash
 # Check the server is responding
-curl http://44.193.31.120:3003/health
+curl http://44.193.31.120:3003/api/coordinator/status   # there is NO /health route; /health falls through to the SPA catch-all and returns index.html
 
 # Check PM2 shows 0 restarts and "online" status
 pm2 status

@@ -1,8 +1,20 @@
 # Documentation Library
 
-**Last Updated:** 2026-01-22
+**Last Updated:** 2026-09-10
 
 This is a searchable index of all project documentation. Search for keywords to find the right document, then read that document directly.
+
+---
+
+## Start Here
+
+### [SYSTEM-OVERVIEW.md](../SYSTEM-OVERVIEW.md)
+**Keywords:** system map, architecture, subsystems, status, proven, built, partial, orphaned, sport coupling, gymnastics-bound, generic, diagrams, mermaid, producer view, currentGraphic, platform decision, which systems exist
+**Summary:** The map of every subsystem (19 systems, 5 surfaces): what each does, its status with evidence, how sport-specific it is, and how they connect over Firebase, sockets, and HTTP. Three Mermaid diagrams. Rewritten 2026-09-10 from a code and Firebase survey; replaces the December 2025 controller/output overview.
+
+### [system-map/](system-map/README.md)
+**Keywords:** system map detail, per-system entry, Firebase paths, socket events, HTTP routes, known gaps, evidence of live use, firebase data model, surfaces
+**Summary:** One detailed file per system with every Firebase path, socket event, route, dependency, and known gap, plus the full Firebase data model and the surfaces breakdown. Start from SYSTEM-OVERVIEW.md and follow the "Full entry" links.
 
 ---
 
@@ -29,8 +41,8 @@ This is a searchable index of all project documentation. Search for keywords to 
 **Summary:** How to set up a new competition VM from scratch.
 
 ### [SYSTEM-OVERVIEW.md](../SYSTEM-OVERVIEW.md)
-**Keywords:** system overview, Firebase structure, controller, output, dashboard, graphics flow, data flow
-**Summary:** High-level system flow for graphics (controller → Firebase → output).
+**Keywords:** system overview, system map, architecture, status of each subsystem, diagrams
+**Summary:** See "Start Here" above. The whole-system map with status and sport-coupling per subsystem.
 
 ---
 
@@ -234,6 +246,7 @@ This is a searchable index of all project documentation. Search for keywords to 
 
 | If you need to... | Read this document |
 |-------------------|-------------------|
+| **Understand the whole system, which subsystems exist, and what state each is in** | [SYSTEM-OVERVIEW.md](../SYSTEM-OVERVIEW.md) then [system-map/](system-map/README.md) |
 | Understand OBS connection flow | [README-OBS-Architecture.md](README-OBS-Architecture.md) |
 | Deploy to production | [CLAUDE.md](../CLAUDE.md) |
 | Add a new team | [CLAUDE.md](../CLAUDE.md) (Adding a New Team section) |
