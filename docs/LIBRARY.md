@@ -1,6 +1,6 @@
 # Documentation Library
 
-**Last Updated:** 2026-09-10
+**Last Updated:** 2026-09-11
 
 This is a searchable index of all project documentation. Search for keywords to find the right document, then read that document directly.
 
@@ -10,11 +10,15 @@ This is a searchable index of all project documentation. Search for keywords to 
 
 ### [SYSTEM-OVERVIEW.md](../SYSTEM-OVERVIEW.md)
 **Keywords:** system map, architecture, subsystems, status, proven, built, partial, orphaned, sport coupling, gymnastics-bound, generic, diagrams, mermaid, producer view, currentGraphic, platform decision, which systems exist
-**Summary:** The map of every subsystem (19 systems, 5 surfaces): what each does, its status with evidence, how sport-specific it is, and how they connect over Firebase, sockets, and HTTP. Three Mermaid diagrams. Rewritten 2026-09-10 from a code and Firebase survey; replaces the December 2025 controller/output overview.
+**Summary:** The map of every subsystem (19 systems, 5 surfaces): what each does, its status with evidence, how sport-specific it is, and how they connect over Firebase, sockets, and HTTP. Four Mermaid diagrams. Rewritten 2026-09-10 from a code and Firebase survey; replaces the December 2025 controller/output overview.
 
 ### [system-map/](system-map/README.md)
 **Keywords:** system map detail, per-system entry, Firebase paths, socket events, HTTP routes, known gaps, evidence of live use, firebase data model, surfaces
 **Summary:** One detailed file per system with every Firebase path, socket event, route, dependency, and known gap, plus the full Firebase data model and the surfaces breakdown. Start from SYSTEM-OVERVIEW.md and follow the "Full entry" links.
+
+### [TOOL-INVENTORY.md](TOOL-INVENTORY.md) + [tool-inventory.csv](tool-inventory.csv)
+**Keywords:** inventory, capabilities, features, what it builds, control surface, adapter, agent control, reliability, stream types, lite full championship open, workbook, planning, component ids, effort, roadmap input
+**Summary:** Every capability the codebase already builds, one row per feature (144 rows, 19 systems), with how each is controlled today (Firebase path, socket event, HTTP route, button, hotkey, config, manual), its reliability, evidence, stream types, and gymnastics coupling. Written for planning: section 5 sizes the tool adapters an agent would need. Derived from the system map on 2026-09-10; the CSV is the machine-readable half.
 
 ---
 
@@ -108,41 +112,26 @@ This is a searchable index of all project documentation. Search for keywords to 
 
 ## Rundown / Show Flow
 
-### [PRD-Rundown-00-Index.md](PRD-Rundown-00-Index.md)
-**Keywords:** rundown index, rundown PRDs, show flow, rundown status
-**Summary:** Index of all Rundown PRDs.
-
-### [PRD-Rundown-00-Timesheet/](PRD-Rundown-00-Timesheet/PRD-ConsolidateTimesheetShowProgress.md)
-**Keywords:** timesheet, show progress, useTimesheet, rotation timing, show stats
-**Summary:** Consolidated timesheet and show progress tracking.
+### [PRD-Rundown-System/](PRD-Rundown-System/PRD-Rundown-System-2026-01-23.md)
+**Keywords:** rundown, show flow, timesheet engine, segments, run of show, start show, advance segment, auto-advance, show analytics, BUG-021, load rundown
+**Summary:** The active rundown PRD: segment model, the server-side timesheet engine that runs the show, and the OBS/graphic/playout hand-offs. `BUGS.md` in the same folder holds 11 live-incident write-ups, including BUG-021 (Load Rundown silently failing when the OBS VM was unreachable). `PLAN-Rundown-System-Implementation.md` is the accurate per-phase status.
 
 ### [PRD-Rundown-01-EditorPrototype/](PRD-Rundown-01-EditorPrototype/PRD-Rundown-01-EditorPrototype.md)
-**Keywords:** rundown editor, editor prototype, rundown UI, segment editor
-**Summary:** Advanced rundown editor prototype.
+**Keywords:** rundown editor, editor UI, segment editor, segment detail, pickers, templates, presence, rundown import export
+**Summary:** The rundown editor UI spec (the page at `/:compId/rundown`). Segment list, detail panel, pickers, templates.
 
-### [PRD-Rundown-02-SegmentList/](PRD-Rundown-02-SegmentList/PRD-Rundown-02-SegmentList.md)
-**Keywords:** segment list, rundown segments, segment display
-**Summary:** Segment list component for rundown editor.
+### [PLAN-Phase-L-Preview-Tool.md](PRD-Rundown-System/PLAN-Phase-L-Preview-Tool.md)
+**Keywords:** rundown preview, print rundown, export rundown, preview tool, phase L
+**Summary:** The rundown preview and export tool (print view, preview URLs with the meet theme applied).
 
-### [PRD-Rundown-03-SegmentDetail/](PRD-Rundown-03-SegmentDetail/PRD-Rundown-03-SegmentDetail.md)
-**Keywords:** segment detail, segment editing, segment form
-**Summary:** Segment detail/editing panel.
-
-### [PRD-Rundown-04-Pickers/](PRD-Rundown-04-Pickers/PRD-Rundown-04-Pickers.md)
-**Keywords:** pickers, graphic picker, scene picker, athlete picker, selection UI
-**Summary:** Picker components for selecting graphics, scenes, athletes.
-
-### [PRD-Rundown-05-ProducerPreview/](PRD-Rundown-05-ProducerPreview/PRD-Rundown-05-ProducerPreview.md)
-**Keywords:** producer preview, producer view, rundown preview
-**Summary:** Producer preview panel for rundown.
-
-### [PRD-AdvancedRundownEditor-2026-01-22.md](PRD-AdvancedRundownEditor-2026-01-22.md)
-**Keywords:** advanced rundown, rundown master PRD, full rundown spec
-**Summary:** Master PRD for the advanced rundown editor feature.
+### [_archive/rundown-2026-01/](_archive/rundown-2026-01/README.md)
+**Keywords:** archived rundown PRDs, PRD-Rundown-00 through 10, segment list PRD, pickers PRD, producer integration, advanced rundown editor, superseded rundown docs
+**Summary:** The ten original rundown PRDs (00-Index, 00-Timesheet, 02-SegmentList, 03-SegmentDetail, 04-Pickers, 05-Prototype, 06-BackendServices, 07-FrontendIntegration, 08-ProducerIntegration, 09-Templates, 10-ImportExport) plus the AdvancedRundownEditor vision doc. Archived 2026-01-23 when they were consolidated into PRD-Rundown-System; most were never implemented. Its README says which is which and why.
 
 ---
 
 ## Graphics
+
 
 ### [PRD-Graphics-Registry/PRD-Graphics-Registry.md](PRD-Graphics-Registry/PRD-Graphics-Registry.md)
 **Keywords:** graphics registry, schema-driven graphics, graphicsRegistry.js, add graphic, new graphic, graphic picker, graphic URL, graphic params
@@ -247,12 +236,14 @@ This is a searchable index of all project documentation. Search for keywords to 
 | If you need to... | Read this document |
 |-------------------|-------------------|
 | **Understand the whole system, which subsystems exist, and what state each is in** | [SYSTEM-OVERVIEW.md](../SYSTEM-OVERVIEW.md) then [system-map/](system-map/README.md) |
+| **Plan work: what exists, how reliable it is, what an agent could drive** | [TOOL-INVENTORY.md](TOOL-INVENTORY.md) + [tool-inventory.csv](tool-inventory.csv) |
 | Understand OBS connection flow | [README-OBS-Architecture.md](README-OBS-Architecture.md) |
 | Deploy to production | [CLAUDE.md](../CLAUDE.md) |
 | Add a new team | [CLAUDE.md](../CLAUDE.md) (Adding a New Team section) |
 | **Add a new graphic** | [GUIDE-Adding-New-Graphics.md](PRD-Graphics-Registry/GUIDE-Adding-New-Graphics.md) |
 | Fix an OBS feature | [PRD-OBS-00-Index.md](PRD-OBS-00-Index.md) → specific PRD |
-| Work on rundown editor | [PRD-Rundown-00-Index.md](PRD-Rundown-00-Index.md) |
+| Work on rundown editor | [PRD-Rundown-01-EditorPrototype/](PRD-Rundown-01-EditorPrototype/PRD-Rundown-01-EditorPrototype.md) |
+| Work on the show engine (start, advance, cues) | [PRD-Rundown-System/](PRD-Rundown-System/PRD-Rundown-System-2026-01-23.md) |
 | Set up a new VM | [vm-setup-guide.md](vm-setup-guide.md) |
 | Understand graphics | [GRAPHICS-INVENTORY.md](GRAPHICS-INVENTORY.md) |
 | Use MCP tools | [CLAUDE.md](../CLAUDE.md) |

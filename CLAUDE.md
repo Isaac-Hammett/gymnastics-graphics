@@ -8,7 +8,9 @@ Read the overview before making architectural claims or starting a new feature. 
 - **PRD `Status:` lines are not a status source.** They are wrong in both directions. The `plan.md` / `implementation-plan.md` inside each PRD folder is usually accurate; the code and the live Firebase contents are authoritative.
 - **Producer View is the product.** The systems are its features. Surfaces (Home, Competition workspace, Producer View, Talent View, Settings) compose systems; they are not systems.
 
-Last surveyed: 2026-09-10. When a system changes materially, update its entry in `docs/system-map/` and the summary table in the overview.
+For planning work rather than understanding the system, **[docs/TOOL-INVENTORY.md](docs/TOOL-INVENTORY.md)** and **[docs/tool-inventory.csv](docs/tool-inventory.csv)** list every capability as one row with its control surface, reliability, evidence, and gymnastics coupling; section 5 sizes the adapters an agent would need to drive each tool.
+
+Last surveyed: 2026-09-10. When a system changes materially, update its entry in `docs/system-map/`, the summary table in the overview, and the matching rows in the inventory.
 
 ## Git Workflow - IMPORTANT
 

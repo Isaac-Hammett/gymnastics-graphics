@@ -13,6 +13,8 @@
 5. **Firebase data model** — the shared bus. Who owns which path.
 6. **Appendix** — tooling, root-folder guide, orphaned and legacy code, where the PRDs are.
 
+**Planning from this document:** [docs/TOOL-INVENTORY.md](docs/TOOL-INVENTORY.md) and [docs/tool-inventory.csv](docs/tool-inventory.csv) turn this map into one row per capability (144 rows), each with the control surface that drives it today, its reliability, and its evidence. Use those when sizing work or deciding what an agent could drive; use this document to understand how the pieces fit.
+
 ### Status scale
 
 | Status | Meaning |
