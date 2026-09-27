@@ -135,6 +135,11 @@ main() {
               --add-dir "$RUNS" --output-format stream-json --verbose)
   [ -n "$FALLBACK" ] && ARGS+=(--fallback-model "$FALLBACK")
 
+  # No background tasks in headless runs. A Bash call over the default 2-minute timeout (the server test suite
+  # takes up to 5) got moved to the background; the agent ended its turn to wait, and `claude -p` exited 0 with
+  # the work uncommitted (ISA2-294, 2026-09-27). Long commands now run in the foreground for up to 10 minutes.
+  export CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1 BASH_DEFAULT_TIMEOUT_MS=600000 BASH_MAX_TIMEOUT_MS=900000
+
   echo "=== $(date '+%F %T') start $KEY role=$ROLE model=$MODEL workdir=$WORKDIR" >> "$LOGS/$KEY.log"
   # Process substitution, not a pipe: a pipe hangs on tee when a child keeps stdout open.
   ( cd "$WORKDIR" && "$TO" "${TIMEOUT_MIN}m" claude "${ARGS[@]}" < "$RUNS/$KEY.prompt.md" 2>> "$LOGS/$KEY.err" \

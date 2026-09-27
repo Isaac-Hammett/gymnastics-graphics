@@ -232,6 +232,22 @@ def main_checkout() -> Path:
     return wt
 
 
+def ticket_branch(t: str, i) -> str:
+    branch_file = RUNS / f"{t}.branch"
+    return branch_file.read_text().strip() if branch_file.exists() else (i or {}).get("branch")
+
+
+def branch_ahead(t: str, i) -> bool:
+    """True when the ticket branch has at least one commit that main lacks. DRY runs assume yes."""
+    if DRY:
+        return True
+    branch = ticket_branch(t, i)
+    if not branch:
+        return False
+    r = sh(["git", "rev-list", "--count", f"{main_branch()}..{branch}"], cwd=ROOT)
+    return r.returncode == 0 and r.stdout.strip().isdigit() and int(r.stdout.strip()) > 0
+
+
 def merge_ticket(t: str, branch: str):
     """Returns (True, msg) on success, (False, msg) on conflict/error, (None, msg) when git refused because of
     local changes in the main checkout (retry next pass).
@@ -270,7 +286,11 @@ def merge_ticket(t: str, branch: str):
         msg += " (not pushed; pushing main deploys, so that is Isaac's call)"
     wt_t = worktrees_dir() / t
     if wt_t.exists():
-        sh(["git", "worktree", "remove", "--force", str(wt_t)], cwd=ROOT)
+        # Never --force: a worktree with uncommitted changes is kept (git refuses), so unmerged work survives.
+        rm = sh(["git", "worktree", "remove", str(wt_t)], cwd=ROOT)
+        if rm.returncode != 0:
+            msg += f"; worktree kept at {wt_t} (uncommitted changes)"
+            return True, msg
     # -D from the main worktree: -d would judge "merged" against whatever branch ROOT has checked out.
     sh(["git", "branch", "-D", branch], cwd=wt)
     return True, msg
@@ -359,13 +379,16 @@ def finalize(key: str, by_id: dict, state: dict):
         L_label(t, "stuck")
         L_comment(t, f"Could not prepare the worktree for {t} (branch conflict with `{main_branch()}`?). See agent-team/logs/dispatch.log.")
         notify(f"{t} worktree prep failed")
-    elif rc == 1 or not (rc == 0 or has_answer):
+    elif rc == 1 or not has_answer or not branch_ahead(t, i):
+        # rc 0 alone proves nothing: a headless run can exit 0 mid-task (ISA2-294 exited while waiting on a
+        # background test run, uncommitted). No answer or no commits means stuck, and the worktree is kept.
+        why = "no answer file" if not has_answer else ("no commits on the branch" if rc != 1 else "")
         L_label(t, "stuck")
-        L_comment(t, f"Run exited rc={rc}{'' if has_answer else ' with no answer'}.\n\nLog tail:\n```\n{log_tail(key)}\n```")
-        notify(f"{t} stuck (rc={rc})")
+        L_comment(t, f"Run exited rc={rc}{f' with {why}' if why else ''}. Worktree kept at `{worktrees_dir() / t}`."
+                     f"\n\nLog tail:\n```\n{log_tail(key)}\n```")
+        notify(f"{t} stuck (rc={rc}{f', {why}' if why else ''})")
     else:
-        branch_file = RUNS / f"{t}.branch"
-        branch = branch_file.read_text().strip() if branch_file.exists() else (i or {}).get("branch")
+        branch = ticket_branch(t, i)
         ok, msg = merge_ticket(t, branch)
         if ok is None:
             if not state["merge_warned"].get(t):
