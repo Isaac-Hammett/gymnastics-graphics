@@ -93,8 +93,17 @@ class VMPoolManager extends EventEmitter {
       // Load or create pool config
       await this._loadPoolConfig();
 
-      // Sync AWS state with Firebase
-      await this._syncWithAWS();
+      // Sync AWS state with Firebase. Without AWS access (a laptop, an agent test coordinator, or a
+      // server whose IAM role is missing) the pool still runs from Firebase: assigned VMs are found and
+      // their OBS connects. Nothing is launched or reconciled, so no pool entries are removed.
+      try {
+        await this._syncWithAWS();
+        this._awsAvailable = true;
+      } catch (error) {
+        this._awsAvailable = false;
+        console.warn(`[VMPoolManager] AWS unavailable (${error.message}). Running from Firebase only: ` +
+          'assigned VMs work, but launch, start, stop, and AWS reconciliation are off until a restart with AWS access.');
+      }
 
       // Set up Firebase listener for real-time updates
       this._setupFirebaseListener();
@@ -817,7 +826,8 @@ class VMPoolManager extends EventEmitter {
       config: this._poolConfig,
       counts,
       vms,
-      initialized: this._initialized
+      initialized: this._initialized,
+      awsAvailable: this._awsAvailable === true
     };
   }
 
