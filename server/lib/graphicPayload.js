@@ -276,6 +276,101 @@ export async function buildGraphicPayload({
   return graphicData;
 }
 
+const EVENT_FRAME_IDS = ['floor', 'pommel', 'rings', 'vault', 'pbars', 'hbar', 'ubars', 'beam', 'allaround', 'final'];
+
+/**
+ * The `graphic` type GraphicsControl.sendGraphic wrote for a button ID.
+ * Event frames, leaderboards, and per-team rosters share one renderer each.
+ * @param {string} graphicId
+ * @returns {string}
+ */
+export function manualGraphicType(graphicId) {
+  if (EVENT_FRAME_IDS.includes(graphicId)) return 'event-frame';
+  if (graphicId.startsWith('leaderboard-')) return 'virtius-leaderboard';
+  if (/^team\d+-roster$/.test(graphicId)) return 'team-roster';
+  return graphicId;
+}
+
+/**
+ * Build the payload a producer's button press writes, matching what
+ * GraphicsControl.sendGraphic wrote client-side before ISA2-281: all ten team
+ * slots, compType, frame title, leaderboard event and gender, event-calendar
+ * fields, theme sponsors ahead of team sponsors, and the button-type `graphic`.
+ * Stage renderer, blocks, and theme come from buildGraphicPayload.
+ *
+ * @param {Object} options
+ * @param {Object} options.db
+ * @param {string} options.compId
+ * @param {string} options.graphicId
+ * @param {string} [options.frameTitle]
+ * @param {string} [options.leaderboardEvent]
+ * @param {string} [options.leaderboardGender]
+ * @param {string} [options.logPrefix]
+ * @returns {Promise<Object>}
+ */
+export async function buildManualGraphicPayload({
+  db: dbOrApp, compId, graphicId, frameTitle, leaderboardEvent, leaderboardGender,
+  logPrefix = '[GraphicPayload]',
+} = {}) {
+  const db = resolveDb(dbOrApp);
+  let config = null;
+  try {
+    config = (await db.ref(`competitions/${compId}/config`).once('value')).val();
+  } catch (error) {
+    console.warn(`${logPrefix} Failed to load competition config: ${error.message}`);
+  }
+  config = config || {};
+
+  const extra = { compType: config.compType || '' };
+  for (let i = 1; i <= 10; i++) {
+    extra[`team${i}Name`] = config[`team${i}Name`] || '';
+    extra[`team${i}Logo`] = config[`team${i}Logo`] || '';
+    extra[`team${i}Ave`] = config[`team${i}Ave`] || '';
+    extra[`team${i}High`] = config[`team${i}High`] || '';
+    extra[`team${i}Con`] = config[`team${i}Con`] || '';
+    extra[`team${i}Coaches`] = config[`team${i}Coaches`] || '';
+  }
+  if (frameTitle) extra.frameTitle = frameTitle;
+  if (leaderboardEvent) {
+    extra.leaderboardEvent = leaderboardEvent;
+    extra.leaderboardGender = leaderboardGender;
+  }
+  if (graphicId === 'event-calendar') {
+    extra.calendarTitle = config.calendarTitle || 'Event Calendar';
+    extra.calendarEvents = config.calendarEvents || '[]';
+    extra.calendarColumns = config.calendarColumns || 'auto';
+  }
+
+  const payload = await buildGraphicPayload({
+    db, compId, graphicId, graphicParams: extra, segmentId: null, logPrefix,
+  });
+  payload.graphic = manualGraphicType(graphicId);
+  delete payload.segmentId;
+
+  // Event sponsors on the active theme win over team sponsors.
+  if (graphicId.startsWith('sponsors-') && config.meetTheme) {
+    try {
+      const themeSponsors = (await db.ref(`themes/${config.meetTheme}/sponsors`).once('value')).val();
+      if (Array.isArray(themeSponsors) && themeSponsors.length > 0) {
+        payload.data.sponsors = JSON.stringify(themeSponsors.slice(0, 8).map(s => ({
+          name: s.name || '',
+          url: s.url || '',
+          ...(s.scale != null && s.scale !== 100 ? { scale: s.scale } : {}),
+          ...(s.offsetX ? { offsetX: s.offsetX } : {}),
+          ...(s.offsetY ? { offsetY: s.offsetY } : {}),
+          ...(s.cropX != null ? { cropX: s.cropX } : {}),
+          ...(s.cropY != null ? { cropY: s.cropY } : {}),
+          ...(s.cropW != null ? { cropW: s.cropW } : {}),
+          ...(s.cropH != null ? { cropH: s.cropH } : {}),
+        })));
+      }
+    } catch (error) {
+      console.warn(`${logPrefix} Failed to load theme sponsors: ${error.message}`);
+    }
+  }
+  return payload;
+}
+
 /**
  * The payload GraphicsControl writes when the producer clears the output.
  * Deliberately omits `renderer` — both engines clear on `graphic: 'clear'`.

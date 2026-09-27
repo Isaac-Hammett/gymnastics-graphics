@@ -76,6 +76,10 @@ class TimesheetEngine extends EventEmitter {
 
     this.showConfig = options.showConfig || { segments: [] };
     this.obs = options.obs || null;
+    // Action bus (ISA2-281): when present, scene switches and graphic fires run
+    // through bus.execute with sender 'rundown'. Without one (legacy single
+    // engine, unit tests) the engine talks to OBS and Firebase itself.
+    this.actionBus = options.actionBus || null;
     this.firebase = options.firebase || null;
     this.io = options.io || null;
 
@@ -721,6 +725,30 @@ class TimesheetEngine extends EventEmitter {
       return;
     }
 
+    if (this.actionBus) {
+      const ack = await this.actionBus.execute({
+        actionId: `scene:${segment.obsScene}`,
+        sender: 'rundown',
+        params: { transition },
+        uncatalogued: true,
+        includeDetails: true
+      });
+      if (ack.ok) {
+        this.emit('sceneChanged', {
+          sceneName: segment.obsScene,
+          transition: transition,
+          segmentId: segment.id
+        });
+      } else {
+        this.emit('error', {
+          type: 'obs_scene_switch',
+          message: `Failed to switch to scene ${segment.obsScene}: ${ack.details?.message || ack.error}`,
+          segmentId: segment.id
+        });
+      }
+      return;
+    }
+
     // Get OBS connection - prefer per-competition connection via obsConnectionManager
     let obsConnection = null;
     if (this.obsConnectionManager && this.compId) {
@@ -895,6 +923,36 @@ class TimesheetEngine extends EventEmitter {
         timestamp: Date.now(),
         rehearsalMode: true
       });
+      return;
+    }
+
+    // Via the action bus: it builds and writes currentGraphic; the engine keeps
+    // the socket.io broadcast and the engine event.
+    if (this.actionBus) {
+      const ack = await this.actionBus.execute({
+        actionId: `graphic:${graphicId}`,
+        sender: 'rundown',
+        params: { graphicParams, segmentId: segment.id },
+        uncatalogued: true,
+        includeDetails: true
+      });
+      if (!ack.ok) {
+        this.emit('error', {
+          type: 'firebase_graphic',
+          message: `Failed to trigger graphic via Firebase: ${ack.details?.message || ack.error}`,
+          segmentId: segment.id
+        });
+        return;
+      }
+      const busPayload = ack.details.payload;
+      if (this.io) {
+        if (this.compId) {
+          this.io.to(`competition:${this.compId}`).emit('triggerGraphic', busPayload);
+        } else {
+          this.io.emit('triggerGraphic', busPayload);
+        }
+      }
+      this.emit('graphicTriggered', busPayload);
       return;
     }
 
@@ -1533,6 +1591,35 @@ class TimesheetEngine extends EventEmitter {
    * @returns {boolean} True if scene switch succeeded
    */
   async overrideScene(sceneName, triggeredBy) {
+    if (this.actionBus) {
+      const ack = await this.actionBus.execute({
+        actionId: `scene:${sceneName}`,
+        sender: 'producer',
+        params: { transition: { type: TRANSITION_TYPES.CUT } },
+        uncatalogued: true,
+        includeDetails: true
+      });
+      if (!ack.ok) {
+        this.emit('error', {
+          type: 'override_scene_failed',
+          message: `Failed to switch to scene '${sceneName}': ${ack.details?.message || ack.error}`
+        });
+        return false;
+      }
+      this._recordOverride('scene_override', {
+        triggeredBy,
+        sceneName,
+        currentSegmentId: this._currentSegment?.id,
+        currentSegmentScene: this._currentSegment?.obsScene
+      });
+      this.emit('sceneOverridden', {
+        sceneName,
+        segmentId: this._currentSegment?.id,
+        timestamp: Date.now()
+      });
+      return true;
+    }
+
     if (!this.obs) {
       this.emit('error', {
         type: 'override_scene_failed',
@@ -1575,6 +1662,35 @@ class TimesheetEngine extends EventEmitter {
   }
 
   /**
+   * Look one camera up in competitions/{compId}/production/cameras.
+   * Bounded so a stuck Firebase read cannot hang the socket handler.
+   * @param {string} cameraId
+   * @returns {Promise<Object|null>}
+   * @private
+   */
+  async _readCameraFromFirebase(cameraId) {
+    if (!this.firebase || !this.compId) return null;
+    try {
+      const db = typeof this.firebase.ref === 'function' ? this.firebase : this.firebase.database();
+      const snapshot = await Promise.race([
+        db.ref(`competitions/${this.compId}/production/cameras`).once('value'),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('timed out')), 5000).unref?.())
+      ]);
+      const value = snapshot.val();
+      if (!value) return null;
+      const entries = Array.isArray(value) ? value.map((c, i) => [String(i), c]) : Object.entries(value);
+      for (const [key, camera] of entries) {
+        if (camera && (camera.id === cameraId || key === cameraId)) {
+          return { ...camera, id: camera.id || key };
+        }
+      }
+    } catch (error) {
+      console.warn(`[Timesheet:${this.compId}] Could not read cameras: ${error.message}`);
+    }
+    return null;
+  }
+
+  /**
    * Override to a specific camera's scene
    * Looks up the camera and switches to its single-camera scene
    * @param {string} cameraId - Camera ID to switch to
@@ -1582,7 +1698,7 @@ class TimesheetEngine extends EventEmitter {
    * @returns {boolean} True if camera switch succeeded
    */
   async overrideCamera(cameraId, triggeredBy) {
-    if (!this.obs) {
+    if (!this.actionBus && !this.obs) {
       this.emit('error', {
         type: 'override_camera_failed',
         message: 'Cannot override camera: OBS not connected'
@@ -1590,9 +1706,13 @@ class TimesheetEngine extends EventEmitter {
       return false;
     }
 
-    // Find the camera in config
+    // Find the camera in config (per-competition engines start with no cameras,
+    // so fall back to the competition's production cameras in Firebase)
     const cameras = this.showConfig.cameras || [];
-    const camera = cameras.find(c => c.id === cameraId);
+    let camera = cameras.find(c => c.id === cameraId);
+    if (!camera && this.actionBus) {
+      camera = await this._readCameraFromFirebase(cameraId);
+    }
 
     if (!camera) {
       this.emit('error', {
@@ -1604,6 +1724,39 @@ class TimesheetEngine extends EventEmitter {
 
     // Determine scene name - use camera's scene or generate standard name
     const sceneName = camera.sceneName || `Single - ${camera.name}`;
+
+    if (this.actionBus) {
+      const ack = await this.actionBus.execute({
+        actionId: `scene:${sceneName}`,
+        sender: 'producer',
+        params: { transition: { type: TRANSITION_TYPES.CUT } },
+        uncatalogued: true,
+        includeDetails: true
+      });
+      if (!ack.ok) {
+        this.emit('error', {
+          type: 'override_camera_failed',
+          message: `Failed to switch to camera '${cameraId}': ${ack.details?.message || ack.error}`
+        });
+        return false;
+      }
+      this._recordOverride('camera_override', {
+        triggeredBy,
+        cameraId,
+        cameraName: camera.name,
+        sceneName,
+        currentSegmentId: this._currentSegment?.id,
+        currentSegmentScene: this._currentSegment?.obsScene
+      });
+      this.emit('cameraOverridden', {
+        cameraId,
+        cameraName: camera.name,
+        sceneName,
+        segmentId: this._currentSegment?.id,
+        timestamp: Date.now()
+      });
+      return true;
+    }
 
     try {
       // Switch to the camera's scene using cut transition
