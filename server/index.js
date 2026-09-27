@@ -27,6 +27,7 @@ import { getSelfStopService } from './lib/selfStop.js';
 import { getOBSStateSync } from './lib/obsStateSync.js';
 import { setupOBSRoutes } from './routes/obs.js';
 import { getOBSConnectionManager } from './lib/obsConnectionManager.js';
+import { getOrCreateActionBus } from './lib/actionBus.js';
 import { DEFAULT_PRESETS } from './lib/obsAudioManager.js';
 import { encryptStreamKey, decryptStreamKey, isEncryptedKey } from './lib/obsStreamManager.js';
 import { mapEditorSegmentsToEngine, validateEngineSegments, diffSegments, detectDuplicateIds, deduplicateSegmentsById } from './lib/segmentMapper.js';
@@ -1066,6 +1067,24 @@ function getOrCreatePlayoutEngine(compId, options = {}) {
  */
 function getPlayoutEngine(compId) {
   return playoutEngines.get(compId) || null;
+}
+
+// ============================================
+// Action Bus Helpers (ISA2-272)
+// ============================================
+
+/**
+ * Get or create the ActionBus for a competition, wired to this process's
+ * Firebase handle, socket.io server, and OBS connection manager.
+ * @param {string} compId - Competition ID
+ * @returns {import('./lib/actionBus.js').ActionBus}
+ */
+function getActionBusForComp(compId) {
+  return getOrCreateActionBus(compId, {
+    firebase: productionConfigService.getDb(),
+    io,
+    obsConnectionManager: getOBSConnectionManager()
+  });
 }
 
 /**
@@ -4805,6 +4824,59 @@ io.on('connection', async (socket) => {
   }
 
   broadcastState();
+
+  // ── Action bus (ISA2-272) ──────────────────────────────────────────────
+  // One command path for scene and graphic actions. Every command is
+  // acknowledged with { ok, actionId, error, guardrail }; successes are
+  // broadcast to the competition room as 'action:executed' by the bus itself.
+  // Registered synchronously, before any await in this handler (BUG-021).
+
+  // Send the catalog of actions available for this competition.
+  socket.on('action:catalog', async (payload, maybeAck) => {
+    const ack = typeof payload === 'function' ? payload : maybeAck;
+    const compId = (typeof payload === 'object' && payload?.compId) || clientCompId;
+    if (!compId) {
+      const error = { error: 'no_comp_id', actions: [] };
+      if (typeof ack === 'function') ack(error);
+      return;
+    }
+    try {
+      const catalog = await getActionBusForComp(compId).buildCatalog();
+      socket.emit('action:catalog', catalog);
+      if (typeof ack === 'function') ack(catalog);
+    } catch (error) {
+      console.error(`[ActionBus:${compId}] Catalog build failed:`, error.message);
+      if (typeof ack === 'function') ack({ error: error.message, actions: [] });
+    }
+  });
+
+  // Execute one action and acknowledge it.
+  socket.on('action:execute', async (payload, maybeAck) => {
+    const ack = typeof payload === 'function' ? payload : maybeAck;
+    const { actionId, sender, recommendationId, compId: payloadCompId } =
+      (typeof payload === 'object' && payload) || {};
+    const compId = payloadCompId || clientCompId;
+
+    if (!compId) {
+      const result = { ok: false, actionId: actionId || null, error: 'no_comp_id', guardrail: null };
+      if (typeof ack === 'function') ack(result);
+      return;
+    }
+
+    let result;
+    try {
+      result = await getActionBusForComp(compId).execute({
+        actionId,
+        sender: sender || `socket:${socket.id}`,
+        recommendationId
+      });
+    } catch (error) {
+      // execute() is designed not to throw; this is the belt-and-braces path.
+      console.error(`[ActionBus:${compId}] execute threw:`, error.message);
+      result = { ok: false, actionId: actionId || null, error: error.message, guardrail: null };
+    }
+    if (typeof ack === 'function') ack(result);
+  });
 
   // Client identifies themselves
   socket.on('identify', ({ role, name }) => {

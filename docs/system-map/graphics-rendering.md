@@ -58,7 +58,8 @@
 **Used by:**
 - Producer View (surface) — `show-controller/src/views/ProducerView.jsx:1472` renders `GraphicsControl`
 - Talent View (surface) — `show-controller/src/components/QuickActions.jsx` writes `currentGraphic` directly (event-summary, leaderboards, clear)
-- Rundown — `server/lib/timesheetEngine.js` requires `stage/graphics-registry.json` (line 21) and writes `competitions/{compId}/currentGraphic` (1119); `ShowContext.jsx:397` mirrors segment-triggered graphics
+- Rundown — `server/lib/timesheetEngine.js` `_triggerGraphic` writes `competitions/{compId}/currentGraphic`; since ISA2-272 (2026-09-27) it builds the payload by calling `buildGraphicPayload()` in `server/lib/graphicPayload.js`, which now owns the `stage/graphics-registry.json` load, `getGraphicById`, the config/sponsor/custom data assembly, the renderer routing, and the stage skeleton/blocks/theme resolution. `ShowContext.jsx:397` mirrors segment-triggered graphics
+- Action bus — `server/lib/actionBus.js` (ISA2-272) writes `currentGraphic` for `graphic:{id}` / `graphic:clear` actions through the *same* `buildGraphicPayload()`, so a bus-fired graphic and a rundown-fired one are byte-identical apart from `segmentId` and `timestamp` (`server/__tests__/graphicPayload.test.js` asserts this)
 - Clip playout — `server/lib/playoutEngine.js:1142` writes `currentGraphic` and reads clip status back from output.html
 - OBS integration — `POST /api/obs/templates/:id/apply` (`server/routes/obs.js:1743-1750`) hands OBS the graphics browser-source URLs
 - Competition workspace (surface) — `/url-generator` and `/graphics-manager` routes in `show-controller/src/App.jsx:89,91`, linked from `HomePage.jsx:885,891`
