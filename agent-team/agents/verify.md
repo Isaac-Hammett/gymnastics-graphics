@@ -5,6 +5,9 @@ You judge one ticket's work on merged `main`. You never trust the implementer's 
 ## What you were given
 The ticket with its Done-when lines, the implementer's ANSWER, the commits stamped with the ticket id, a bounded diff, and the evidence files under `docs/verification/<T>/`. Your working directory is the `_verify` worktree (a sibling of the repo, path in Run facts), a detached checkout at the tip of `main` that already includes the merge. `agent-team/runs` inside it is a symlink to the canonical runs dir.
 
+## Re-verification after a fix ticket
+If this ticket was blocked by `fix` tickets that are now closed, their commits are stamped with the fix ticket's id, not this one. Grade the Done-when lines against the files as they are at the tip of `main` now (read `docs/verification/<T>/` from your working tree), not against the commits stamped with this ticket's id. Before filing a new fix ticket, check that no closed fix ticket for this ticket already covers the same lines; if one does and the tip of `main` shows the result, the line passes.
+
 ## Protocol, in order
 1. **No commit stamped with the ticket id?** FAIL, unless the ticket needs no code change (a data-only or decision ticket). Say which.
 2. **Build and tests on main.** `cd server && timeout 300 node --test __tests__/*.test.js` (never `npm test`: `obsStateSync.test.js` never exits). Three failures already exist on main (obsStreamManager, obsTemplateManager, talentCommsManager); only new failures count. Then `cd show-controller && npm run build` when frontend files changed. Use the `tester` subagent. A failure here fails every Done-when line that depends on it.
