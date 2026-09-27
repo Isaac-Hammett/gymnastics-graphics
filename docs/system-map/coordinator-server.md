@@ -14,6 +14,8 @@
 
 **Key files:**
 - `server/index.js` (8,730 lines) — the whole process: imports 30+ libs, Express+Socket.io setup, 82 routes, 117 socket handlers, `httpServer.listen` at 8699
+- `server/lib/actionBus.js` (ISA2-272, 2026-09-27) — per-competition action bus: one command path for scene and graphic actions with stable IDs. **Built** (unit-tested, socket path smoke-checked on local dev; not yet exercised against a VM's OBS)
+- `server/lib/graphicPayload.js` (ISA2-272, 2026-09-27) — the `currentGraphic` payload builder, extracted from `timesheetEngine._triggerGraphic`; also owns the `stage/graphics-registry.json` load and `getGraphicById`
 - `server/lib/autoShutdown.js` (450) — idle timer, 30 s cancellable shutdown, Firebase audit; `enabled` gated on `COORDINATOR_MODE`
 - `server/lib/selfStop.js` (446) — IMDSv2 instance-id lookup + `StopInstancesCommand` on self
 - `server/lib/productionConfigService.js` — the real `admin.initializeApp({credential: applicationDefault()})` (lines 44-52); `autoShutdown`/`selfStop` each re-init defensively
@@ -34,9 +36,17 @@
 - `competitions/{compId}/config/scoringFeed`, `competitions/{compId}/config/virtiusSessionId` — startup scan + `child_changed` listener in `initializeScoringIngestion()`
 - `competitions/{compId}/obs/templateScenes` — `broadcastOBSState()` scene categorization
 
+**Action bus (ISA2-272) — one command path for scene and graphic actions.** Before this, five scene-switch paths used different OBS connections and none acknowledged anything, and `competitions/{compId}/currentGraphic` had eight or more writers. `server/lib/actionBus.js` adds a per-competition bus (`getOrCreateActionBus(compId)`, same shape as `getOrCreatePlayoutEngine`) that:
+- **Catalogs** what can be done right now as `{id, kind, label, category, params}`: `scene:{sceneName}` from OBS `GetSceneList` unioned with the scenes the rundown's segments reference (`params.source` is `obs`, `rundown`, or `both`), plus `graphic:{graphicId}` and `graphic:clear` from `stage/graphics-registry.json` filtered by the competition's gender and team count, with `perTeam` entries expanded per slot (`team-roster` → `graphic:team2-roster`).
+- **Executes** scenes through `obsConnectionManager.getConnection(compId)`, confirmed against `CurrentProgramSceneChanged` (listener armed *before* the `SetCurrentProgramScene` call; a scene that is already live short-circuits, since OBS emits nothing then). Graphics are written server-side via `graphicPayload.buildGraphicPayload`, the same function the timesheet engine calls.
+- **Acks** every command as `{ok, actionId, error, guardrail}`. Error codes: `no_action_id`, `unknown_action`, `obs_not_connected`, `obs_call_failed`, `obs_timeout`, `not_confirmed`, `firebase_unavailable`, `firebase_timeout`, `firebase_write_failed`, `guardrail`. Every OBS and Firebase call on the socket path is bounded — Firebase Admin without valid credentials never settles a read, which would otherwise hang the ack forever.
+- **Observes without rerouting.** Listens to the connection manager's forwarded `obsEvent`/`CurrentProgramSceneChanged` and to `currentGraphic`, and attributes each change to `bus` or `human` (3 s window after a bus write) so guardrails and the decision log know what the producer did. Guardrails are pluggable (`addGuardrail`); the bus ships with none.
+
+**Still a follow-up:** the rundown engine, the ProducerView scene buttons, and GraphicsControl continue to write `currentGraphic` and switch scenes on their own paths. The bus is additive so far.
+
 **Socket events:**
-`emits:` connected, shutdownPending, shutdownCancelled, shutdownExecuting, serverShuttingDown, stateUpdate, vmPoolStatus, cameraHealth, cameraStatusChanged (124 distinct emit names total across index.js)
-`listens:` disconnect, identify, plus 115 more (see inventory below); process-level lifecycle listeners are the `socket.use()` activity-tracking middleware registered first in every connection
+`emits:` action:catalog, action:executed (to `competition:{compId}`), connected, shutdownPending, shutdownCancelled, shutdownExecuting, serverShuttingDown, stateUpdate, vmPoolStatus, cameraHealth, cameraStatusChanged (124 distinct emit names total across index.js)
+`listens:` action:execute `{actionId, sender, recommendationId?}` and action:catalog (both registered first, synchronously, per BUG-021), disconnect, identify, plus 115 more (see inventory below); process-level lifecycle listeners are the `socket.use()` activity-tracking middleware registered first in every connection
 
 **HTTP routes:** (coordinator-lifecycle subset only; full monolith inventory below)
 - `GET /api/coordinator/status` — mode, uptime, idle, firebase/aws/obs reachability

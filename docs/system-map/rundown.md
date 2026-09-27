@@ -9,7 +9,7 @@
 
 **Key files:**
 - `show-controller/src/pages/RundownEditorPage.jsx` (12,193 lines) — the entire editor: segment list, timeline view, detail panel, all 30+ modals
-- `server/lib/timesheetEngine.js` (1,841) — EventEmitter show clock: start/stop/pause/resume/advance/previous/goToSegment, scene switch, graphic fire, audio cue, hot-reload
+- `server/lib/timesheetEngine.js` (1,648 after ISA2-272) — EventEmitter show clock: start/stop/pause/resume/advance/previous/goToSegment, scene switch, graphic fire, audio cue, hot-reload. `_triggerGraphic` no longer builds its own payload: the builder and the graphics-registry load moved to `server/lib/graphicPayload.js` so the action bus writes the identical payload (`server/__tests__/graphicPayload.test.js` pins the golden payloads and the rundown/bus equivalence)
 - `server/lib/aiSuggestionService.js` (1,848) — rule-based segment suggestions (see sub-part)
 - `server/lib/segmentMapper.js` (528) — editor↔engine field mapping, `diffSegments`, `detectDuplicateIds`, `deduplicateSegmentsById`
 - `server/index.js` (8,730) — `getOrCreateEngine`, per-competition engine Map, `subscribeToRundownChanges`, Who-to-Watch sequencer, playout bridge, all rundown sockets
