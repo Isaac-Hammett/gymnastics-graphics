@@ -63,7 +63,7 @@ Read the verdict in `runs/ISA2-271.verify.answer.md` and on the ticket before yo
 ## Run
 
 ```bash
-tmux new -s dispatch 'cd agent-team && python3 dispatch.py'
+tmux new -d -s gg-dispatch 'cd agent-team && python3 dispatch.py'   # gg- prefix: another project already uses a session named "dispatch"
 ```
 
 Per-run sessions are `gg-<KEY>` (`tmux attach -t gg-ISA2-275`). Killing the dispatcher leaves them running; restarting re-adopts them.
