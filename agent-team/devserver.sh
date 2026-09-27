@@ -27,8 +27,9 @@ main() {
       stop_all "$RUNS" "$API_PORT" "$SPA_PORT" "$TAG"
       [ -d "$WT/server" ] || { echo "devserver.sh: worktree missing at $WT" >&2; return 1; }
       start_api "$WT" "$API_PORT" "$RUNS" "$LOGS" "$TAG"
+      # vite via node directly (see node_bin): the registry files it would rebuild in predev are committed.
       ( cd "$WT/show-controller" && VITE_API_URL="http://localhost:$API_PORT" VITE_LOCAL_SERVER="http://localhost:$API_PORT" \
-          nohup npm run dev -- --port "$SPA_PORT" --strictPort > "$LOGS/devserver-spa-$TAG.log" 2>&1 & echo $! > "$RUNS/devserver-spa-$TAG.pid" )
+          nohup $(node_bin) node_modules/vite/bin/vite.js --port "$SPA_PORT" --strictPort > "$LOGS/devserver-spa-$TAG.log" 2>&1 & echo $! > "$RUNS/devserver-spa-$TAG.pid" )
       wait_for "http://localhost:$SPA_PORT/" 90 || { echo "devserver.sh: SPA did not answer on :$SPA_PORT (see $LOGS/devserver-spa-$TAG.log)" >&2; return 1; }
       wait_for "http://localhost:$API_PORT/api/coordinator/status" 90 || { echo "devserver.sh: coordinator did not answer on :$API_PORT (see $LOGS/devserver-api-$TAG.log)" >&2; return 1; }
       echo "SPA http://localhost:$SPA_PORT   API http://localhost:$API_PORT"
@@ -57,6 +58,12 @@ main() {
   esac
 }
 
+# tmux on this Mac is an Intel-only build, so processes it starts run under Rosetta, and the universal node picks
+# x86_64 there. The SPA's native deps (rollup) are arm64-only. Run node natively when that's possible.
+node_bin() {
+  if [ "$(uname -m)" = "x86_64" ] && arch -arm64 node -e 0 2>/dev/null; then echo "arch -arm64 node"; else echo "node"; fi
+}
+
 start_api() {
   local WT="$1" API_PORT="$2" RUNS="$3" LOGS="$4" TAG="$5"
   unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN AWS_SECURITY_TOKEN AWS_WEB_IDENTITY_TOKEN_FILE AWS_ROLE_ARN
@@ -66,7 +73,7 @@ start_api() {
   local KEY="${FIREBASE_ADMIN_KEY:-$HOME/.config/firebase/gymnastics-graphics-prod-sa.json}"
   [ -f "$KEY" ] && export GOOGLE_APPLICATION_CREDENTIALS="$KEY"
   export FIREBASE_DATABASE_URL="${FIREBASE_DATABASE_URL:-https://gymnastics-graphics-default-rtdb.firebaseio.com}"
-  ( cd "$WT/server" && PORT="$API_PORT" nohup node index.js >> "$LOGS/devserver-api-$TAG.log" 2>&1 & echo $! > "$RUNS/devserver-api-$TAG.pid" )
+  ( cd "$WT/server" && PORT="$API_PORT" nohup $(node_bin) index.js >> "$LOGS/devserver-api-$TAG.log" 2>&1 & echo $! > "$RUNS/devserver-api-$TAG.pid" )
 }
 
 wait_for() {
