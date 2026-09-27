@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { PlayIcon, MoonIcon, ArrowPathIcon, ClockIcon } from '@heroicons/react/24/solid';
+import { MoonIcon, ArrowPathIcon, ClockIcon } from '@heroicons/react/24/solid';
 import { useCoordinator, COORDINATOR_STATUS } from '../hooks/useCoordinator';
 
 /**
@@ -144,13 +144,13 @@ export default function SystemOfflinePage({ redirectTo }) {
           </div>
 
           <h1 className="text-2xl font-bold text-white mb-3">
-            {isWaking ? 'System Starting Up...' : 'System is Sleeping'}
+            {isWaking ? 'Checking for the Coordinator...' : 'Coordinator Offline'}
           </h1>
 
           <p className="text-zinc-400 text-base leading-relaxed">
             {isWaking
-              ? 'The production system is starting. This usually takes 60-90 seconds.'
-              : 'The production system is hibernating to save costs. Click below to wake it up.'}
+              ? 'Checking every few seconds. A server started from AWS usually answers within 60-90 seconds.'
+              : "The coordinator server isn't responding. If it's stopped between meets, start it from AWS, then check again."}
           </p>
         </div>
 
@@ -202,13 +202,13 @@ export default function SystemOfflinePage({ redirectTo }) {
               onClick={handleWake}
               className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-green-600 hover:bg-green-500 rounded-xl text-white text-lg font-semibold transition-colors shadow-lg shadow-green-600/20"
             >
-              <PlayIcon className="w-6 h-6" />
-              Wake Up System
+              <ArrowPathIcon className="w-6 h-6" />
+              Check Again
             </button>
 
             {/* Estimated Time */}
             <div className="text-center text-sm text-zinc-500">
-              Estimated startup time: 60-90 seconds
+              Keeps checking for 2 minutes
             </div>
           </div>
         )}

@@ -1,4 +1,10 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { getServerUrl } from '../lib/serverUrl';
+
+// Shown when the status endpoint can't be reached (e.g. the EC2 instance is
+// stopped between meets). The browser can't start EC2 itself.
+const UNREACHABLE_MESSAGE =
+  "Can't reach the coordinator. If the server is stopped, start it from AWS, then click Check Again.";
 
 /**
  * Coordinator status states
@@ -14,8 +20,9 @@ export const COORDINATOR_STATUS = {
 /**
  * useCoordinator - Hook for managing coordinator EC2 instance state
  *
- * Checks coordinator status via Netlify serverless functions and provides
- * the ability to wake the coordinator when it's sleeping.
+ * Checks coordinator status via the coordinator's own /api/coordinator/status
+ * endpoint. The old Netlify wake/stop functions no longer exist, so wake()
+ * re-checks status (polling for up to 2 minutes) rather than starting EC2.
  *
  * @returns {Object} Coordinator state and actions
  */
@@ -37,17 +44,24 @@ export function useCoordinator() {
   const POLL_INTERVAL_MS = 5 * 1000;
 
   /**
-   * Check coordinator status via Netlify function
+   * Check coordinator status via the coordinator's status endpoint
    * @returns {Promise<Object>} Status response
    */
   const checkStatus = useCallback(async () => {
     try {
-      const response = await fetch('/.netlify/functions/coordinator-status', {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-        },
-      });
+      let response;
+      try {
+        response = await fetch(`${getServerUrl()}/api/coordinator/status`, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+          },
+          signal: AbortSignal.timeout(8000),
+        });
+      } catch {
+        // Network error or timeout: the coordinator is down or unreachable
+        throw new Error(UNREACHABLE_MESSAGE);
+      }
 
       if (!response.ok) {
         const data = await response.json().catch(() => ({}));
@@ -79,7 +93,7 @@ export function useCoordinator() {
         uptime: data.uptime,
         idleMinutes: data.idleMinutes,
         launchTime: data.launchTime,
-        firebase: data.firebase,
+        firebase: data.firebase ?? data.connections?.firebase,
         cached: data.cached,
         timestamp: data.timestamp,
       });
@@ -104,139 +118,39 @@ export function useCoordinator() {
   }, []);
 
   /**
-   * Wake the coordinator via Netlify function
+   * "Wake": re-check status now, then keep polling for up to 2 minutes.
+   * The browser can't start a stopped EC2 instance; this picks up a server
+   * that was just started from AWS.
    * @returns {Promise<Object>} Wake response
    */
   const wake = useCallback(async () => {
     if (isWaking) {
-      return { success: false, error: 'Already waking' };
+      return { success: false, error: 'Already checking' };
     }
 
     setIsWaking(true);
     setError(null);
 
-    try {
-      const response = await fetch('/.netlify/functions/wake-coordinator', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      const data = await response.json();
-
-      if (!response.ok || !data.success) {
-        throw new Error(data.message || data.error || 'Failed to wake coordinator');
-      }
-
-      // If already running, update status immediately
-      if (data.state === 'running') {
-        setStatus(COORDINATOR_STATUS.ONLINE);
-        setAppReady(true);
-        setIsWaking(false);
-        return { success: true, alreadyRunning: true };
-      }
-
-      // Start polling for readiness
-      setStatus(COORDINATOR_STATUS.STARTING);
-      startPolling();
-
-      return {
-        success: true,
-        estimatedReadySeconds: data.estimatedReadySeconds || 60,
-      };
-    } catch (err) {
-      setError(err.message);
+    const result = await checkStatus();
+    if (result.status === COORDINATOR_STATUS.ONLINE) {
       setIsWaking(false);
-      return {
-        success: false,
-        error: err.message,
-      };
+      return { success: true, alreadyRunning: true };
     }
-  }, [isWaking]);
+
+    startPolling();
+    return { success: true };
+  }, [isWaking, checkStatus]);
 
   /**
-   * Stop the coordinator via Netlify function
+   * Stopping the coordinator from the browser is not supported: the old
+   * Netlify stop function is gone. Stop the EC2 instance from AWS instead.
    * @returns {Promise<Object>} Stop response
    */
   const stop = useCallback(async () => {
-    if (isStopping) {
-      return { success: false, error: 'Already stopping' };
-    }
-
-    setIsStopping(true);
-    setError(null);
-
-    try {
-      const response = await fetch('/.netlify/functions/stop-coordinator', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      const data = await response.json();
-
-      if (!response.ok || !data.success) {
-        throw new Error(data.message || data.error || 'Failed to stop coordinator');
-      }
-
-      // If already stopped, update status immediately
-      if (data.state === 'stopped') {
-        setStatus(COORDINATOR_STATUS.OFFLINE);
-        setAppReady(false);
-        setIsStopping(false);
-        return { success: true, alreadyStopped: true };
-      }
-
-      // Update to stopping state and start polling
-      setStatus(COORDINATOR_STATUS.STOPPING);
-      startStopPolling();
-
-      return { success: true };
-    } catch (err) {
-      setError(err.message);
-      setIsStopping(false);
-      return {
-        success: false,
-        error: err.message,
-      };
-    }
-  }, [isStopping]);
-
-  /**
-   * Start polling for coordinator to finish stopping
-   */
-  const startStopPolling = useCallback(() => {
-    // Clear any existing polling
-    if (pollingRef.current) {
-      clearInterval(pollingRef.current);
-    }
-
-    pollingStartTime.current = Date.now();
-
-    pollingRef.current = setInterval(async () => {
-      // Check if we've exceeded max polling time
-      const elapsed = Date.now() - pollingStartTime.current;
-      if (elapsed >= MAX_POLLING_MS) {
-        clearInterval(pollingRef.current);
-        pollingRef.current = null;
-        setIsStopping(false);
-        setError('Coordinator did not stop within 2 minutes');
-        return;
-      }
-
-      // Check status
-      const result = await checkStatus();
-
-      // If coordinator is now offline, stop polling
-      if (result.status === COORDINATOR_STATUS.OFFLINE) {
-        clearInterval(pollingRef.current);
-        pollingRef.current = null;
-        setIsStopping(false);
-      }
-    }, POLL_INTERVAL_MS);
-  }, [checkStatus]);
+    const message = 'Stopping the coordinator from the app is not supported. Stop the EC2 instance from AWS.';
+    setError(message);
+    return { success: false, error: message };
+  }, []);
 
   /**
    * Start polling for coordinator readiness

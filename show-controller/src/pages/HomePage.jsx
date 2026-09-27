@@ -590,9 +590,9 @@ export default function HomePage() {
                   <span className="text-xl">*</span>
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-white">System is Sleeping</h3>
+                  <h3 className="text-lg font-bold text-white">Coordinator Offline</h3>
                   <p className="text-sm text-red-300/70">
-                    The coordinator is offline to save costs. VM operations are disabled.
+                    The coordinator server isn't responding. If it's stopped between meets, start it from AWS. VM operations are disabled until it's back.
                   </p>
                 </div>
               </div>
@@ -608,10 +608,10 @@ export default function HomePage() {
                 {isWaking ? (
                   <span className="flex items-center gap-2">
                     <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    Starting System...
+                    Checking...
                   </span>
                 ) : (
-                  'Start System'
+                  'Check Again'
                 )}
               </button>
             </div>

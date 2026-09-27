@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { PlayIcon, ArrowPathIcon } from '@heroicons/react/24/solid';
+import { ArrowPathIcon } from '@heroicons/react/24/solid';
 import { useCoordinator, COORDINATOR_STATUS } from '../hooks/useCoordinator';
 
 /**
@@ -150,8 +150,8 @@ export default function CoordinatorStatus() {
           onClick={handleWake}
           className="flex items-center gap-1.5 px-3 py-1.5 bg-green-500/20 text-green-400 text-sm font-medium rounded-lg hover:bg-green-500/30 transition-colors"
         >
-          <PlayIcon className="w-4 h-4" />
-          Start System
+          <ArrowPathIcon className="w-4 h-4" />
+          Check Again
         </button>
       )}
 
@@ -159,7 +159,7 @@ export default function CoordinatorStatus() {
       {isWaking && (
         <div className="flex items-center gap-2 text-sm text-yellow-400">
           <ArrowPathIcon className="w-4 h-4 animate-spin" />
-          <span>Starting...</span>
+          <span>Checking...</span>
         </div>
       )}
 
