@@ -61,6 +61,11 @@ start_api() {
   local WT="$1" API_PORT="$2" RUNS="$3" LOGS="$4" TAG="$5"
   unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN AWS_SECURITY_TOKEN AWS_WEB_IDENTITY_TOKEN_FILE AWS_ROLE_ARN
   export AWS_PROFILE=agent-team-no-aws AWS_CONFIG_FILE=/dev/null AWS_SHARED_CREDENTIALS_FILE=/dev/null AWS_EC2_METADATA_DISABLED=true
+  # Absolute Firebase Admin key for run coordinators (worktrees don't share relative paths or your shell env).
+  # dotenv never overrides variables already set, so this wins over server/.env.
+  local KEY="${FIREBASE_ADMIN_KEY:-$HOME/.config/firebase/gymnastics-graphics-prod-sa.json}"
+  [ -f "$KEY" ] && export GOOGLE_APPLICATION_CREDENTIALS="$KEY"
+  export FIREBASE_DATABASE_URL="${FIREBASE_DATABASE_URL:-https://gymnastics-graphics-default-rtdb.firebaseio.com}"
   ( cd "$WT/server" && PORT="$API_PORT" nohup node index.js >> "$LOGS/devserver-api-$TAG.log" 2>&1 & echo $! > "$RUNS/devserver-api-$TAG.pid" )
 }
 

@@ -126,7 +126,9 @@ def tmux_has(sess: str) -> bool:
 
 def running_sessions() -> set:
     r = sh(["tmux", "list-sessions", "-F", "#{session_name}"])
-    return {s for s in r.stdout.split() if s.startswith("gg-")} if r.returncode == 0 else set()
+    # Only agent-run sessions (gg-ISA2-12, gg-ISA2-12-verify, gg-PLANNER, gg-REVIEWER), never a loop session.
+    pat = re.compile(r"^gg-(?:[A-Z][A-Z0-9]*-\d+(?:-verify)?|PLANNER|REVIEWER)$")
+    return {s for s in r.stdout.split() if pat.match(s)} if r.returncode == 0 else set()
 
 
 def tmux_start(sess: str, cmd: str):
