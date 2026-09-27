@@ -3,9 +3,7 @@ import { Link } from 'react-router-dom';
 import { db, ref, set, get, onValue, push, remove } from '../lib/firebase';
 import { PhotoIcon, XMarkIcon, ClipboardDocumentIcon, CheckIcon, Cog6ToothIcon, PlusIcon, TrashIcon } from '@heroicons/react/24/solid';
 import useEventConfig from '../hooks/useEventConfig';
-import useTeamsDatabase from '../hooks/useTeamsDatabase';
-import { getGraphicsForCompetition, getGraphicsByCategory, getGraphicById, CATEGORIES } from '../lib/graphicsRegistry';
-import { resolveTheme } from '../lib/themeResolver';
+import { getGraphicsForCompetition, getGraphicsByCategory, CATEGORIES } from '../lib/graphicsRegistry';
 import CollapsibleSubcategory from './CollapsibleSubcategory';
 
 // Event button mapping for different genders (uses eventConfig IDs)
@@ -43,9 +41,6 @@ const leaderboardButtonConfig = {
 const commonLeaderboardButtons = [
   { id: 'leaderboard-aa', label: 'AA Leaders', leaderboardEvent: 'aa' },
 ];
-
-// All possible event frame IDs (for both genders)
-const eventFrames = ['floor', 'pommel', 'rings', 'vault', 'pbars', 'hbar', 'ubars', 'beam', 'allaround', 'final'];
 
 const OUTPUT_BASE_URL = 'https://commentarygraphic.com/output.html';
 const LOCAL_OUTPUT_URL = 'http://localhost:3003/output.html';
@@ -119,7 +114,7 @@ const eventDisplayNames = {
   'BAR': 'High Bar',
 };
 
-export default function GraphicsControl({ competitionId }) {
+export default function GraphicsControl({ competitionId, socket }) {
   const [currentGraphic, setCurrentGraphic] = useState(null);
   const [currentGraphicId, setCurrentGraphicId] = useState(null); // Track the specific button ID (e.g., 'floor', 'pommel')
   const [config, setConfig] = useState(null);
@@ -143,7 +138,6 @@ export default function GraphicsControl({ competitionId }) {
   const { events, eventIds, rotationCount, gender } = useEventConfig(config?.compType);
 
   // Get teams database for sponsor data
-  const { getTeamSponsors, resolveSchoolKey } = useTeamsDatabase();
 
   // Build dynamic graphic buttons based on competition gender and team names
   const graphicButtons = useMemo(() => {
@@ -307,222 +301,27 @@ export default function GraphicsControl({ competitionId }) {
     });
   };
 
-  const sendGraphic = async (graphicId, frameTitle = null, leaderboardEvent = null) => {
+  // Fire or clear a graphic through the coordinator's action bus (ISA2-281), so
+  // guardrails and the decision log see it. The coordinator builds the payload
+  // (config, sponsors, stage blocks, theme) and writes currentGraphic.
+  const executeAction = (actionId, params) => {
+    if (!socket) {
+      console.error(`GraphicsControl: no coordinator connection, cannot run ${actionId}`);
+      return;
+    }
+    socket.emit('action:execute', { actionId, sender: 'producer', compId, params }, (ack) => {
+      if (!ack?.ok) console.error(`GraphicsControl: ${actionId} failed`, ack);
+    });
+  };
+
+  const sendGraphic = (graphicId, frameTitle = null, leaderboardEvent = null) => {
     if (!compId || !config) return;
-
-    const data = {
-      compType: config.compType || '',
-      eventName: config.eventName || '',
-      meetDate: config.meetDate || '',
-      venue: config.venue || '',
-      location: config.location || '',
-      hosts: config.hosts || '',
-      virtiusSessionId: config.virtiusSessionId || '',
-      meetTheme: config.meetTheme || '',
-      // Team 1
-      team1Name: config.team1Name || '',
-      team1Logo: config.team1Logo || '',
-      team1Ave: config.team1Ave || '',
-      team1High: config.team1High || '',
-      team1Con: config.team1Con || '',
-      team1Coaches: config.team1Coaches || '',
-      // Team 2
-      team2Name: config.team2Name || '',
-      team2Logo: config.team2Logo || '',
-      team2Ave: config.team2Ave || '',
-      team2High: config.team2High || '',
-      team2Con: config.team2Con || '',
-      team2Coaches: config.team2Coaches || '',
-      // Team 3
-      team3Name: config.team3Name || '',
-      team3Logo: config.team3Logo || '',
-      team3Ave: config.team3Ave || '',
-      team3High: config.team3High || '',
-      team3Con: config.team3Con || '',
-      team3Coaches: config.team3Coaches || '',
-      // Team 4
-      team4Name: config.team4Name || '',
-      team4Logo: config.team4Logo || '',
-      team4Ave: config.team4Ave || '',
-      team4High: config.team4High || '',
-      team4Con: config.team4Con || '',
-      team4Coaches: config.team4Coaches || '',
-      // Team 5
-      team5Name: config.team5Name || '',
-      team5Logo: config.team5Logo || '',
-      team5Ave: config.team5Ave || '',
-      team5High: config.team5High || '',
-      team5Con: config.team5Con || '',
-      team5Coaches: config.team5Coaches || '',
-      // Team 6
-      team6Name: config.team6Name || '',
-      team6Logo: config.team6Logo || '',
-      team6Ave: config.team6Ave || '',
-      team6High: config.team6High || '',
-      team6Con: config.team6Con || '',
-      team6Coaches: config.team6Coaches || '',
-      // Team 7
-      team7Name: config.team7Name || '',
-      team7Logo: config.team7Logo || '',
-      team7Ave: config.team7Ave || '',
-      team7High: config.team7High || '',
-      team7Con: config.team7Con || '',
-      team7Coaches: config.team7Coaches || '',
-      // Team 8
-      team8Name: config.team8Name || '',
-      team8Logo: config.team8Logo || '',
-      team8Ave: config.team8Ave || '',
-      team8High: config.team8High || '',
-      team8Con: config.team8Con || '',
-      team8Coaches: config.team8Coaches || '',
-      // Team 9
-      team9Name: config.team9Name || '',
-      team9Logo: config.team9Logo || '',
-      team9Ave: config.team9Ave || '',
-      team9High: config.team9High || '',
-      team9Con: config.team9Con || '',
-      team9Coaches: config.team9Coaches || '',
-      // Team 10
-      team10Name: config.team10Name || '',
-      team10Logo: config.team10Logo || '',
-      team10Ave: config.team10Ave || '',
-      team10High: config.team10High || '',
-      team10Con: config.team10Con || '',
-      team10Coaches: config.team10Coaches || '',
-    };
-
-    if (frameTitle) {
-      data.frameTitle = frameTitle;
-    }
-
-    if (leaderboardEvent) {
-      data.leaderboardEvent = leaderboardEvent;
-      data.leaderboardGender = gender; // Pass gender for column visibility (women don't have Exec/SB)
-    }
-
-    // Handle event calendar - load events from competition config
-    if (graphicId === 'event-calendar') {
-      data.calendarTitle = config.calendarTitle || 'Event Calendar';
-      data.calendarEvents = config.calendarEvents || '[]';
-      data.calendarColumns = config.calendarColumns || 'auto';
-    }
-
-    // Handle sponsor graphics - check for event sponsors from theme first, then fall back to team sponsors
-    if (graphicId.startsWith('sponsors-')) {
-      let sponsorsFound = false;
-
-      // Check if competition has a theme with event sponsors
-      if (config.meetTheme) {
-        try {
-          const themeRef = ref(db, `themes/${config.meetTheme}/sponsors`);
-          const snapshot = await get(themeRef);
-          const eventSponsors = snapshot.val();
-          if (eventSponsors && Array.isArray(eventSponsors) && eventSponsors.length > 0) {
-            // Use event sponsors from theme (include all adjustment fields)
-            data.sponsors = JSON.stringify(eventSponsors.slice(0, 8).map(s => ({
-              name: s.name || '',
-              url: s.url || '',
-              ...(s.scale != null && s.scale !== 100 ? { scale: s.scale } : {}),
-              ...(s.offsetX ? { offsetX: s.offsetX } : {}),
-              ...(s.offsetY ? { offsetY: s.offsetY } : {}),
-              ...(s.cropX != null ? { cropX: s.cropX } : {}),
-              ...(s.cropY != null ? { cropY: s.cropY } : {}),
-              ...(s.cropW != null ? { cropW: s.cropW } : {}),
-              ...(s.cropH != null ? { cropH: s.cropH } : {}),
-            })));
-            sponsorsFound = true;
-          }
-        } catch (err) {
-          console.error('Error fetching theme sponsors:', err);
-        }
-      }
-
-      // Fallback to team sponsors if no event sponsors
-      if (!sponsorsFound) {
-        // Resolve home team key from team name (includes gender suffix)
-        const schoolKey = resolveSchoolKey(config.team1Name);
-        // Add gender suffix to get full team key (e.g., "west-chester" -> "west-chester-womens")
-        const homeTeamKey = schoolKey ? `${schoolKey}-${gender}` : null;
-        if (homeTeamKey) {
-          const teamSponsors = getTeamSponsors(homeTeamKey);
-          // Convert to JSON for the overlay (include all adjustment fields)
-          data.sponsors = JSON.stringify(teamSponsors.slice(0, 8).map(s => ({
-            name: s.name,
-            url: s.url,
-            ...(s.scale != null && s.scale !== 100 ? { scale: s.scale } : {}),
-            ...(s.offsetX ? { offsetX: s.offsetX } : {}),
-            ...(s.offsetY ? { offsetY: s.offsetY } : {}),
-            ...(s.cropX != null ? { cropX: s.cropX } : {}),
-            ...(s.cropY != null ? { cropY: s.cropY } : {}),
-            ...(s.cropW != null ? { cropW: s.cropW } : {}),
-            ...(s.cropH != null ? { cropH: s.cropH } : {}),
-          })));
-        } else {
-          data.sponsors = '[]';
-        }
-      }
-    }
-
-    // Determine graphic type
-    let graphicType = graphicId;
-    if (eventFrames.includes(graphicId)) {
-      graphicType = 'event-frame';
-    } else if (graphicId.startsWith('leaderboard-')) {
-      graphicType = 'virtius-leaderboard';
-    } else if (graphicId.match(/^team\d+-roster$/)) {
-      graphicType = 'team-roster';
-    }
-
-    // Include graphicId in data for renderers that need it
-    data.graphicId = graphicId;
-
-    // Look up renderer from registry (defaults to 'output' if not found or not 'stage')
-    // For perTeam graphics (e.g., "team1-roster"), strip the number to find base ID ("team-roster")
-    const baseId = graphicId.replace(/^team\d+-/, 'team-');
-    const registryEntry = getGraphicById(graphicId) || getGraphicById(baseId);
-    const firebaseRenderer = registryEntry && registryEntry.renderer === 'stage' ? 'stage' : 'output';
-
-    // Build the currentGraphic payload
-    const graphicPayload = {
-      graphic: graphicType,
-      graphicId: graphicId, // Store the specific button ID for highlighting
-      renderer: firebaseRenderer,
-      data: data,
-      timestamp: Date.now()
-    };
-
-    // For stage renderer graphics, resolve theme and include render spec
-    if (firebaseRenderer === 'stage' && registryEntry) {
-      // Resolve theme with per-graphic overrides
-      const resolvedTheme = await resolveTheme(null, config.meetTheme, graphicId);
-
-      // Include stage engine render spec — use defaultData.blocks (with per-block data)
-      // rather than bare block names, so stage.html knows titles and Firebase source paths
-      graphicPayload.skeleton = registryEntry.skeleton;
-      let stageBlocks = (registryEntry.defaultData && registryEntry.defaultData.blocks)
-        || registryEntry.blocks;
-
-      // For per-team roster graphics, fill in team-specific data
-      const rosterMatch = graphicId.match(/^team(\d+)-roster$/);
-      if (rosterMatch) {
-        const teamNum = rosterMatch[1];
-        const teamName = config[`team${teamNum}Name`] || `Team ${teamNum}`;
-        const teamKey = config[`team${teamNum}Key`] || '';
-        stageBlocks = [
-          { type: 'header-bar', data: { title: teamName } },
-          { type: 'athlete-grid', data: { teamKey: teamKey } }
-        ];
-      }
-
-      graphicPayload.blocks = stageBlocks;
-
-      // Include resolved theme if available
-      if (resolvedTheme) {
-        graphicPayload.theme = resolvedTheme;
-      }
-    }
-
-    set(ref(db, `competitions/${compId}/currentGraphic`), graphicPayload);
+    executeAction(`graphic:${graphicId}`, {
+      manual: true,
+      frameTitle,
+      leaderboardEvent,
+      leaderboardGender: leaderboardEvent ? gender : undefined,
+    });
   };
 
   // Send rotation slate graphic with specific rotation number
@@ -621,13 +420,7 @@ export default function GraphicsControl({ competitionId }) {
 
   const clearGraphic = () => {
     if (!compId) return;
-
-    // Note: clearGraphic does NOT include renderer field — both engines clear on graphic: 'clear'
-    set(ref(db, `competitions/${compId}/currentGraphic`), {
-      graphic: 'clear',
-      data: {},
-      timestamp: Date.now()
-    });
+    executeAction('graphic:clear', { manual: true });
   };
 
   // Send "Now Competing" graphic for a specific athlete

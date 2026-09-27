@@ -415,6 +415,8 @@ function getOrCreateEngine(compId, obsConnectionManager, firebase, socketIo) {
     obsConnectionManager,
     firebase,
     io: socketIo,
+    // Scene switches and graphic fires go through the per-competition action bus (ISA2-281)
+    actionBus: getOrCreateActionBus(compId, { firebase, io: socketIo, obsConnectionManager }),
     showConfig: { segments: [] } // Start with empty config - segments loaded via loadRundown
   });
 
@@ -4853,9 +4855,14 @@ io.on('connection', async (socket) => {
   // Execute one action and acknowledge it.
   socket.on('action:execute', async (payload, maybeAck) => {
     const ack = typeof payload === 'function' ? payload : maybeAck;
-    const { actionId, sender, recommendationId, compId: payloadCompId } =
+    const { actionId, sender, recommendationId, params, compId: payloadCompId } =
       (typeof payload === 'object' && payload) || {};
     const compId = payloadCompId || clientCompId;
+    // A producer's own button press may run a scene or graphic the catalog does
+    // not list (custom graphics, per-button variants). Everyone else, Xavier
+    // included, stays inside the catalog.
+    const requester = showState.connectedClients.find(c => c.id === socket.id);
+    const trustedProducer = requester?.role === 'producer' && sender !== 'xavier';
 
     if (!compId) {
       const result = { ok: false, actionId: actionId || null, error: 'no_comp_id', guardrail: null };
@@ -4868,7 +4875,9 @@ io.on('connection', async (socket) => {
       result = await getActionBusForComp(compId).execute({
         actionId,
         sender: sender || `socket:${socket.id}`,
-        recommendationId
+        recommendationId,
+        params: trustedProducer ? params : undefined,
+        uncatalogued: trustedProducer
       });
     } catch (error) {
       // execute() is designed not to throw; this is the belt-and-braces path.
@@ -4921,9 +4930,19 @@ io.on('connection', async (socket) => {
       return;
     }
 
-    const success = await switchScene(sceneName);
-    if (!success) {
-      socket.emit('error', { message: `Failed to switch to scene: ${sceneName}` });
+    // Per-competition action bus, not the global obs connection (ISA2-281)
+    const compId = client.compId || clientCompId;
+    if (!compId) {
+      socket.emit('error', { message: 'No competition ID for client' });
+      return;
+    }
+    const ack = await getActionBusForComp(compId).execute({
+      actionId: `scene:${sceneName}`,
+      sender: 'producer',
+      uncatalogued: true
+    });
+    if (!ack.ok) {
+      socket.emit('error', { message: `Failed to switch to scene: ${sceneName} (${ack.error})` });
     }
   });
 
@@ -4944,21 +4963,21 @@ io.on('connection', async (socket) => {
       return;
     }
 
-    // Use per-competition OBS connection
-    const obsConnManager = getOBSConnectionManager();
-    const compObs = obsConnManager.getConnection(clientCompId);
-
-    if (!compObs || !obsConnManager.isConnected(clientCompId)) {
-      socket.emit('error', { message: 'OBS not connected for this competition' });
-      return;
-    }
-
-    try {
-      await compObs.call('SetCurrentProgramScene', { sceneName });
+    // Per-competition action bus (ISA2-281); it owns the OBS call, timeout, and confirmation
+    const ack = await getActionBusForComp(clientCompId).execute({
+      actionId: `scene:${sceneName}`,
+      sender: 'producer',
+      uncatalogued: true
+    });
+    if (ack.ok) {
       console.log(`[switchScene] Switched to scene: ${sceneName} for ${clientCompId}`);
-    } catch (error) {
-      console.error(`[switchScene] Failed to switch scene: ${error.message}`);
-      socket.emit('error', { message: `Failed to switch to scene: ${sceneName}` });
+    } else {
+      console.error(`[switchScene] Failed to switch scene: ${ack.error}`);
+      socket.emit('error', {
+        message: ack.error === 'obs_not_connected'
+          ? 'OBS not connected for this competition'
+          : `Failed to switch to scene: ${sceneName}`
+      });
     }
   });
 

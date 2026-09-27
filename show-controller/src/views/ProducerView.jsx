@@ -1469,7 +1469,7 @@ export default function ProducerView() {
             )}
 
             {/* Web Graphics Control */}
-            <GraphicsControl competitionId={compId} />
+            <GraphicsControl competitionId={compId} socket={socket} />
 
             {/* Connected Clients */}
             <div className="bg-zinc-800 rounded-xl p-4">

@@ -20,8 +20,11 @@
  *    `competitions/{compId}/currentGraphic` so guardrails and the decision log
  *    know what the producer did, without rerouting the producer's own actions.
  *
- * Out of scope (follow-up): moving the rundown engine, the ProducerView scene
- * buttons, and GraphicsControl onto the bus.
+ * The rundown engine (sender 'rundown'), the ProducerView scene buttons, and
+ * GraphicsControl's send/clear (ISA2-281) all run through `execute` too, so
+ * guardrails see every command whoever sends it. Still off the bus: playout
+ * and Who to Watch scene switches, and GraphicsControl's rotation-slate,
+ * event-summary, and custom-graphic sends.
  *
  * @module actionBus
  */
@@ -29,6 +32,7 @@
 import { EventEmitter } from 'events';
 import {
   buildGraphicPayload,
+  buildManualGraphicPayload,
   buildClearPayload,
   getGraphicsRegistry,
   resolveDb,
@@ -331,26 +335,47 @@ export class ActionBus extends EventEmitter {
    * @param {string} request.actionId - e.g. "scene:Single - Camera 1", "graphic:team2-roster"
    * @param {string} [request.sender] - Who asked (a client role, or "xavier")
    * @param {string} [request.recommendationId] - Links the action to a suggestion
+   * @param {Object} [request.params] - Per-invocation extras. Scenes: `transition`
+   *   `{type, durationMs, transitionName}`. Graphics: `graphicParams`, `segmentId`,
+   *   `manual` (build the GraphicsControl-shaped payload), `frameTitle`,
+   *   `leaderboardEvent`, `leaderboardGender`.
+   * @param {boolean} [request.uncatalogued] - Trusted server callers (the rundown,
+   *   the producer's own controls) may run a `scene:` or `graphic:` ID that is not
+   *   in the catalog, e.g. a custom graphic or a scene only the rundown names.
+   *   The socket path never sets this for Xavier.
+   * @param {boolean} [request.includeDetails] - Add `details` (including the
+   *   graphic payload) to the returned ack, for in-process callers.
    * @returns {Promise<{ok: boolean, actionId: string, error: string|null, guardrail: Object|null}>}
    */
-  async execute({ actionId, sender = 'unknown', recommendationId = null } = {}) {
+  async execute({
+    actionId, sender = 'unknown', recommendationId = null,
+    params = {}, uncatalogued = false, includeDetails = false,
+  } = {}) {
+    const ackFn = (fields) => this._ack({ ...fields, includeDetails });
+
     if (!actionId) {
-      return this._ack({ actionId: null, sender, recommendationId, ok: false, error: ACTION_ERRORS.NO_ACTION_ID });
+      return ackFn({ actionId: null, sender, recommendationId, ok: false, error: ACTION_ERRORS.NO_ACTION_ID });
     }
 
-    // The catalog is the ID namespace, so build it on first use.
-    if (!this._catalog) {
-      await this.buildCatalog();
-    }
-
-    let action = this.getAction(actionId);
-    if (!action) {
-      // A scene may have been added in OBS since the last build; rebuild once.
-      await this.buildCatalog();
+    let action;
+    if (uncatalogued) {
+      // Trusted callers name the action themselves; never pay for a catalog
+      // build (OBS and Firebase reads) on the rundown's hot path.
+      action = this.getAction(actionId) || synthesizeAction(actionId);
+    } else {
+      // The catalog is the ID namespace, so build it on first use.
+      if (!this._catalog) {
+        await this.buildCatalog();
+      }
       action = this.getAction(actionId);
+      if (!action) {
+        // A scene may have been added in OBS since the last build; rebuild once.
+        await this.buildCatalog();
+        action = this.getAction(actionId);
+      }
     }
     if (!action) {
-      return this._ack({ actionId, sender, recommendationId, ok: false, error: ACTION_ERRORS.UNKNOWN_ACTION });
+      return ackFn({ actionId, sender, recommendationId, ok: false, error: ACTION_ERRORS.UNKNOWN_ACTION });
     }
 
     const guardrail = this._checkGuardrails({
@@ -361,7 +386,7 @@ export class ActionBus extends EventEmitter {
     });
     if (guardrail) {
       console.log(`${this.logPrefix} Guardrail "${guardrail.rule}" blocked ${actionId} from ${sender}`);
-      return this._ack({
+      return ackFn({
         actionId, sender, recommendationId, ok: false,
         error: ACTION_ERRORS.GUARDRAIL, guardrail, kind: action.kind,
       });
@@ -369,21 +394,21 @@ export class ActionBus extends EventEmitter {
 
     let result;
     if (action.kind === ACTION_KINDS.SCENE) {
-      result = await this._executeScene(action);
+      result = await this._executeScene(action, params || {});
     } else if (action.kind === ACTION_KINDS.GRAPHIC) {
-      result = await this._executeGraphic(action);
+      result = await this._executeGraphic(action, params || {});
     } else {
       result = { ok: false, error: ACTION_ERRORS.UNKNOWN_ACTION };
     }
 
-    return this._ack({ actionId, sender, recommendationId, kind: action.kind, ...result });
+    return ackFn({ actionId, sender, recommendationId, kind: action.kind, ...result });
   }
 
   /**
    * Switch the OBS program scene and confirm it against CurrentProgramSceneChanged.
    * @private
    */
-  async _executeScene(action) {
+  async _executeScene(action, params = {}) {
     const { sceneName } = action.params;
     const obs = this._getObsConnection();
     if (!obs) {
@@ -410,6 +435,9 @@ export class ActionBus extends EventEmitter {
     this._recentSceneWrite = { sceneName, at: Date.now() };
 
     try {
+      if (params.transition) {
+        await this._applyTransition(obs, params.transition);
+      }
       await withTimeout(
         obs.call('SetCurrentProgramScene', { sceneName }),
         this.obsCallTimeoutMs,
@@ -429,6 +457,27 @@ export class ActionBus extends EventEmitter {
       return { ok: false, error: ACTION_ERRORS.NOT_CONFIRMED, confirmed: false, sceneName };
     }
     return { ok: true, error: null, confirmed: true, sceneName };
+  }
+
+  /**
+   * Set the OBS transition before a scene switch. Same OBS calls, in the same
+   * order, as the rundown engine made before it moved onto the bus.
+   * @param {Object} obs
+   * @param {{type?: string, durationMs?: number, transitionName?: string}} transition
+   * @private
+   */
+  async _applyTransition(obs, transition) {
+    const call = (name, args) => withTimeout(
+      obs.call(name, args), this.obsCallTimeoutMs, ACTION_ERRORS.OBS_TIMEOUT
+    );
+    if (transition.type === 'fade' && transition.durationMs > 0) {
+      await call('SetCurrentSceneTransitionDuration', { transitionDuration: transition.durationMs });
+      await call('SetCurrentSceneTransition', { transitionName: 'Fade' });
+    } else if (transition.type === 'stinger') {
+      await call('SetCurrentSceneTransition', { transitionName: transition.transitionName || 'Stinger' });
+    } else {
+      await call('SetCurrentSceneTransition', { transitionName: 'Cut' });
+    }
   }
 
   /**
@@ -480,33 +529,54 @@ export class ActionBus extends EventEmitter {
    * payload builder the rundown engine uses.
    * @private
    */
-  async _executeGraphic(action) {
+  async _executeGraphic(action, params = {}) {
     const db = resolveDb(this.firebase);
     if (!db) {
       return { ok: false, error: ACTION_ERRORS.FIREBASE_UNAVAILABLE };
     }
 
     const { graphicId } = action.params;
-    const graphicParams = action.params.teamSlot ? { teamSlot: action.params.teamSlot } : {};
+    // Manual (GraphicsControl) sends carry their own params; the per-team slot
+    // is already in the graphic ID there and was never written into the data.
+    const graphicParams = {
+      ...(action.params.teamSlot && !params.manual ? { teamSlot: action.params.teamSlot } : {}),
+      ...(params.graphicParams || {}),
+    };
 
     let payload;
     try {
       // The builder reads config, sponsors, and the theme; bound the lot so a
       // credential-less or unreachable Firebase still produces an ack.
-      payload = graphicId === 'clear'
-        ? buildClearPayload()
-        : await withTimeout(
-          buildGraphicPayload({
+      if (graphicId === 'clear') {
+        payload = buildClearPayload();
+      } else if (params.manual) {
+        payload = await withTimeout(
+          buildManualGraphicPayload({
             db,
             compId: this.compId,
             graphicId,
-            graphicParams,
-            segmentId: null,
+            frameTitle: params.frameTitle,
+            leaderboardEvent: params.leaderboardEvent,
+            leaderboardGender: params.leaderboardGender,
             logPrefix: this.logPrefix,
           }),
           this.firebaseTimeoutMs,
           ACTION_ERRORS.FIREBASE_TIMEOUT
         );
+      } else {
+        payload = await withTimeout(
+          buildGraphicPayload({
+            db,
+            compId: this.compId,
+            graphicId,
+            graphicParams,
+            segmentId: params.segmentId ?? null,
+            logPrefix: this.logPrefix,
+          }),
+          this.firebaseTimeoutMs,
+          ACTION_ERRORS.FIREBASE_TIMEOUT
+        );
+      }
     } catch (error) {
       console.error(`${this.logPrefix} Payload build failed for "${graphicId}": ${error.message}`);
       return {
@@ -547,7 +617,10 @@ export class ActionBus extends EventEmitter {
    * and return the ack.
    * @private
    */
-  _ack({ actionId, sender, recommendationId, ok, error = null, guardrail = null, kind = null, ...details }) {
+  _ack({
+    actionId, sender, recommendationId, ok, error = null, guardrail = null, kind = null,
+    includeDetails = false, ...details
+  }) {
     const ack = {
       ok,
       actionId,
@@ -571,7 +644,8 @@ export class ActionBus extends EventEmitter {
       this.io.to(`competition:${this.compId}`).emit('action:executed', broadcast);
     }
 
-    return ack;
+    // In-process callers (the rundown engine) need the payload and message.
+    return includeDetails ? { ...ack, details } : ack;
   }
 
   // ---------------------------------------------------------------------------
@@ -731,6 +805,29 @@ export class ActionBus extends EventEmitter {
       return [];
     }
   }
+}
+
+/**
+ * Build an action for an ID the catalog does not list (trusted callers only).
+ * @param {string} actionId - "scene:{name}" or "graphic:{id}"
+ * @returns {Object|null} null when the prefix or name is missing
+ */
+function synthesizeAction(actionId) {
+  const sceneMatch = /^scene:(.+)$/s.exec(actionId);
+  if (sceneMatch) {
+    return {
+      id: actionId, kind: ACTION_KINDS.SCENE, label: sceneMatch[1], category: 'scenes',
+      params: { sceneName: sceneMatch[1], source: 'uncatalogued' },
+    };
+  }
+  const graphicMatch = /^graphic:(.+)$/s.exec(actionId);
+  if (graphicMatch) {
+    return {
+      id: actionId, kind: ACTION_KINDS.GRAPHIC, label: graphicMatch[1], category: 'graphics',
+      params: { graphicId: graphicMatch[1] },
+    };
+  }
+  return null;
 }
 
 /**
