@@ -1,0 +1,100 @@
+{
+  "video": "recordings/ecac-2026/program.mp4",
+  "width": 1280,
+  "height": 720,
+  "fps": 30,
+  "durationMs": 8735022,
+  "layoutTimeline": [
+    {
+      "fromMs": 0,
+      "layout": "other",
+      "tiles": {},
+      "tickerRect": null,
+      "note": "Pre-show card, team march-in, and early rotations where the director cuts between single-cam and partial (2 or 5 tile) splits as events start/finish one at a time. No fixed event-to-tile mapping holds here, so tileFor() returns null for this window."
+    },
+    {
+      "fromMs": 2400000,
+      "layout": "3x2",
+      "tiles": {
+        "FLOOR": {
+          "x": 0,
+          "y": 0,
+          "w": 582,
+          "h": 332
+        },
+        "HORSE": {
+          "x": 582,
+          "y": 0,
+          "w": 388,
+          "h": 332
+        },
+        "RINGS": {
+          "x": 970,
+          "y": 0,
+          "w": 310,
+          "h": 332
+        },
+        "VAULT": {
+          "x": 0,
+          "y": 332,
+          "w": 582,
+          "h": 298
+        },
+        "PBARS": {
+          "x": 582,
+          "y": 332,
+          "w": 388,
+          "h": 298
+        },
+        "BAR": {
+          "x": 970,
+          "y": 332,
+          "w": 310,
+          "h": 298
+        }
+      },
+      "tickerRect": {
+        "x": 0,
+        "y": 630,
+        "w": 1280,
+        "h": 90
+      }
+    },
+    {
+      "fromMs": 4800000,
+      "layout": "2x2",
+      "tiles": {
+        "FLOOR": {
+          "x": 28,
+          "y": 8,
+          "w": 610,
+          "h": 337
+        },
+        "PBARS": {
+          "x": 642,
+          "y": 8,
+          "w": 610,
+          "h": 337
+        },
+        "RINGS": {
+          "x": 28,
+          "y": 349,
+          "w": 610,
+          "h": 279
+        },
+        "BAR": {
+          "x": 642,
+          "y": 349,
+          "w": 610,
+          "h": 279
+        }
+      },
+      "tickerRect": {
+        "x": 0,
+        "y": 630,
+        "w": 1280,
+        "h": 90
+      }
+    }
+  ]
+}
