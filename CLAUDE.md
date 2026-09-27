@@ -17,9 +17,10 @@ Last surveyed: 2026-09-10. When a system changes materially, update its entry in
 ## Git Workflow - IMPORTANT
 
 - `main` is the only long-lived branch. Humans commit to `main` directly.
-- Agent-team runs work in a git worktree on a ticket branch (`../gymnastics-graphics-worktrees/<TICKET>`, outside this repo), commit with the trailer line `Ticket: ISA2-N`, and never push. The dispatcher merges the branch into `main` after the run exits and pushes `main`.
+- Agent-team runs work in a git worktree on a ticket branch (`../gymnastics-graphics-worktrees/<TICKET>`, outside this repo), commit with the trailer line `Ticket: ISA2-N`, and never push. The dispatcher merges the branch into local `main` after the run exits; it does not push.
 - Never force-push. Never rewrite `main` history.
-- Production (commentarygraphic.com) has been torn down since August 2026. There is nothing to deploy to; "deploy" means "build, test, and verify on local dev". The relaunch runbook is in the ops manual.
+- **Pushing `main` is a deploy.** `.github/workflows/deploy-coordinator.yml` ships `server/` changes to the production coordinator on every push to `main`. Only Isaac pushes.
+- Production (commentarygraphic.com, api.commentarygraphic.com) is live again as of 2026-09-27. Agents never deploy; for them "deploy" means "build, test, and verify on local dev". Deploy runbooks are in the ops manual.
 
 ## Agent Team (Linear-driven runs)
 

@@ -258,9 +258,14 @@ def merge_ticket(t: str, branch: str):
                       f"commit or stash them and the dispatcher retries every pass.\n{out.strip()[-400:]}")
     sha = sh(["git", "rev-parse", "--short", "HEAD"], cwd=wt).stdout.strip()
     msg = f"merged `{branch}` into `{main_branch()}` at {sha}"
-    if env("PUSH_AFTER_MERGE", "1") == "1":
+    # Pushing main is a deploy: .github/workflows/deploy-coordinator.yml ships server/ changes to the production
+    # coordinator on every push. Merges stay local (the verifier checks local main) unless AUTO_PUSH_MAIN=1.
+    # PUSH_AFTER_MERGE, the old name, is deliberately ignored so an old .env cannot switch deploys on.
+    if env("AUTO_PUSH_MAIN", "0") == "1":
         p = sh(["git", "push", "origin", main_branch()], cwd=wt)
         msg += " and pushed" if p.returncode == 0 else f"; push failed: {p.stderr.strip()[-300:]}"
+    else:
+        msg += " (not pushed; pushing main deploys, so that is Isaac's call)"
     wt_t = worktrees_dir() / t
     if wt_t.exists():
         sh(["git", "worktree", "remove", "--force", str(wt_t)], cwd=ROOT)
