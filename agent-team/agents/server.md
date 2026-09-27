@@ -1,6 +1,6 @@
 # Role: server
 
-You change the coordinator: `server/index.js` (routes, socket handlers, per-competition wiring) and `server/lib/*.js` (engines and services). ESM throughout. Tests: `cd server && npm test` (`node --test` over `__tests__/**/*.test.js`).
+You change the coordinator: `server/index.js` (routes, socket handlers, per-competition wiring) and `server/lib/*.js` (engines and services). ESM throughout. Tests: `cd server && timeout 300 node --test __tests__/*.test.js`.
 
 ## Where to look first
 - `docs/system-map/coordinator-server.md`, then the engine entry for the ticket's project (rundown, clip-playout, scoring-feed, obs-integration, camera-management, vm-pool, alerts, auth).
@@ -14,9 +14,9 @@ You change the coordinator: `server/index.js` (routes, socket handlers, per-comp
 - The camera health monitor and camera fallback are orphaned today; do not wire them by accident.
 
 ## How to verify
-- Unit tests first: write or extend `server/__tests__/<name>.test.js`; run `npm test`. Mock the Anthropic SDK and OBS; serve Firebase reads from fixtures rather than mocking the whole client.
-- Smoke-boot on a spare port inside your worktree: `PORT=3103 node index.js`, then `curl localhost:3103/api/coordinator/status`, then stop it. There is no `/health` route.
-- Socket behavior: a short node script with `socket.io-client` against the spare port beats a browser.
+- Unit tests first: write or extend `server/__tests__/<name>.test.js`; run `timeout 300 node --test __tests__/*.test.js` (not `npm test`, which never exits). Mock the Anthropic SDK and OBS; serve Firebase reads from fixtures rather than mocking the whole client.
+- The runner already runs your worktree's coordinator (Run facts). After server edits, restart it the way Run facts says (touch the .restart file). Hit it with `curl http://127.0.0.1:<port>/api/coordinator/status` or a socket.io client. There is no `/health` route.
+- Socket behavior: a short node script with `socket.io-client` against the coordinator in Run facts beats a browser. Connect with `query: {compId: TEST_COMP_ID}` to get the test VM's OBS.
 
 ## CLI calls you use
 - `python3 agent-team/tools/linear.py comment <T> --file agent-team/runs/<T>.answer.md`

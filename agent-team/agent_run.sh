@@ -75,6 +75,13 @@ main() {
   MODEL="$(printf '%s\n' "$MODELS" | sed -n 1p)"
   FALLBACK="$(printf '%s\n' "$MODELS" | sed -n 2p)"
 
+  # Each ticket/verify run gets its own coordinator + SPA, started below OUTSIDE the agent's sandbox.
+  if [ "$KIND" = "verify" ]; then
+    export GG_API_PORT="${VERIFY_API_PORT:-3099}" GG_SPA_PORT="${VERIFY_SPA_PORT:-5199}"
+  elif [ "$KIND" = "work" ]; then
+    local N="${T##*-}"; N=$((10#$N % 100))
+    export GG_API_PORT=$((3100 + N)) GG_SPA_PORT=$((5300 + N))
+  fi
   build_prompt "$KIND" "$ROLE" "$KEY" "$T" "$TEAM_DIR" "$ROOT" "$WORKDIR" "$EXTRA" > "$RUNS/$KEY.prompt.md"
   local AGENTS_JSON; AGENTS_JSON="$(python3 "$TEAM_DIR/tools/common.py" agents-json)"
 
@@ -87,6 +94,25 @@ main() {
   if [ -z "$TO" ]; then
     echo "agent_run.sh: gtimeout/timeout not found (brew install coreutils)" >&2
     echo 1 > "$RUNS/$KEY.exit"; return 1
+  fi
+
+  # Servers run here, outside the agent's sandbox, so they can reach Firebase and the test VM's OBS.
+  if [ -n "${GG_API_PORT:-}" ]; then
+    GG_VERIFY_WT="$WORKDIR" VERIFY_API_PORT="$GG_API_PORT" VERIFY_SPA_PORT="$GG_SPA_PORT" \
+      bash "$TEAM_DIR/devserver.sh" start >> "$LOGS/$KEY.log" 2>&1 \
+      && echo "=== servers up: API :$GG_API_PORT  SPA :$GG_SPA_PORT" >> "$LOGS/$KEY.log" \
+      || echo "=== WARNING: dev servers failed to start (see logs/devserver-*-$GG_API_PORT.log)" >> "$LOGS/$KEY.log"
+    # The agent can't restart a server from inside its sandbox, so it touches runs/<KEY>.restart and this does it.
+    rm -f "$RUNS/$KEY.restart"
+    ( while sleep 2; do
+        kill -0 "$$" 2>/dev/null || exit 0
+        if [ -f "$RUNS/$KEY.restart" ]; then
+          rm -f "$RUNS/$KEY.restart"
+          GG_VERIFY_WT="$WORKDIR" VERIFY_API_PORT="$GG_API_PORT" VERIFY_SPA_PORT="$GG_SPA_PORT" \
+            bash "$TEAM_DIR/devserver.sh" restart-api >> "$LOGS/$KEY.log" 2>&1
+          touch "$RUNS/$KEY.restarted"
+        fi
+      done ) &
   fi
 
   # Heartbeat comment every 10 minutes on ticket and verify runs. It stops itself when this script dies
@@ -114,6 +140,9 @@ main() {
   ( cd "$WORKDIR" && "$TO" "${TIMEOUT_MIN}m" claude "${ARGS[@]}" < "$RUNS/$KEY.prompt.md" 2>> "$LOGS/$KEY.err" \
       > >(python3 "$TEAM_DIR/tools/streamlog.py" "$LOGS/$KEY.log" "$RUNS/$KEY.result.json") )
   local RC=$?
+  if [ -n "${GG_API_PORT:-}" ]; then
+    GG_VERIFY_WT="$WORKDIR" VERIFY_API_PORT="$GG_API_PORT" VERIFY_SPA_PORT="$GG_SPA_PORT" bash "$TEAM_DIR/devserver.sh" stop >/dev/null 2>&1
+  fi
   [ -n "${GG_HB_PID:-}" ] && kill "$GG_HB_PID" 2>/dev/null
   sleep 2
   echo "=== $(date '+%F %T') end $KEY rc=$RC" >> "$LOGS/$KEY.log"
@@ -219,6 +248,13 @@ build_prompt() {
   echo "- Agent-team dir: $TEAM_DIR · board CLI: python3 $TEAM_DIR/tools/linear.py · store CLI: python3 $TEAM_DIR/tools/store.py"
   echo "- Answer file: $RUNS/$KEY.answer.md"
   echo "- Test competition (the only Firebase path you may write under): competitions/${TEST_COMP_ID:-UNSET}/"
+  if [ -n "${GG_API_PORT:-}" ]; then
+    echo "- **Servers are already running for you, outside your sandbox** (your own Bash cannot reach Firebase, the VM, or Linear; these can):"
+    echo "  - Coordinator (your worktree's server/): http://127.0.0.1:$GG_API_PORT. After editing server code, restart it with: touch $RUNS/$KEY.restart, then wait until $RUNS/$KEY.restarted exists (about 5-20 s)."
+    echo "  - App (your worktree's show-controller/): http://127.0.0.1:$GG_SPA_PORT, log in with VERIFY_LOGIN_* from agent-team/.env"
+    echo "  - The test VM is assigned to ${TEST_COMP_ID:-the test competition}. A socket.io client connecting to the coordinator with query {compId: '${TEST_COMP_ID:-}'} makes the coordinator open its OBS connection to the VM. Example: node -e \"const io=require('socket.io-client')('http://127.0.0.1:$GG_API_PORT',{query:{compId:'${TEST_COMP_ID:-}'}});io.on('connect',()=>setTimeout(()=>io.emit('action:catalog',{},a=>{console.log(JSON.stringify(a).slice(0,500));process.exit()}),4000))\" (run from server/)."
+    echo "  - Do not start your own node servers; they would be sandboxed and could not reach OBS or Firebase."
+  fi
   echo; echo "# Closing instructions"
   case "$KIND" in
     work) cat <<EOF

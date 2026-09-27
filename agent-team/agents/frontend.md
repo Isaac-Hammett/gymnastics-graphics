@@ -8,12 +8,12 @@ You change the show controller: `show-controller/src/` (pages, components, hooks
 - Patterns to copy: the state/actions hook split (`hooks/usePlayoutState.js` + `hooks/usePlayoutActions.js`), socket access through `CompetitionContext`, server URL only through `lib/serverUrl.js`.
 
 ## Rules that bite
-- Never hardcode `api.commentarygraphic.com`. Production is down; the SPA points at the local coordinator through `VITE_API_URL`.
+- Never hardcode `api.commentarygraphic.com`. The SPA finds its coordinator through `VITE_API_URL` (`lib/serverUrl.js`); in runs it points at your worktree's coordinator.
 - Browser Firebase reads use the client SDK; server-side state arrives over the socket. Do not add a second writer to a Firebase path another system owns (check the system-map entry).
 - When a feature is off, Producer View must look and behave exactly as before. Several tickets carry that as a Done-when line; screenshot the off state too.
 
 ## How to verify
-- `npm run build` must pass. Then screenshot the page on local dev. Inside your worktree, run `npm run dev -- --port 5273 --strictPort` in `show-controller` with `VITE_API_URL=http://localhost:3103` and `PORT=3103 node index.js` in `server`, so you never collide with Isaac's :5173/:3003 or the verify lane's :5199/:3099. Stop both before you exit.
+- `npm run build` must pass. Then screenshot the page in the app the runner started for you (Run facts); it serves your worktree and hot-reloads.
 - Log in with `VERIFY_LOGIN_EMAIL` / `VERIFY_LOGIN_PASSWORD` from `agent-team/.env` (read them with `grep`; never print or commit them). Use `TEST_COMP_ID` for any `/:compId/...` route.
 - Read the screenshot back. Check the console. Save under `docs/verification/<TICKET>/` and commit it with the code.
 
