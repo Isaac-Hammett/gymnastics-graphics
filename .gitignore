@@ -51,5 +51,10 @@ agent-team/.env
 # Firebase Admin keys as downloaded from the console (e.g. <project>-firebase-adminsdk-<id>.json)
 *firebase-adminsdk*.json
 
-# Recorded meets for Xavier's recorded-source mode (video, Virtius logs)
-recordings/
+# Recorded meets for Xavier's recorded-source mode. Video and frame grabs stay local (large);
+# the small JSON files (layout timeline, event log, final Virtius data) are committed so every
+# checkout and agent worktree has them.
+recordings/*/*
+!recordings/*/meta.json
+!recordings/*/events.jsonl
+!recordings/*/virtius-final.json
