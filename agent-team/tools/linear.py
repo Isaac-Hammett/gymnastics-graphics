@@ -586,9 +586,58 @@ def main(argv=None) -> int:
         else:
             ap.print_help(); return 2
     except LinearError as e:
+        # Agent runs may be sandboxed away from api.linear.app. Queue comments and new tickets on disk;
+        # the dispatcher (outside the sandbox) posts them on its next pass.
+        if e.unreachable and a.cmd in ("comment", "create") and env("GG_KEY") and env("LINEAR_NO_OUTBOX") != "1":
+            path = queue_outbox(a, argv if argv is not None else sys.argv[1:])
+            print(f"QUEUED: Linear is unreachable from this run; the dispatcher will post this ({path.name}).")
+            return 0
         print(f"linear.py: {e}", file=sys.stderr)
         return 2 if e.unreachable else 1
     return 0
+
+
+OUTBOX = RUNS / "outbox"
+
+
+def queue_outbox(a, raw_argv) -> Path:
+    """Save a comment/create as argv with file contents inlined, so it can be replayed from any directory."""
+    argv = list(raw_argv)
+    for flag, repl in (("--file", None), ("--desc-file", "--desc")):
+        if flag in argv:
+            i = argv.index(flag)
+            text = Path(argv[i + 1]).read_text()
+            if repl:
+                argv[i:i + 2] = [repl, text]
+            else:  # comment --file F -> comment T "text"
+                argv[i:i + 2] = [text]
+    OUTBOX.mkdir(parents=True, exist_ok=True)
+    path = OUTBOX / f"{time.strftime('%Y%m%dT%H%M%S')}-{os.getpid()}-{a.cmd}.json"
+    path.write_text(json.dumps({"argv": argv, "key": env("GG_KEY"), "queuedAt": now_iso()}, indent=1))
+    return path
+
+
+def flush_outbox(log=print) -> int:
+    """Replay queued comments/creates. Returns how many were posted."""
+    if not OUTBOX.exists():
+        return 0
+    posted = 0
+    os.environ["LINEAR_NO_OUTBOX"] = "1"
+    try:
+        for p in sorted(OUTBOX.glob("*.json")):
+            item = json.loads(p.read_text())
+            rc = main(item["argv"])
+            if rc == 0:
+                p.unlink()
+                posted += 1
+                log(f"outbox: posted {p.name} ({item.get('key')})")
+            else:
+                log(f"outbox: {p.name} failed rc={rc}; will retry")
+                if rc == 2:
+                    break
+    finally:
+        os.environ.pop("LINEAR_NO_OUTBOX", None)
+    return posted
 
 
 if __name__ == "__main__":

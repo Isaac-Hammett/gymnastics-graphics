@@ -581,6 +581,9 @@ def one_pass(state: dict):
             log(f"board fetch failed: {e}")
         return
     by_id = {i["id"]: i for i in board}
+    if not DRY:
+        # Comments and tickets queued by sandboxed agent runs (see linear.queue_outbox).
+        linear.flush_outbox(log)
     sessions = running_sessions()
 
     # 1. finalize runs whose session is gone
