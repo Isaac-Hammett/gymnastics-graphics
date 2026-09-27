@@ -28,6 +28,7 @@ main() {
   eval "$(python3 "$TEAM_DIR/tools/common.py" export-env)"
   local RUNS="$TEAM_DIR/runs" LOGS="$TEAM_DIR/logs" WT_DIR="$GG_WORKTREES"
   mkdir -p "$RUNS" "$LOGS" "$WT_DIR"
+  no_aws
   local MAIN="${MAIN_BRANCH:-main}"
   local LINEAR="python3 $TEAM_DIR/tools/linear.py"
   local TIMEOUT_MIN="${AGENT_TIMEOUT_MIN:-180}" MAX_TURNS="${CLAUDE_MAX_TURNS:-150}"
@@ -118,6 +119,13 @@ main() {
   echo "=== $(date '+%F %T') end $KEY rc=$RC" >> "$LOGS/$KEY.log"
   echo "$RC" > "$RUNS/$KEY.exit"
   return "$RC"
+}
+
+# Agents never touch AWS. This also protects production Firebase: on every boot the coordinator syncs the VM pool
+# with EC2 and deletes vmPool/vms entries that AWS does not list. With no credentials that sync fails harmlessly.
+no_aws() {
+  unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN AWS_SECURITY_TOKEN AWS_CREDENTIAL_EXPIRATION AWS_WEB_IDENTITY_TOKEN_FILE AWS_ROLE_ARN
+  export AWS_PROFILE=agent-team-no-aws AWS_CONFIG_FILE=/dev/null AWS_SHARED_CREDENTIALS_FILE=/dev/null AWS_EC2_METADATA_DISABLED=true
 }
 
 fetch_ticket() {

@@ -25,7 +25,9 @@ Set LINEAR_OFFLINE=1 to serve board/ready/issue from runs/board.json without net
 from __future__ import annotations
 
 import argparse
+import http.client
 import json
+import socket
 import os
 import sys
 import time
@@ -116,6 +118,15 @@ def gql(query: str, variables=None, retries: int = 5):
             raise LinearError(f"{last}: {body_text[:300]}")
         except urllib.error.URLError as e:
             last = f"network: {e.reason}"
+            if attempt < retries - 1:
+                time.sleep(delay)
+                delay *= 2
+                continue
+            raise LinearError(last, unreachable=True)
+        except (http.client.IncompleteRead, http.client.RemoteDisconnected, ConnectionError, socket.timeout,
+                TimeoutError, json.JSONDecodeError) as e:
+            # A response cut off mid-transfer (seen through proxies) is transient: retry like a timeout.
+            last = f"network: {type(e).__name__}"
             if attempt < retries - 1:
                 time.sleep(delay)
                 delay *= 2

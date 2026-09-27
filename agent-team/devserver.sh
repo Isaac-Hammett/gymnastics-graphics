@@ -12,6 +12,10 @@ main() {
   mkdir -p "$RUNS" "$LOGS"
   case "$CMD" in
     start)
+      # No AWS credentials: the coordinator's boot-time VM-pool sync would otherwise delete vmPool entries in
+      # production Firebase for instances AWS no longer lists. Same guard as agent_run.sh.
+      unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN AWS_SECURITY_TOKEN AWS_WEB_IDENTITY_TOKEN_FILE AWS_ROLE_ARN
+      export AWS_PROFILE=agent-team-no-aws AWS_CONFIG_FILE=/dev/null AWS_SHARED_CREDENTIALS_FILE=/dev/null AWS_EC2_METADATA_DISABLED=true
       stop_all "$RUNS" "$API_PORT" "$SPA_PORT"
       [ -d "$WT/server" ] || { echo "devserver.sh: verify worktree missing at $WT (run agent_run.sh <T>.verify verify --prepare-only)" >&2; return 1; }
       ( cd "$WT/server" && PORT="$API_PORT" nohup node index.js > "$LOGS/devserver-api.log" 2>&1 & echo $! > "$RUNS/devserver-api.pid" )
