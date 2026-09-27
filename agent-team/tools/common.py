@@ -50,9 +50,11 @@ def _parse_kv(path: Path) -> dict:
 
 
 def config() -> dict:
-    """models.conf first, then .env (which overrides)."""
+    """models.conf, then settings.conf (committed, non-secret project settings), then .env (secrets and local
+    overrides). A blank line in .env (`TEST_COMP_ID=`) does not wipe a committed default."""
     conf = _parse_kv(TEAM_DIR / "models.conf")
-    conf.update(_parse_kv(TEAM_DIR / ".env"))
+    conf.update(_parse_kv(TEAM_DIR / "settings.conf"))
+    conf.update({k: v for k, v in _parse_kv(TEAM_DIR / ".env").items() if v != ""})
     return conf
 
 

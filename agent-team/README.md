@@ -19,7 +19,7 @@ Ported from the design that ran the partner-research project, adapted for a code
 | `tools/common.py`, `tools/streamlog.py` | Env and model resolution; readable log + cost capture from stream-json. |
 | `agents/<role>.md` | One file per role: graphics, frontend, server, data, docs, verify, planner, reviewer. |
 | `subagents/*.md` | scout, searcher, tester. Passed to every run with `--agents`. |
-| `models.conf`, `env.example` | Model table; copy `env.example` to `.env`. |
+| `models.conf`, `settings.conf`, `env.example` | Model table; committed project settings (test competition); copy `env.example` to `.env` for secrets. Load order: models.conf, settings.conf, .env. |
 | `hooks/guard.sh` | Optional PreToolUse hook that blocks push, force, history rewrites, `git add -A`, AWS, ssh. |
 | `runs/`, `logs/` | Gitignored run state. |
 | `../gymnastics-graphics-worktrees/` | One worktree per ticket, plus `_verify` (and `_main` if `main` is checked out nowhere else). Outside the repo on purpose; override with `WORKTREES_DIR`. |
@@ -28,9 +28,9 @@ The root `CLAUDE.md` holds the contract every agent follows; `docs/OPS-MANUAL.md
 
 ## Setup
 
-1. `cp agent-team/env.example agent-team/.env` and fill in `LINEAR_API_KEY` (a personal API key from Linear settings), `TEST_COMP_ID`, `VERIFY_LOGIN_EMAIL`, `VERIFY_LOGIN_PASSWORD`. Leave `PLANNER_ENABLED=0`, `LOOPS_ENABLED=0`, `REVIEWER_MODE=recommend` for the pilot.
+1. `cp agent-team/env.example agent-team/.env` and fill in the secrets only: `LINEAR_API_KEY` (a personal API key from Linear settings), `VERIFY_LOGIN_EMAIL`, `VERIFY_LOGIN_PASSWORD`. Non-secret settings such as `TEST_COMP_ID` live in the committed `settings.conf`; a blank line in `.env` does not override them.
 2. Make sure `show-controller/.env.local` and `server/.env` exist and work in your own checkout (`npm run dev` on :5173, `node index.js` on :3003, login works). The runner copies both into every worktree.
-3. `server/.env` needs `GOOGLE_APPLICATION_CREDENTIALS` pointing at a working Firebase Admin key, or server-side features stay broken for the agents too.
+3. The coordinator needs Firebase Admin access, or server-side features stay broken for the agents too. Check it with `curl -s localhost:3003/api/admin/themes`: a JSON list of themes means it works. It did on 2026-09-27.
 4. `agent-team/` must be committed on `main` (done 2026-09-27). Worktrees branch from `main`, so agents only ever see what is on `main`.
 5. No MCP approval step is needed: the runner passes `--mcp-config .mcp.json --strict-mcp-config`. Checked on 2026-09-27: playwright and gymnastics both connect in a headless run, and `firebase_delete`, the AWS tools, and the SSH tools are absent from the agent's tool list.
 6. Optional: `brew install coreutils` if `gtimeout` is missing; the runner accepts `timeout` too.
