@@ -296,6 +296,19 @@ def merge_ticket(t: str, branch: str):
     return True, msg
 
 
+# One test VM and one test competition: two runs driving the same OBS would switch scenes under each other.
+# Tickets labeled `vm` (and their verifiers) run one at a time; everything else runs in parallel.
+VM_LABEL = "vm"
+
+
+def vm_in_use(sessions, by_id) -> bool:
+    for s in sessions:
+        m = re.match(r"^gg-([A-Z][A-Z0-9]*-\d+)(?:-verify)?$", s)
+        if m and VM_LABEL in (by_id.get(m.group(1)) or {}).get("labels", []):
+            return True
+    return False
+
+
 def open_fix_blockers(t: str) -> list:
     """Open blockers of T, read fresh from Linear (the pass's board is stale by the time a verifier finishes)."""
     try:
@@ -629,11 +642,16 @@ def one_pass(state: dict):
     sessions = running_sessions()
     running_verify = [s for s in sessions if s.endswith("-verify")]
     slots = env_int("MAX_VERIFIERS", 1) - len(running_verify)
+    vm_busy = vm_in_use(sessions, by_id)
     for i in verify_candidates(board, by_id):
         if slots <= 0:
             break
         if session_name(f"{i['id']}.verify") in sessions:
             continue
+        if VM_LABEL in i["labels"]:
+            if vm_busy:
+                continue
+            vm_busy = True
         start_verify(i["id"])
         slots -= 1
 
@@ -646,6 +664,10 @@ def one_pass(state: dict):
         t = i["id"]
         if session_name(t) in sessions or exit_file(t).exists() or t in state["recently_done"]:
             continue
+        if VM_LABEL in i["labels"]:
+            if vm_busy:
+                continue
+            vm_busy = True
         start_ticket(i)
         slots -= 1
 
