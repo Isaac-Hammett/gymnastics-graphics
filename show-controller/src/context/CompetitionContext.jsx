@@ -58,6 +58,12 @@ export function CompetitionProvider({ children }) {
       return 'https://api.commentarygraphic.com';
     }
 
+    // Local dev with VITE_LOCAL_SERVER set: route every competition to the
+    // local coordinator instead of its (possibly dead) VM address
+    if (import.meta.env.VITE_LOCAL_SERVER && window.location.hostname === 'localhost') {
+      return import.meta.env.VITE_LOCAL_SERVER;
+    }
+
     // In development (HTTP), can connect directly to VM
     if (vmAddress) {
       // Ensure vmAddress doesn't already have protocol

@@ -1312,6 +1312,14 @@ async function initializeOBSStateSync(competitionId) {
   // Get or create the singleton instance
   obsStateSync = getOBSStateSync(obs, io, productionConfigService);
 
+  // Handle connection errors (e.g., OBS VM unreachable). Without a listener,
+  // EventEmitter throws on 'error' and crashes the whole coordinator.
+  if (obsStateSync.listenerCount('error') === 0) {
+    obsStateSync.on('error', (error) => {
+      console.warn(`[OBSStateSync] OBS error (non-fatal): ${error?.message || error}`);
+    });
+  }
+
   // Initialize with competition ID
   await obsStateSync.initialize(competitionId);
 
