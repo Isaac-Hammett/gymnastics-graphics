@@ -1,5 +1,5 @@
-# Dependencies
-node_modules/
+# Dependencies (no trailing slash, so the node_modules symlinks inside agent worktrees are ignored too)
+node_modules
 
 # Environment files
 .env
@@ -41,3 +41,15 @@ ralph-wigg/screenshots/
 docs/PRD-Rundown-01-EditorPrototype/logs/claude-output.jsonl
 docs/PRD-Rundown-System/logs/*.jsonl
 docs/PRD-Rundown-System/logs/claude-output.jsonl
+
+# agent team (Linear-driven runs). No trailing slash: inside ticket worktrees these are symlinks.
+agent-team/runs
+agent-team/logs
+agent-team/worktrees
+agent-team/.env
+
+# Firebase Admin keys as downloaded from the console (e.g. <project>-firebase-adminsdk-<id>.json)
+*firebase-adminsdk*.json
+
+# Recorded meets for Xavier's recorded-source mode (video, Virtius logs)
+recordings/
