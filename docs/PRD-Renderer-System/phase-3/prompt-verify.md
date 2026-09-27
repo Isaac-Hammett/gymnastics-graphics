@@ -18,7 +18,7 @@ You verify ALL completed tasks on production. Take screenshots, compare against 
 ## URLs
 - Home page (competition cards): `https://commentarygraphic.com/`
 - Producer view: `https://commentarygraphic.com/producer/{compId}`
-- Auth: `test@test.com` / `ClaudeTest`
+- Auth: the test account (credentials are not stored in the repo — ask Isaac)
 
 ---
 
@@ -29,7 +29,7 @@ You verify ALL completed tasks on production. Take screenshots, compare against 
 - [ ] `browser_install`
 - [ ] `browser_resize` to 1920x1080
 - [ ] Navigate to `https://commentarygraphic.com/`
-- [ ] Authenticate with `test@test.com` / `ClaudeTest`
+- [ ] Authenticate with the test account (credentials are not stored in the repo — ask Isaac)
 - [ ] Read `plan.md` — collect every `— COMPLETE` task
 - [ ] Clear `fixes.md` (remove old entries — this is a fresh verification pass)
 

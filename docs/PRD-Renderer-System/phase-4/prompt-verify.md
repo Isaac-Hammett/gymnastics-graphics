@@ -19,7 +19,7 @@ You verify ALL completed tasks on production. Take screenshots, compare against 
 - `https://commentarygraphic.com/`
 - `https://commentarygraphic.com/url-generator`
 - `https://commentarygraphic.com/producer/{compId}`
-- Auth: `test@test.com` / `ClaudeTest`
+- Auth: the test account (credentials are not stored in the repo — ask Isaac)
 
 ---
 
