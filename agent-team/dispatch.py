@@ -419,7 +419,8 @@ def check_running(by_id: dict, state: dict, sessions: set):
         check_silence(key_from_session(sess), sess, by_id, state)
     grace = timedelta(minutes=3)
     for t, i in by_id.items():
-        if i["state"] != "In Progress":
+        # Only tickets the agent team works (role label). Humans' own In Progress tickets are not ours.
+        if i["state"] != "In Progress" or not linear.role_of(i):
             continue
         if minutes_since(state["recently_done"].get(t)) < 15:
             continue
