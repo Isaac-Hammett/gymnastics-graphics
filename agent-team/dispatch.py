@@ -336,6 +336,7 @@ def finalize(key: str, by_id: dict, state: dict):
                 notify(f"Planner proposed {m.group(1)} ticket(s)")
             state["last_planner_run"] = iso()
             state["planner_due"] = False
+            state["planner_new_ids"] = []
         else:
             if "escalat" in ans.lower():
                 notify("Reviewer escalated something; look for needs-isaac")
@@ -531,9 +532,30 @@ def verify_candidates(board: list, by_id: dict) -> list:
 
 # ---------------------------------------------------------------- planner / reviewer / loops / rechecks
 
-def maybe_planner(state: dict):
+def note_new_focus_tickets(board: list, state: dict):
+    """A ticket new to the focus project (PLANNER_PROJECT) makes the planner due, so every new ticket gets an
+    overview against the project's build order. The new ids go to runs/planner_new.json for the planner."""
+    focus = env("PLANNER_PROJECT", "")
+    if not focus:
+        return
+    ids = sorted(i["id"] for i in board if i.get("project") == focus)
+    seen = state.get("planner_seen_ids")
+    if seen is None:
+        state["planner_seen_ids"] = ids
+        return
+    new = sorted(set(ids) - set(seen))
+    if new:
+        pending = sorted(set(state.get("planner_new_ids", [])) | set(new))
+        state["planner_new_ids"] = pending
+        state["planner_due"] = True
+        log(f"planner due: new {focus} ticket(s) {', '.join(new)}")
+    state["planner_seen_ids"] = ids
+
+
+def maybe_planner(board: list, state: dict):
     if env("PLANNER_ENABLED", "0") != "1":
         return
+    note_new_focus_tickets(board, state)
     if tmux_has(session_name("PLANNER")) or exit_file("PLANNER").exists():
         return
     last = state.get("last_planner_run")
@@ -541,6 +563,8 @@ def maybe_planner(state: dict):
     due_close = state.get("planner_due") and minutes_since(last) > env_int("PLANNER_MIN_GAP_MIN", 60)
     if due_daily or due_close:
         log("start PLANNER")
+        if not DRY:
+            (RUNS / "planner_new.json").write_text(json.dumps(state.get("planner_new_ids", [])))
         tmux_start(session_name("PLANNER"), run_cmd("PLANNER", "planner"))
 
 
@@ -672,7 +696,7 @@ def one_pass(state: dict):
         slots -= 1
 
     # 6-9
-    maybe_planner(state)
+    maybe_planner(board, state)
     rechecks()
     standing_loops(board, state)
     maybe_reviewer(board, state)

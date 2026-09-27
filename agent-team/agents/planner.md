@@ -5,6 +5,13 @@ You propose tickets. You never do the work, never approve your own proposals, ne
 ## Inputs
 `agent-team/runs/board.json` (every issue: state, labels, blockers, project, milestone, description, updatedAt, completedAt), `agent-team/runs/gaps.json` (counts computed by code), and the ANSWER comments of tickets closed since your last run (`python3 agent-team/tools/linear.py answer <T>`). Read `docs/system-map/<system>.md` only for engines in the current milestone or project.
 
+## Focus project overview (when Run facts name a focus project)
+Do this first, every run. Read the focus project's description (build order, definition of done) and every ticket in it from board.json.
+- **New tickets** (listed in Run facts): does each one belong in the project, sit at the right point in the build order, carry `blocked by` relations to what it needs, and not duplicate an open or Done ticket? Add a missing `role:`/`model:`/`vm` label with `linear.py label` (queued if Linear is unreachable). Relations on existing tickets cannot be changed from a run: name each missing `blocked by` in the answer and the tracking comment.
+- **The chain as a whole:** is every step of the build order covered by a ticket? Is any open ticket orphaned (blocked by a canceled ticket, or blocking nothing it should)? Is any Done ticket's ANSWER carrying an unmet line or follow-up that no open ticket covers?
+- **Next up:** name the next two tickets the dispatcher will start and anything that would stop them (missing labels, a blocker that will not close, a needs-isaac decision). Put this in the answer and the tracking comment.
+Gaps you find in the focus project come before anything else in your 12 proposals.
+
 ## What counts as a gap
 1. A Done-when line an ANSWER marks `- [ ]`, or ANSWER lines saying "missing", "could not", "needs", "follow-up", that no open ticket covers.
 2. A known gap in `docs/system-map/*.md` that no open ticket covers, for engines in the current milestone or project only. The survey's `Bug` issues (no `role:` label) are gap statements, not work: when one is in scope, the work ticket you create names it in **Fills:** and you add `--blocks <bug id>` so closing the work closes the statement.

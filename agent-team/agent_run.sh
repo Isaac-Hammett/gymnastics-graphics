@@ -245,6 +245,9 @@ build_prompt() {
   if [ "$KIND" = "system" ]; then
     echo "Board snapshot: $RUNS/board.json · gaps: $RUNS/gaps.json · proposed tickets: $RUNS/proposed.json"
     echo "Read them with the Read tool or a short python3 one-liner; do not re-fetch the whole board from Linear."
+    if [ -n "${PLANNER_PROJECT:-}" ]; then
+      echo "Focus project: \"$PLANNER_PROJECT\". Tickets new to it since the last planner run: $(cat "$RUNS/planner_new.json" 2>/dev/null || echo '[]')"
+    fi
   fi
   if [ -n "$EXTRA" ]; then echo; echo "$EXTRA"; fi
   echo; echo "# Run facts"

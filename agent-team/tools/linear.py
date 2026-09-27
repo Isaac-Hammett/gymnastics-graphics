@@ -586,9 +586,10 @@ def main(argv=None) -> int:
         else:
             ap.print_help(); return 2
     except LinearError as e:
-        # Agent runs may be sandboxed away from api.linear.app. Queue comments and new tickets on disk;
-        # the dispatcher (outside the sandbox) posts them on its next pass.
-        if e.unreachable and a.cmd in ("comment", "create") and env("GG_KEY") and env("LINEAR_NO_OUTBOX") != "1":
+        # Agent runs may be sandboxed away from api.linear.app. Queue writes on disk; the dispatcher (outside
+        # the sandbox) replays them on its next pass. Reviewer decisions and labels are queueable too, or the
+        # auto reviewer could never approve anything. `state` is not: only the dispatcher changes states.
+        if (e.unreachable and a.cmd in OUTBOX_CMDS and env("GG_KEY") and env("LINEAR_NO_OUTBOX") != "1"):
             path = queue_outbox(a, argv if argv is not None else sys.argv[1:])
             print(f"QUEUED: Linear is unreachable from this run; the dispatcher will post this ({path.name}).")
             return 0
@@ -598,6 +599,7 @@ def main(argv=None) -> int:
 
 
 OUTBOX = RUNS / "outbox"
+OUTBOX_CMDS = ("comment", "create", "label", "approve", "reject", "escalate", "recommend")
 
 
 def queue_outbox(a, raw_argv) -> Path:
