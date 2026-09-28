@@ -7,7 +7,8 @@
  *
  * Socket events (room `competition:<compId>`):
  *   competitionState:event   one typed event { type, t, confidence, evidence[], ... }
- *   competitionState:update  { compId, stateVersion, state }  after any state change
+ *   competitionState:update  { compId, stateVersion, state }  after any state change;
+ *                            { ..., reset: true, t } when a source seeks (ISA2-296)
  */
 
 import { EventEmitter } from 'events';
@@ -33,6 +34,7 @@ export class CompetitionStateService extends EventEmitter {
     this._source = null;
     this._lastError = null;
     this._onInput = (input) => this.ingest(input);
+    this._onReset = ({ t, state }) => this.reset(state, t);
     this._onError = (err) => {
       this._lastError = { message: err.message, at: Date.now() };
       console.error(`[CompetitionState:${compId}] source error: ${err.message}`);
@@ -45,6 +47,7 @@ export class CompetitionStateService extends EventEmitter {
     this._source = source;
     source.on('input', this._onInput);
     source.on('error', this._onError);
+    source.on('reset', this._onReset);
     source.start();
   }
 
@@ -53,7 +56,24 @@ export class CompetitionStateService extends EventEmitter {
     this._source.stop();
     this._source.off('input', this._onInput);
     this._source.off('error', this._onError);
+    this._source.off('reset', this._onReset);
     this._source = null;
+  }
+
+  /**
+   * Replace the state with one a source rebuilt (a recorded seek). No typed
+   * events are emitted for the jump; stateVersion keeps increasing.
+   */
+  reset(state, t = null) {
+    const stateVersion = Math.max(this._state.stateVersion, state.stateVersion) + 1;
+    this._state = { ...state, stateVersion };
+    this._recent = [];
+    const pub = this.getPublicState();
+    this.emit('reset', { t, state: pub });
+    this.emit('update', pub);
+    this._io?.to(`competition:${this.compId}`).emit('competitionState:update', {
+      compId: this.compId, stateVersion, state: pub, reset: true, t
+    });
   }
 
   /** Reduce one input and publish the result. Returns the emitted events. */

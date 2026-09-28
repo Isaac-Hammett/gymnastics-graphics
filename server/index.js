@@ -46,6 +46,7 @@ import { discoverAlumni } from './lib/talentDiscoveryService.js';
 import { fetchClips } from './lib/clipService.js';
 import { loadRecordingPackage } from './lib/recordings/recordingPackage.js';
 import { buildRecordedScenes, applyLayout as applyRecordedLayout, DEFAULT_RECORDING, RECORDED_SOURCE_NAME } from './scripts/buildRecordedScenes.js';
+import { loadRecordedShow, getRecordedShow } from './lib/recordings/recordedShow.js';
 import { PlayoutEngine, getPlayoutEngine as getPlayoutEngineFromModule, removePlayoutEngine as removePlayoutEngineFromModule, PLAYOUT_MODE, CLIP_STATUS } from './lib/playoutEngine.js';
 import { getScoringService, removeScoringService, getAllScoringServices } from './lib/scoringIngestionService.js';
 
@@ -5024,10 +5025,78 @@ io.on('connection', async (socket) => {
   socket.on('recorded:apply-layout', (payload, maybeAck) => recordedObsCall(payload, maybeAck, (obs, opts) =>
     applyRecordedLayout(obs, loadRecordingPackage(opts.recording || DEFAULT_RECORDING), Number(opts.tMs) || 0)));
 
-  socket.on('recorded:seek', (payload, maybeAck) => recordedObsCall(payload, maybeAck, async (obs, opts) => {
-    await obs.call('SetMediaInputCursor', { inputName: RECORDED_SOURCE_NAME, mediaCursor: Math.max(0, Number(opts.tMs) || 0) });
-    return { tMs: Number(opts.tMs) || 0 };
+  // ── Recorded-source show clock (ISA2-296) ──────────────────────────────
+  // recorded:load builds a ShowClock + RecordedEventSource for the competition
+  // and attaches the source to its competition state service. play / pause /
+  // seek / rate drive the OBS media cursor, the event source and applyLayout
+  // together. Every call acks { ok, ...status } or { ok: false, error }; status
+  // changes also go to the competition room as 'recorded:status'.
+  const recordedClockCall = async (payload, maybeAck, work) => {
+    const ack = typeof payload === 'function' ? payload : maybeAck;
+    const opts = (typeof payload === 'object' && payload) || {};
+    const compId = opts.compId || clientCompId;
+    let result;
+    try {
+      const show = compId && getRecordedShow(compId);
+      if (!show) throw new Error('No recording loaded for this competition; send recorded:load first');
+      result = { ok: true, ...(await work(show, opts)) };
+    } catch (error) {
+      console.error(`[ShowClock] ${error.message}`);
+      result = { ok: false, error: error.message };
+    }
+    if (typeof ack === 'function') ack(result);
+  };
+
+  socket.on('recorded:load', async (payload, maybeAck) => {
+    const ack = typeof payload === 'function' ? payload : maybeAck;
+    const opts = (typeof payload === 'object' && payload) || {};
+    const compId = opts.compId || clientCompId;
+    let result;
+    try {
+      if (!compId) throw new Error('no_comp_id');
+      const obsManager = getOBSConnectionManager();
+      const show = loadRecordedShow(compId, {
+        recording: opts.recording || DEFAULT_RECORDING,
+        stateService: getOrCreateCompetitionState(compId, { io }),
+        getObs: () => (obsManager.isConnected(compId) ? obsManager.getConnection(compId) : null),
+        applyLayout: applyRecordedLayout,
+        eventsOffsetMs: Number(opts.eventsOffsetMs) || 0,
+        mediaOffsetMs: Number(opts.mediaOffsetMs) || 0,
+        pollIntervalMs: Math.max(1000, Number(opts.pollIntervalMs) || 15000),
+        onStatus: (status) => io.to(`competition:${compId}`).emit('recorded:status', status)
+      });
+      result = { ok: true, ...(await show.clock.seek(Number(opts.startMs) || 0)) };
+    } catch (error) {
+      console.error(`[ShowClock] load failed: ${error.message}`);
+      result = { ok: false, error: error.message };
+    }
+    if (typeof ack === 'function') ack(result);
+  });
+
+  socket.on('recorded:play', (payload, maybeAck) => recordedClockCall(payload, maybeAck, (show) => show.clock.play()));
+  socket.on('recorded:pause', (payload, maybeAck) => recordedClockCall(payload, maybeAck, (show) => show.clock.pause()));
+  socket.on('recorded:rate', (payload, maybeAck) => recordedClockCall(payload, maybeAck, (show, opts) => show.clock.setRate(opts.rate)));
+  socket.on('recorded:offset', (payload, maybeAck) => recordedClockCall(payload, maybeAck, async (show, opts) => {
+    if (opts.eventsOffsetMs != null) show.source.setOffset(Number(opts.eventsOffsetMs));
+    return opts.mediaOffsetMs != null ? show.clock.setMediaOffset(Number(opts.mediaOffsetMs)) : show.clock.status();
   }));
+  socket.on('recorded:status', (payload, maybeAck) => recordedClockCall(payload, maybeAck, async (show, opts) => {
+    if (opts.readObs) await show.clock.readObsCursor();
+    return show.clock.status();
+  }));
+
+  // With a show loaded, seek moves the whole clock; without one it only moves
+  // the OBS cursor (the ISA2-295 behaviour).
+  socket.on('recorded:seek', (payload, maybeAck) => {
+    const opts = (typeof payload === 'object' && payload) || {};
+    if (getRecordedShow(opts.compId || clientCompId)) {
+      return recordedClockCall(payload, maybeAck, (show) => show.clock.seek(opts.tMs));
+    }
+    return recordedObsCall(payload, maybeAck, async (obs) => {
+      await obs.call('SetMediaInputCursor', { inputName: RECORDED_SOURCE_NAME, mediaCursor: Math.max(0, Number(opts.tMs) || 0) });
+      return { tMs: Number(opts.tMs) || 0 };
+    });
+  });
 
   // Client identifies themselves
   socket.on('identify', ({ role, name }) => {

@@ -1,0 +1,451 @@
+{"type":"meta","synthetic":true,"recording":"ecac-2026","note":"Rebuilt from virtius-final.json. Rotation windows come from meta.json layoutTimeline; routine times inside a rotation are evenly spaced, not measured. tVideoMs is ms into program.mp4.","rotations":[{"rotation":1,"fromMs":1038000,"toMs":1974000},{"rotation":2,"fromMs":2072000,"toMs":2966000},{"rotation":3,"fromMs":3230000,"toMs":3998000},{"rotation":4,"fromMs":4222000,"toMs":5072000},{"rotation":5,"fromMs":5255000,"toMs":6145000},{"rotation":6,"fromMs":6318000,"toMs":7165000}]}
+{"tVideoMs":1063000,"type":"greenLight","event":"FLOOR","team":"NAVY","athlete":{"id":"8216","name":"Daniel Gurevich"}}
+{"tVideoMs":1063000,"type":"greenLight","event":"HORSE","team":"W&M","athlete":{"id":"7901","name":"Ricky Pizem"}}
+{"tVideoMs":1063000,"type":"greenLight","event":"RINGS","team":"SIM","athlete":{"id":"8498","name":"Noah Doiron"}}
+{"tVideoMs":1063000,"type":"greenLight","event":"VAULT","team":"ARMY","athlete":{"id":"8228","name":"Jaden Blank"}}
+{"tVideoMs":1063000,"type":"greenLight","event":"PBARS","team":"GRN","athlete":{"id":"8430","name":"Kyler Hinson"}}
+{"tVideoMs":1063000,"type":"greenLight","event":"BAR","team":"SPR","athlete":{"id":"8449","name":"Carl Jacob Soederqvist"}}
+{"tVideoMs":1179267,"type":"scorePosted","event":"FLOOR","team":"NAVY","athlete":{"id":"8216","name":"Daniel Gurevich"},"score":13.35}
+{"tVideoMs":1179267,"type":"teamTotal","team":"NAVY","score":13.35}
+{"tVideoMs":1203520,"type":"scorePosted","event":"HORSE","team":"W&M","athlete":{"id":"7901","name":"Ricky Pizem"},"score":12.55}
+{"tVideoMs":1203520,"type":"teamTotal","team":"W&M","score":12.55}
+{"tVideoMs":1205667,"type":"greenLight","event":"FLOOR","team":"NAVY","athlete":{"id":"8218","name":"Benjamin Thurlow Lam"}}
+{"tVideoMs":1234200,"type":"greenLight","event":"HORSE","team":"W&M","athlete":{"id":"8105","name":"Jared Noyman"}}
+{"tVideoMs":1239900,"type":"scorePosted","event":"BAR","team":"SPR","athlete":{"id":"8449","name":"Carl Jacob Soederqvist"},"score":11.7}
+{"tVideoMs":1239900,"type":"teamTotal","team":"SPR","score":11.7}
+{"tVideoMs":1239900,"type":"scorePosted","event":"PBARS","team":"GRN","athlete":{"id":"8430","name":"Kyler Hinson"},"score":13.45}
+{"tVideoMs":1239900,"type":"teamTotal","team":"GRN","score":13.45}
+{"tVideoMs":1239900,"type":"scorePosted","event":"VAULT","team":"ARMY","athlete":{"id":"8228","name":"Jaden Blank"},"score":13.55}
+{"tVideoMs":1239900,"type":"teamTotal","team":"ARMY","score":13.55}
+{"tVideoMs":1239900,"type":"scorePosted","event":"RINGS","team":"SIM","athlete":{"id":"8498","name":"Noah Doiron"},"score":11.75}
+{"tVideoMs":1239900,"type":"teamTotal","team":"SIM","score":11.75}
+{"tVideoMs":1277000,"type":"greenLight","event":"RINGS","team":"SIM","athlete":{"id":"8501","name":"Oskar Silverman"}}
+{"tVideoMs":1277000,"type":"greenLight","event":"VAULT","team":"ARMY","athlete":{"id":"8466","name":"Felipe Junqueira"}}
+{"tVideoMs":1277000,"type":"greenLight","event":"PBARS","team":"GRN","athlete":{"id":"7977","name":"Michael Avery"}}
+{"tVideoMs":1277000,"type":"greenLight","event":"BAR","team":"SPR","athlete":{"id":"8440","name":"Skyler Cook"}}
+{"tVideoMs":1321933,"type":"scorePosted","event":"FLOOR","team":"NAVY","athlete":{"id":"8218","name":"Benjamin Thurlow Lam"},"score":13.65}
+{"tVideoMs":1321933,"type":"teamTotal","team":"NAVY","score":27}
+{"tVideoMs":1348333,"type":"greenLight","event":"FLOOR","team":"NAVY","athlete":{"id":"7986","name":"Colby Prince"}}
+{"tVideoMs":1374720,"type":"scorePosted","event":"HORSE","team":"W&M","athlete":{"id":"8105","name":"Jared Noyman"},"score":12}
+{"tVideoMs":1374720,"type":"teamTotal","team":"W&M","score":24.55}
+{"tVideoMs":1405400,"type":"greenLight","event":"HORSE","team":"W&M","athlete":{"id":"7751","name":"Sam Smith"}}
+{"tVideoMs":1453900,"type":"scorePosted","event":"BAR","team":"SPR","athlete":{"id":"8440","name":"Skyler Cook"},"score":12.05}
+{"tVideoMs":1453900,"type":"teamTotal","team":"SPR","score":23.75}
+{"tVideoMs":1453900,"type":"scorePosted","event":"PBARS","team":"GRN","athlete":{"id":"7977","name":"Michael Avery"},"score":13.2}
+{"tVideoMs":1453900,"type":"teamTotal","team":"GRN","score":26.65}
+{"tVideoMs":1453900,"type":"scorePosted","event":"VAULT","team":"ARMY","athlete":{"id":"8466","name":"Felipe Junqueira"},"score":13.15}
+{"tVideoMs":1453900,"type":"teamTotal","team":"ARMY","score":26.7}
+{"tVideoMs":1453900,"type":"scorePosted","event":"RINGS","team":"SIM","athlete":{"id":"8501","name":"Oskar Silverman"},"score":12.3}
+{"tVideoMs":1453900,"type":"teamTotal","team":"SIM","score":24.05}
+{"tVideoMs":1464600,"type":"scorePosted","event":"FLOOR","team":"NAVY","athlete":{"id":"7986","name":"Colby Prince"},"score":13.65}
+{"tVideoMs":1464600,"type":"teamTotal","team":"NAVY","score":40.65}
+{"tVideoMs":1491000,"type":"greenLight","event":"FLOOR","team":"NAVY","athlete":{"id":"7989","name":"Danilo Viciana"}}
+{"tVideoMs":1491000,"type":"greenLight","event":"RINGS","team":"SIM","athlete":{"id":"8297","name":"Alex Campbell"}}
+{"tVideoMs":1491000,"type":"greenLight","event":"VAULT","team":"ARMY","athlete":{"id":"7849","name":"Maddox Pabellon"}}
+{"tVideoMs":1491000,"type":"greenLight","event":"PBARS","team":"GRN","athlete":{"id":"8211","name":"Sergey Popov"}}
+{"tVideoMs":1491000,"type":"greenLight","event":"BAR","team":"SPR","athlete":{"id":"8445","name":"Kaleb Palacio"}}
+{"tVideoMs":1545920,"type":"scorePosted","event":"HORSE","team":"W&M","athlete":{"id":"7751","name":"Sam Smith"},"score":12.4}
+{"tVideoMs":1545920,"type":"teamTotal","team":"W&M","score":36.95}
+{"tVideoMs":1576600,"type":"greenLight","event":"HORSE","team":"W&M","athlete":{"id":"8107","name":"Gavin Zborowski"}}
+{"tVideoMs":1607267,"type":"scorePosted","event":"FLOOR","team":"NAVY","athlete":{"id":"7989","name":"Danilo Viciana"},"score":13.8}
+{"tVideoMs":1607267,"type":"teamTotal","team":"NAVY","score":54.45}
+{"tVideoMs":1633667,"type":"greenLight","event":"FLOOR","team":"NAVY","athlete":{"id":"8425","name":"Jonah Soltz"}}
+{"tVideoMs":1667900,"type":"scorePosted","event":"BAR","team":"SPR","athlete":{"id":"8445","name":"Kaleb Palacio"},"score":12.15}
+{"tVideoMs":1667900,"type":"teamTotal","team":"SPR","score":35.9}
+{"tVideoMs":1667900,"type":"scorePosted","event":"PBARS","team":"GRN","athlete":{"id":"8211","name":"Sergey Popov"},"score":13.15}
+{"tVideoMs":1667900,"type":"teamTotal","team":"GRN","score":39.8}
+{"tVideoMs":1667900,"type":"scorePosted","event":"VAULT","team":"ARMY","athlete":{"id":"7849","name":"Maddox Pabellon"},"score":13.45}
+{"tVideoMs":1667900,"type":"teamTotal","team":"ARMY","score":40.15}
+{"tVideoMs":1667900,"type":"scorePosted","event":"RINGS","team":"SIM","athlete":{"id":"8297","name":"Alex Campbell"},"score":12.4}
+{"tVideoMs":1667900,"type":"teamTotal","team":"SIM","score":36.45}
+{"tVideoMs":1705000,"type":"greenLight","event":"RINGS","team":"SIM","athlete":{"id":"8092","name":"Brian Rollison"}}
+{"tVideoMs":1705000,"type":"greenLight","event":"VAULT","team":"ARMY","athlete":{"id":"8231","name":"Nick Lester"}}
+{"tVideoMs":1705000,"type":"greenLight","event":"PBARS","team":"GRN","athlete":{"id":"8207","name":"Jaxon Clapper"}}
+{"tVideoMs":1705000,"type":"greenLight","event":"BAR","team":"SPR","athlete":{"id":"8008","name":"Owen Carney"}}
+{"tVideoMs":1717120,"type":"scorePosted","event":"HORSE","team":"W&M","athlete":{"id":"8107","name":"Gavin Zborowski"},"score":13.45}
+{"tVideoMs":1717120,"type":"teamTotal","team":"W&M","score":50.4}
+{"tVideoMs":1747800,"type":"greenLight","event":"HORSE","team":"W&M","athlete":{"id":"8295","name":"Luke Tully"}}
+{"tVideoMs":1749933,"type":"scorePosted","event":"FLOOR","team":"NAVY","athlete":{"id":"8425","name":"Jonah Soltz"},"score":12.85}
+{"tVideoMs":1776333,"type":"greenLight","event":"FLOOR","team":"NAVY","athlete":{"id":"8217","name":"Brian Solomon"}}
+{"tVideoMs":1881900,"type":"scorePosted","event":"BAR","team":"SPR","athlete":{"id":"8008","name":"Owen Carney"},"score":11.25}
+{"tVideoMs":1881900,"type":"teamTotal","team":"SPR","score":47.15}
+{"tVideoMs":1881900,"type":"scorePosted","event":"PBARS","team":"GRN","athlete":{"id":"8207","name":"Jaxon Clapper"},"score":13.85}
+{"tVideoMs":1881900,"type":"teamTotal","team":"GRN","score":53.65}
+{"tVideoMs":1881900,"type":"scorePosted","event":"VAULT","team":"ARMY","athlete":{"id":"8231","name":"Nick Lester"},"score":13.9}
+{"tVideoMs":1881900,"type":"teamTotal","team":"ARMY","score":54.05}
+{"tVideoMs":1881900,"type":"scorePosted","event":"RINGS","team":"SIM","athlete":{"id":"8092","name":"Brian Rollison"},"score":13.65}
+{"tVideoMs":1881900,"type":"teamTotal","team":"SIM","score":50.1}
+{"tVideoMs":1888320,"type":"scorePosted","event":"HORSE","team":"W&M","athlete":{"id":"8295","name":"Luke Tully"},"score":12.2}
+{"tVideoMs":1892600,"type":"scorePosted","event":"FLOOR","team":"NAVY","athlete":{"id":"8217","name":"Brian Solomon"},"score":13.05}
+{"tVideoMs":2097000,"type":"greenLight","event":"HORSE","team":"NAVY","athlete":{"id":"8541","name":"Kody Tokunaga"}}
+{"tVideoMs":2097000,"type":"greenLight","event":"RINGS","team":"W&M","athlete":{"id":"7748","name":"Jonathan Irwin"}}
+{"tVideoMs":2097000,"type":"greenLight","event":"VAULT","team":"SIM","athlete":{"id":"8498","name":"Noah Doiron"}}
+{"tVideoMs":2097000,"type":"greenLight","event":"PBARS","team":"ARMY","athlete":{"id":"8228","name":"Jaden Blank"}}
+{"tVideoMs":2097000,"type":"greenLight","event":"BAR","team":"GRN","athlete":{"id":"7977","name":"Michael Avery"}}
+{"tVideoMs":2097000,"type":"greenLight","event":"FLOOR","team":"SPR","athlete":{"id":"8449","name":"Carl Jacob Soederqvist"}}
+{"tVideoMs":2264975,"type":"scorePosted","event":"FLOOR","team":"SPR","athlete":{"id":"8449","name":"Carl Jacob Soederqvist"},"score":13.65}
+{"tVideoMs":2264975,"type":"teamTotal","team":"SPR","score":60.8}
+{"tVideoMs":2264975,"type":"scorePosted","event":"BAR","team":"GRN","athlete":{"id":"7977","name":"Michael Avery"},"score":12.1}
+{"tVideoMs":2264975,"type":"teamTotal","team":"GRN","score":65.75}
+{"tVideoMs":2264975,"type":"scorePosted","event":"PBARS","team":"ARMY","athlete":{"id":"8228","name":"Jaden Blank"},"score":12.9}
+{"tVideoMs":2264975,"type":"teamTotal","team":"ARMY","score":66.95}
+{"tVideoMs":2264975,"type":"scorePosted","event":"VAULT","team":"SIM","athlete":{"id":"8498","name":"Noah Doiron"},"score":12.9}
+{"tVideoMs":2264975,"type":"teamTotal","team":"SIM","score":63}
+{"tVideoMs":2264975,"type":"scorePosted","event":"RINGS","team":"W&M","athlete":{"id":"7748","name":"Jonathan Irwin"},"score":12.95}
+{"tVideoMs":2264975,"type":"teamTotal","team":"W&M","score":63.35}
+{"tVideoMs":2264975,"type":"scorePosted","event":"HORSE","team":"NAVY","athlete":{"id":"8541","name":"Kody Tokunaga"},"score":12.8}
+{"tVideoMs":2264975,"type":"teamTotal","team":"NAVY","score":67.25}
+{"tVideoMs":2300500,"type":"greenLight","event":"HORSE","team":"NAVY","athlete":{"id":"8425","name":"Jonah Soltz"}}
+{"tVideoMs":2300500,"type":"greenLight","event":"RINGS","team":"W&M","athlete":{"id":"8106","name":"Evan Wilkins"}}
+{"tVideoMs":2300500,"type":"greenLight","event":"VAULT","team":"SIM","athlete":{"id":"7961","name":"Milo Staley"}}
+{"tVideoMs":2300500,"type":"greenLight","event":"PBARS","team":"ARMY","athlete":{"id":"8259","name":"Cash Johnston"}}
+{"tVideoMs":2300500,"type":"greenLight","event":"BAR","team":"GRN","athlete":{"id":"7970","name":"Donovan Diviney"}}
+{"tVideoMs":2300500,"type":"greenLight","event":"FLOOR","team":"SPR","athlete":{"id":"8223","name":"Evan Reichert"}}
+{"tVideoMs":2468475,"type":"scorePosted","event":"FLOOR","team":"SPR","athlete":{"id":"8223","name":"Evan Reichert"},"score":13.4}
+{"tVideoMs":2468475,"type":"teamTotal","team":"SPR","score":74.2}
+{"tVideoMs":2468475,"type":"scorePosted","event":"BAR","team":"GRN","athlete":{"id":"7970","name":"Donovan Diviney"},"score":12.55}
+{"tVideoMs":2468475,"type":"teamTotal","team":"GRN","score":78.3}
+{"tVideoMs":2468475,"type":"scorePosted","event":"PBARS","team":"ARMY","athlete":{"id":"8259","name":"Cash Johnston"},"score":12.95}
+{"tVideoMs":2468475,"type":"teamTotal","team":"ARMY","score":79.9}
+{"tVideoMs":2468475,"type":"scorePosted","event":"VAULT","team":"SIM","athlete":{"id":"7961","name":"Milo Staley"},"score":13.45}
+{"tVideoMs":2468475,"type":"teamTotal","team":"SIM","score":76.45}
+{"tVideoMs":2468475,"type":"scorePosted","event":"RINGS","team":"W&M","athlete":{"id":"8106","name":"Evan Wilkins"},"score":12.3}
+{"tVideoMs":2468475,"type":"teamTotal","team":"W&M","score":75.65}
+{"tVideoMs":2468475,"type":"scorePosted","event":"HORSE","team":"NAVY","athlete":{"id":"8425","name":"Jonah Soltz"},"score":12.95}
+{"tVideoMs":2468475,"type":"teamTotal","team":"NAVY","score":80.2}
+{"tVideoMs":2504000,"type":"greenLight","event":"HORSE","team":"NAVY","athlete":{"id":"8216","name":"Daniel Gurevich"}}
+{"tVideoMs":2504000,"type":"greenLight","event":"RINGS","team":"W&M","athlete":{"id":"8295","name":"Luke Tully"}}
+{"tVideoMs":2504000,"type":"greenLight","event":"VAULT","team":"SIM","athlete":{"id":"8096","name":"Jake Smith"}}
+{"tVideoMs":2504000,"type":"greenLight","event":"PBARS","team":"ARMY","athlete":{"id":"8230","name":"Noah Duran"}}
+{"tVideoMs":2504000,"type":"greenLight","event":"BAR","team":"GRN","athlete":{"id":"8430","name":"Kyler Hinson"}}
+{"tVideoMs":2504000,"type":"greenLight","event":"FLOOR","team":"SPR","athlete":{"id":"8441","name":"Michael Dalton"}}
+{"tVideoMs":2671975,"type":"scorePosted","event":"FLOOR","team":"SPR","athlete":{"id":"8441","name":"Michael Dalton"},"score":13.1}
+{"tVideoMs":2671975,"type":"teamTotal","team":"SPR","score":87.3}
+{"tVideoMs":2671975,"type":"scorePosted","event":"BAR","team":"GRN","athlete":{"id":"8430","name":"Kyler Hinson"},"score":12.75}
+{"tVideoMs":2671975,"type":"teamTotal","team":"GRN","score":91.05}
+{"tVideoMs":2671975,"type":"scorePosted","event":"PBARS","team":"ARMY","athlete":{"id":"8230","name":"Noah Duran"},"score":13.1}
+{"tVideoMs":2671975,"type":"teamTotal","team":"ARMY","score":93}
+{"tVideoMs":2671975,"type":"scorePosted","event":"VAULT","team":"SIM","athlete":{"id":"8096","name":"Jake Smith"},"score":12.55}
+{"tVideoMs":2671975,"type":"teamTotal","team":"SIM","score":89}
+{"tVideoMs":2671975,"type":"scorePosted","event":"RINGS","team":"W&M","athlete":{"id":"8295","name":"Luke Tully"},"score":12.25}
+{"tVideoMs":2671975,"type":"teamTotal","team":"W&M","score":87.9}
+{"tVideoMs":2671975,"type":"scorePosted","event":"HORSE","team":"NAVY","athlete":{"id":"8216","name":"Daniel Gurevich"},"score":13.3}
+{"tVideoMs":2671975,"type":"teamTotal","team":"NAVY","score":93.5}
+{"tVideoMs":2707500,"type":"greenLight","event":"HORSE","team":"NAVY","athlete":{"id":"8217","name":"Brian Solomon"}}
+{"tVideoMs":2707500,"type":"greenLight","event":"RINGS","team":"W&M","athlete":{"id":"8107","name":"Gavin Zborowski"}}
+{"tVideoMs":2707500,"type":"greenLight","event":"VAULT","team":"SIM","athlete":{"id":"8300","name":"Braxton Jones"}}
+{"tVideoMs":2707500,"type":"greenLight","event":"PBARS","team":"ARMY","athlete":{"id":"8231","name":"Nick Lester"}}
+{"tVideoMs":2707500,"type":"greenLight","event":"BAR","team":"GRN","athlete":{"id":"7979","name":"Jacob Foster"}}
+{"tVideoMs":2707500,"type":"greenLight","event":"FLOOR","team":"SPR","athlete":{"id":"8008","name":"Owen Carney"}}
+{"tVideoMs":2875475,"type":"scorePosted","event":"FLOOR","team":"SPR","athlete":{"id":"8008","name":"Owen Carney"},"score":13.4}
+{"tVideoMs":2875475,"type":"teamTotal","team":"SPR","score":100.7}
+{"tVideoMs":2875475,"type":"scorePosted","event":"BAR","team":"GRN","athlete":{"id":"7979","name":"Jacob Foster"},"score":12.75}
+{"tVideoMs":2875475,"type":"teamTotal","team":"GRN","score":103.8}
+{"tVideoMs":2875475,"type":"scorePosted","event":"PBARS","team":"ARMY","athlete":{"id":"8231","name":"Nick Lester"},"score":13.3}
+{"tVideoMs":2875475,"type":"teamTotal","team":"ARMY","score":106.3}
+{"tVideoMs":2875475,"type":"scorePosted","event":"VAULT","team":"SIM","athlete":{"id":"8300","name":"Braxton Jones"},"score":14}
+{"tVideoMs":2875475,"type":"teamTotal","team":"SIM","score":103}
+{"tVideoMs":2875475,"type":"scorePosted","event":"RINGS","team":"W&M","athlete":{"id":"8107","name":"Gavin Zborowski"},"score":12.4}
+{"tVideoMs":2875475,"type":"teamTotal","team":"W&M","score":100.3}
+{"tVideoMs":2875475,"type":"scorePosted","event":"HORSE","team":"NAVY","athlete":{"id":"8217","name":"Brian Solomon"},"score":13.15}
+{"tVideoMs":2875475,"type":"teamTotal","team":"NAVY","score":106.65}
+{"tVideoMs":3255000,"type":"greenLight","event":"RINGS","team":"NAVY","athlete":{"id":"8425","name":"Jonah Soltz"}}
+{"tVideoMs":3255000,"type":"greenLight","event":"VAULT","team":"W&M","athlete":{"id":"7902","name":"Evan Sikra"}}
+{"tVideoMs":3255000,"type":"greenLight","event":"PBARS","team":"SIM","athlete":{"id":"8297","name":"Alex Campbell"}}
+{"tVideoMs":3255000,"type":"greenLight","event":"BAR","team":"ARMY","athlete":{"id":"8260","name":"Jake Prabhakaran"}}
+{"tVideoMs":3255000,"type":"greenLight","event":"FLOOR","team":"GRN","athlete":{"id":"8431","name":"Andrew Ricard"}}
+{"tVideoMs":3255000,"type":"greenLight","event":"HORSE","team":"SPR","athlete":{"id":"8449","name":"Carl Jacob Soederqvist"}}
+{"tVideoMs":3366960,"type":"scorePosted","event":"PBARS","team":"SIM","athlete":{"id":"8297","name":"Alex Campbell"},"score":10.9}
+{"tVideoMs":3366960,"type":"teamTotal","team":"SIM","score":113.9}
+{"tVideoMs":3392600,"type":"greenLight","event":"PBARS","team":"SIM","athlete":{"id":"8097","name":"Paul Tiedemann"}}
+{"tVideoMs":3396200,"type":"scorePosted","event":"HORSE","team":"SPR","athlete":{"id":"8449","name":"Carl Jacob Soederqvist"},"score":12.85}
+{"tVideoMs":3396200,"type":"teamTotal","team":"SPR","score":113.55}
+{"tVideoMs":3396200,"type":"scorePosted","event":"FLOOR","team":"GRN","athlete":{"id":"8431","name":"Andrew Ricard"},"score":13}
+{"tVideoMs":3396200,"type":"teamTotal","team":"GRN","score":116.8}
+{"tVideoMs":3396200,"type":"scorePosted","event":"BAR","team":"ARMY","athlete":{"id":"8260","name":"Jake Prabhakaran"},"score":12.5}
+{"tVideoMs":3396200,"type":"teamTotal","team":"ARMY","score":118.8}
+{"tVideoMs":3396200,"type":"scorePosted","event":"VAULT","team":"W&M","athlete":{"id":"7902","name":"Evan Sikra"},"score":13.15}
+{"tVideoMs":3396200,"type":"teamTotal","team":"W&M","score":113.45}
+{"tVideoMs":3396200,"type":"scorePosted","event":"RINGS","team":"NAVY","athlete":{"id":"8425","name":"Jonah Soltz"},"score":12.45}
+{"tVideoMs":3396200,"type":"teamTotal","team":"NAVY","score":119.1}
+{"tVideoMs":3427000,"type":"greenLight","event":"RINGS","team":"NAVY","athlete":{"id":"7987","name":"Aaron Stein"}}
+{"tVideoMs":3427000,"type":"greenLight","event":"VAULT","team":"W&M","athlete":{"id":"7901","name":"Ricky Pizem"}}
+{"tVideoMs":3427000,"type":"greenLight","event":"BAR","team":"ARMY","athlete":{"id":"8228","name":"Jaden Blank"}}
+{"tVideoMs":3427000,"type":"greenLight","event":"FLOOR","team":"GRN","athlete":{"id":"8430","name":"Kyler Hinson"}}
+{"tVideoMs":3427000,"type":"greenLight","event":"HORSE","team":"SPR","athlete":{"id":"8223","name":"Evan Reichert"}}
+{"tVideoMs":3504560,"type":"scorePosted","event":"PBARS","team":"SIM","athlete":{"id":"8097","name":"Paul Tiedemann"},"score":12.75}
+{"tVideoMs":3504560,"type":"teamTotal","team":"SIM","score":126.65}
+{"tVideoMs":3530200,"type":"greenLight","event":"PBARS","team":"SIM","athlete":{"id":"8094","name":"Tristan Shorey"}}
+{"tVideoMs":3568200,"type":"scorePosted","event":"HORSE","team":"SPR","athlete":{"id":"8223","name":"Evan Reichert"},"score":12.8}
+{"tVideoMs":3568200,"type":"teamTotal","team":"SPR","score":126.35}
+{"tVideoMs":3568200,"type":"scorePosted","event":"FLOOR","team":"GRN","athlete":{"id":"8430","name":"Kyler Hinson"},"score":13.45}
+{"tVideoMs":3568200,"type":"teamTotal","team":"GRN","score":130.25}
+{"tVideoMs":3568200,"type":"scorePosted","event":"BAR","team":"ARMY","athlete":{"id":"8228","name":"Jaden Blank"},"score":12.65}
+{"tVideoMs":3568200,"type":"teamTotal","team":"ARMY","score":131.45}
+{"tVideoMs":3568200,"type":"scorePosted","event":"VAULT","team":"W&M","athlete":{"id":"7901","name":"Ricky Pizem"},"score":13.35}
+{"tVideoMs":3568200,"type":"teamTotal","team":"W&M","score":126.8}
+{"tVideoMs":3568200,"type":"scorePosted","event":"RINGS","team":"NAVY","athlete":{"id":"7987","name":"Aaron Stein"},"score":12.95}
+{"tVideoMs":3568200,"type":"teamTotal","team":"NAVY","score":132.05}
+{"tVideoMs":3599000,"type":"greenLight","event":"RINGS","team":"NAVY","athlete":{"id":"7983","name":"Garrett Lawless"}}
+{"tVideoMs":3599000,"type":"greenLight","event":"VAULT","team":"W&M","athlete":{"id":"8108","name":"Niko Greenly"}}
+{"tVideoMs":3599000,"type":"greenLight","event":"BAR","team":"ARMY","athlete":{"id":"8259","name":"Cash Johnston"}}
+{"tVideoMs":3599000,"type":"greenLight","event":"FLOOR","team":"GRN","athlete":{"id":"7969","name":"Ethan Poole"}}
+{"tVideoMs":3599000,"type":"greenLight","event":"HORSE","team":"SPR","athlete":{"id":"8442","name":"Devon Felsenstein"}}
+{"tVideoMs":3642160,"type":"scorePosted","event":"PBARS","team":"SIM","athlete":{"id":"8094","name":"Tristan Shorey"},"score":10.9}
+{"tVideoMs":3642160,"type":"teamTotal","team":"SIM","score":137.55}
+{"tVideoMs":3667800,"type":"greenLight","event":"PBARS","team":"SIM","athlete":{"id":"8500","name":"Kenny Rabe"}}
+{"tVideoMs":3740200,"type":"scorePosted","event":"HORSE","team":"SPR","athlete":{"id":"8442","name":"Devon Felsenstein"},"score":12.3}
+{"tVideoMs":3740200,"type":"teamTotal","team":"SPR","score":138.65}
+{"tVideoMs":3740200,"type":"scorePosted","event":"FLOOR","team":"GRN","athlete":{"id":"7969","name":"Ethan Poole"},"score":13.35}
+{"tVideoMs":3740200,"type":"teamTotal","team":"GRN","score":143.6}
+{"tVideoMs":3740200,"type":"scorePosted","event":"BAR","team":"ARMY","athlete":{"id":"8259","name":"Cash Johnston"},"score":13.1}
+{"tVideoMs":3740200,"type":"teamTotal","team":"ARMY","score":144.55}
+{"tVideoMs":3740200,"type":"scorePosted","event":"VAULT","team":"W&M","athlete":{"id":"8108","name":"Niko Greenly"},"score":13.65}
+{"tVideoMs":3740200,"type":"teamTotal","team":"W&M","score":140.45}
+{"tVideoMs":3740200,"type":"scorePosted","event":"RINGS","team":"NAVY","athlete":{"id":"7983","name":"Garrett Lawless"},"score":12.6}
+{"tVideoMs":3740200,"type":"teamTotal","team":"NAVY","score":144.65}
+{"tVideoMs":3771000,"type":"greenLight","event":"RINGS","team":"NAVY","athlete":{"id":"8217","name":"Brian Solomon"}}
+{"tVideoMs":3771000,"type":"greenLight","event":"VAULT","team":"W&M","athlete":{"id":"8295","name":"Luke Tully"}}
+{"tVideoMs":3771000,"type":"greenLight","event":"BAR","team":"ARMY","athlete":{"id":"8232","name":"Tyson Phelps"}}
+{"tVideoMs":3771000,"type":"greenLight","event":"FLOOR","team":"GRN","athlete":{"id":"8207","name":"Jaxon Clapper"}}
+{"tVideoMs":3771000,"type":"greenLight","event":"HORSE","team":"SPR","athlete":{"id":"8219","name":"Peyton Cramer"}}
+{"tVideoMs":3779760,"type":"scorePosted","event":"PBARS","team":"SIM","athlete":{"id":"8500","name":"Kenny Rabe"},"score":12.65}
+{"tVideoMs":3779760,"type":"teamTotal","team":"SIM","score":150.2}
+{"tVideoMs":3805400,"type":"greenLight","event":"PBARS","team":"SIM","athlete":{"id":"8498","name":"Noah Doiron"}}
+{"tVideoMs":3912200,"type":"scorePosted","event":"HORSE","team":"SPR","athlete":{"id":"8219","name":"Peyton Cramer"},"score":13.6}
+{"tVideoMs":3912200,"type":"teamTotal","team":"SPR","score":152.25}
+{"tVideoMs":3912200,"type":"scorePosted","event":"FLOOR","team":"GRN","athlete":{"id":"8207","name":"Jaxon Clapper"},"score":13.2}
+{"tVideoMs":3912200,"type":"teamTotal","team":"GRN","score":156.8}
+{"tVideoMs":3912200,"type":"scorePosted","event":"BAR","team":"ARMY","athlete":{"id":"8232","name":"Tyson Phelps"},"score":12.65}
+{"tVideoMs":3912200,"type":"teamTotal","team":"ARMY","score":157.2}
+{"tVideoMs":3912200,"type":"scorePosted","event":"VAULT","team":"W&M","athlete":{"id":"8295","name":"Luke Tully"},"score":13.85}
+{"tVideoMs":3912200,"type":"teamTotal","team":"W&M","score":154.3}
+{"tVideoMs":3912200,"type":"scorePosted","event":"RINGS","team":"NAVY","athlete":{"id":"8217","name":"Brian Solomon"},"score":12.7}
+{"tVideoMs":3912200,"type":"teamTotal","team":"NAVY","score":157.35}
+{"tVideoMs":3917360,"type":"scorePosted","event":"PBARS","team":"SIM","athlete":{"id":"8498","name":"Noah Doiron"},"score":11.1}
+{"tVideoMs":4247000,"type":"greenLight","event":"VAULT","team":"NAVY","athlete":{"id":"8216","name":"Daniel Gurevich"}}
+{"tVideoMs":4247000,"type":"greenLight","event":"PBARS","team":"W&M","athlete":{"id":"8509","name":"Nicholas Kosarikov"}}
+{"tVideoMs":4247000,"type":"greenLight","event":"BAR","team":"SIM","athlete":{"id":"7961","name":"Milo Staley"}}
+{"tVideoMs":4247000,"type":"greenLight","event":"FLOOR","team":"ARMY","athlete":{"id":"8228","name":"Jaden Blank"}}
+{"tVideoMs":4247000,"type":"greenLight","event":"HORSE","team":"GRN","athlete":{"id":"7979","name":"Jacob Foster"}}
+{"tVideoMs":4247000,"type":"greenLight","event":"RINGS","team":"SPR","athlete":{"id":"8012","name":"Will Wilson"}}
+{"tVideoMs":4372900,"type":"scorePosted","event":"BAR","team":"SIM","athlete":{"id":"7961","name":"Milo Staley"},"score":11.5}
+{"tVideoMs":4372900,"type":"teamTotal","team":"SIM","score":161.7}
+{"tVideoMs":4401000,"type":"greenLight","event":"BAR","team":"SIM","athlete":{"id":"8092","name":"Brian Rollison"}}
+{"tVideoMs":4405625,"type":"scorePosted","event":"RINGS","team":"SPR","athlete":{"id":"8012","name":"Will Wilson"},"score":12.45}
+{"tVideoMs":4405625,"type":"teamTotal","team":"SPR","score":164.7}
+{"tVideoMs":4405625,"type":"scorePosted","event":"HORSE","team":"GRN","athlete":{"id":"7979","name":"Jacob Foster"},"score":12.45}
+{"tVideoMs":4405625,"type":"teamTotal","team":"GRN","score":169.25}
+{"tVideoMs":4405625,"type":"scorePosted","event":"FLOOR","team":"ARMY","athlete":{"id":"8228","name":"Jaden Blank"},"score":13.35}
+{"tVideoMs":4405625,"type":"teamTotal","team":"ARMY","score":170.55}
+{"tVideoMs":4405625,"type":"scorePosted","event":"PBARS","team":"W&M","athlete":{"id":"8509","name":"Nicholas Kosarikov"},"score":12.95}
+{"tVideoMs":4405625,"type":"teamTotal","team":"W&M","score":167.25}
+{"tVideoMs":4405625,"type":"scorePosted","event":"VAULT","team":"NAVY","athlete":{"id":"8216","name":"Daniel Gurevich"},"score":13.25}
+{"tVideoMs":4405625,"type":"teamTotal","team":"NAVY","score":170.6}
+{"tVideoMs":4439500,"type":"greenLight","event":"VAULT","team":"NAVY","athlete":{"id":"8425","name":"Jonah Soltz"}}
+{"tVideoMs":4439500,"type":"greenLight","event":"PBARS","team":"W&M","athlete":{"id":"8106","name":"Evan Wilkins"}}
+{"tVideoMs":4439500,"type":"greenLight","event":"FLOOR","team":"ARMY","athlete":{"id":"8233","name":"Max Rubin"}}
+{"tVideoMs":4439500,"type":"greenLight","event":"HORSE","team":"GRN","athlete":{"id":"8208","name":"Andres Esquivel-Garza"}}
+{"tVideoMs":4439500,"type":"greenLight","event":"RINGS","team":"SPR","athlete":{"id":"8654","name":"Brian Delf"}}
+{"tVideoMs":4526900,"type":"scorePosted","event":"BAR","team":"SIM","athlete":{"id":"8092","name":"Brian Rollison"},"score":11.6}
+{"tVideoMs":4526900,"type":"teamTotal","team":"SIM","score":173.3}
+{"tVideoMs":4555000,"type":"greenLight","event":"BAR","team":"SIM","athlete":{"id":"8096","name":"Jake Smith"}}
+{"tVideoMs":4598125,"type":"scorePosted","event":"RINGS","team":"SPR","athlete":{"id":"8654","name":"Brian Delf"},"score":12.8}
+{"tVideoMs":4598125,"type":"teamTotal","team":"SPR","score":177.5}
+{"tVideoMs":4598125,"type":"scorePosted","event":"HORSE","team":"GRN","athlete":{"id":"8208","name":"Andres Esquivel-Garza"},"score":13.05}
+{"tVideoMs":4598125,"type":"teamTotal","team":"GRN","score":182.3}
+{"tVideoMs":4598125,"type":"scorePosted","event":"FLOOR","team":"ARMY","athlete":{"id":"8233","name":"Max Rubin"},"score":12.9}
+{"tVideoMs":4598125,"type":"teamTotal","team":"ARMY","score":183.45}
+{"tVideoMs":4598125,"type":"scorePosted","event":"PBARS","team":"W&M","athlete":{"id":"8106","name":"Evan Wilkins"},"score":13.2}
+{"tVideoMs":4598125,"type":"teamTotal","team":"W&M","score":180.45}
+{"tVideoMs":4598125,"type":"scorePosted","event":"VAULT","team":"NAVY","athlete":{"id":"8425","name":"Jonah Soltz"},"score":13.3}
+{"tVideoMs":4598125,"type":"teamTotal","team":"NAVY","score":183.9}
+{"tVideoMs":4632000,"type":"greenLight","event":"VAULT","team":"NAVY","athlete":{"id":"8217","name":"Brian Solomon"}}
+{"tVideoMs":4632000,"type":"greenLight","event":"PBARS","team":"W&M","athlete":{"id":"8108","name":"Niko Greenly"}}
+{"tVideoMs":4632000,"type":"greenLight","event":"FLOOR","team":"ARMY","athlete":{"id":"8231","name":"Nick Lester"}}
+{"tVideoMs":4632000,"type":"greenLight","event":"HORSE","team":"GRN","athlete":{"id":"8430","name":"Kyler Hinson"}}
+{"tVideoMs":4632000,"type":"greenLight","event":"RINGS","team":"SPR","athlete":{"id":"8013","name":"Gustavin Suess"}}
+{"tVideoMs":4680900,"type":"scorePosted","event":"BAR","team":"SIM","athlete":{"id":"8096","name":"Jake Smith"},"score":10.95}
+{"tVideoMs":4680900,"type":"teamTotal","team":"SIM","score":184.25}
+{"tVideoMs":4709000,"type":"greenLight","event":"BAR","team":"SIM","athlete":{"id":"8097","name":"Paul Tiedemann"}}
+{"tVideoMs":4790625,"type":"scorePosted","event":"RINGS","team":"SPR","athlete":{"id":"8013","name":"Gustavin Suess"},"score":12.4}
+{"tVideoMs":4790625,"type":"teamTotal","team":"SPR","score":189.9}
+{"tVideoMs":4790625,"type":"scorePosted","event":"HORSE","team":"GRN","athlete":{"id":"8430","name":"Kyler Hinson"},"score":13.1}
+{"tVideoMs":4790625,"type":"teamTotal","team":"GRN","score":195.4}
+{"tVideoMs":4790625,"type":"scorePosted","event":"FLOOR","team":"ARMY","athlete":{"id":"8231","name":"Nick Lester"},"score":12.85}
+{"tVideoMs":4790625,"type":"teamTotal","team":"ARMY","score":196.3}
+{"tVideoMs":4790625,"type":"scorePosted","event":"PBARS","team":"W&M","athlete":{"id":"8108","name":"Niko Greenly"},"score":13.2}
+{"tVideoMs":4790625,"type":"teamTotal","team":"W&M","score":193.65}
+{"tVideoMs":4790625,"type":"scorePosted","event":"VAULT","team":"NAVY","athlete":{"id":"8217","name":"Brian Solomon"},"score":13.35}
+{"tVideoMs":4790625,"type":"teamTotal","team":"NAVY","score":197.25}
+{"tVideoMs":4824500,"type":"greenLight","event":"VAULT","team":"NAVY","athlete":{"id":"7985","name":"Matthew Petros"}}
+{"tVideoMs":4824500,"type":"greenLight","event":"PBARS","team":"W&M","athlete":{"id":"8295","name":"Luke Tully"}}
+{"tVideoMs":4824500,"type":"greenLight","event":"FLOOR","team":"ARMY","athlete":{"id":"8467","name":"Thomas Morrow"}}
+{"tVideoMs":4824500,"type":"greenLight","event":"HORSE","team":"GRN","athlete":{"id":"8212","name":"Matthew Roth"}}
+{"tVideoMs":4824500,"type":"greenLight","event":"RINGS","team":"SPR","athlete":{"id":"8447","name":"Blaise Rousseau"}}
+{"tVideoMs":4834900,"type":"scorePosted","event":"BAR","team":"SIM","athlete":{"id":"8097","name":"Paul Tiedemann"},"score":13.25}
+{"tVideoMs":4834900,"type":"teamTotal","team":"SIM","score":197.5}
+{"tVideoMs":4863000,"type":"greenLight","event":"BAR","team":"SIM","athlete":{"id":"8498","name":"Noah Doiron"}}
+{"tVideoMs":4983125,"type":"scorePosted","event":"RINGS","team":"SPR","athlete":{"id":"8447","name":"Blaise Rousseau"},"score":13.8}
+{"tVideoMs":4983125,"type":"teamTotal","team":"SPR","score":203.7}
+{"tVideoMs":4983125,"type":"scorePosted","event":"HORSE","team":"GRN","athlete":{"id":"8212","name":"Matthew Roth"},"score":14.1}
+{"tVideoMs":4983125,"type":"teamTotal","team":"GRN","score":209.5}
+{"tVideoMs":4983125,"type":"scorePosted","event":"FLOOR","team":"ARMY","athlete":{"id":"8467","name":"Thomas Morrow"},"score":12.5}
+{"tVideoMs":4983125,"type":"teamTotal","team":"ARMY","score":208.8}
+{"tVideoMs":4983125,"type":"scorePosted","event":"PBARS","team":"W&M","athlete":{"id":"8295","name":"Luke Tully"},"score":12.5}
+{"tVideoMs":4983125,"type":"teamTotal","team":"W&M","score":206.15}
+{"tVideoMs":4983125,"type":"scorePosted","event":"VAULT","team":"NAVY","athlete":{"id":"7985","name":"Matthew Petros"},"score":12.55}
+{"tVideoMs":4983125,"type":"teamTotal","team":"NAVY","score":209.8}
+{"tVideoMs":4988900,"type":"scorePosted","event":"BAR","team":"SIM","athlete":{"id":"8498","name":"Noah Doiron"},"score":11.3}
+{"tVideoMs":5280000,"type":"greenLight","event":"PBARS","team":"NAVY","athlete":{"id":"8425","name":"Jonah Soltz"}}
+{"tVideoMs":5280000,"type":"greenLight","event":"BAR","team":"W&M","athlete":{"id":"7902","name":"Evan Sikra"}}
+{"tVideoMs":5280000,"type":"greenLight","event":"FLOOR","team":"SIM","athlete":{"id":"8497","name":"Garrett Alexander"}}
+{"tVideoMs":5280000,"type":"greenLight","event":"HORSE","team":"ARMY","athlete":{"id":"8257","name":"Ben Aguilar"}}
+{"tVideoMs":5280000,"type":"greenLight","event":"RINGS","team":"GRN","athlete":{"id":"7974","name":"Elijah Cruz"}}
+{"tVideoMs":5280000,"type":"greenLight","event":"VAULT","team":"SPR","athlete":{"id":"8008","name":"Owen Carney"}}
+{"tVideoMs":5412700,"type":"scorePosted","event":"RINGS","team":"GRN","athlete":{"id":"7974","name":"Elijah Cruz"},"score":11.2}
+{"tVideoMs":5412700,"type":"teamTotal","team":"GRN","score":220.7}
+{"tVideoMs":5412700,"type":"scorePosted","event":"HORSE","team":"ARMY","athlete":{"id":"8257","name":"Ben Aguilar"},"score":12.85}
+{"tVideoMs":5412700,"type":"teamTotal","team":"ARMY","score":221.65}
+{"tVideoMs":5442000,"type":"greenLight","event":"HORSE","team":"ARMY","athlete":{"id":"8230","name":"Noah Duran"}}
+{"tVideoMs":5442000,"type":"greenLight","event":"RINGS","team":"GRN","athlete":{"id":"7978","name":"Ricky Mays"}}
+{"tVideoMs":5447125,"type":"scorePosted","event":"VAULT","team":"SPR","athlete":{"id":"8008","name":"Owen Carney"},"score":13.35}
+{"tVideoMs":5447125,"type":"teamTotal","team":"SPR","score":217.05}
+{"tVideoMs":5447125,"type":"scorePosted","event":"FLOOR","team":"SIM","athlete":{"id":"8497","name":"Garrett Alexander"},"score":13.45}
+{"tVideoMs":5447125,"type":"teamTotal","team":"SIM","score":210.95}
+{"tVideoMs":5447125,"type":"scorePosted","event":"BAR","team":"W&M","athlete":{"id":"7902","name":"Evan Sikra"},"score":12.55}
+{"tVideoMs":5447125,"type":"teamTotal","team":"W&M","score":218.7}
+{"tVideoMs":5447125,"type":"scorePosted","event":"PBARS","team":"NAVY","athlete":{"id":"8425","name":"Jonah Soltz"},"score":13.45}
+{"tVideoMs":5447125,"type":"teamTotal","team":"NAVY","score":223.25}
+{"tVideoMs":5482500,"type":"greenLight","event":"PBARS","team":"NAVY","athlete":{"id":"7989","name":"Danilo Viciana"}}
+{"tVideoMs":5482500,"type":"greenLight","event":"BAR","team":"W&M","athlete":{"id":"8106","name":"Evan Wilkins"}}
+{"tVideoMs":5482500,"type":"greenLight","event":"FLOOR","team":"SIM","athlete":{"id":"8498","name":"Noah Doiron"}}
+{"tVideoMs":5482500,"type":"greenLight","event":"VAULT","team":"SPR","athlete":{"id":"8441","name":"Michael Dalton"}}
+{"tVideoMs":5574700,"type":"scorePosted","event":"RINGS","team":"GRN","athlete":{"id":"7978","name":"Ricky Mays"},"score":12.7}
+{"tVideoMs":5574700,"type":"teamTotal","team":"GRN","score":233.4}
+{"tVideoMs":5574700,"type":"scorePosted","event":"HORSE","team":"ARMY","athlete":{"id":"8230","name":"Noah Duran"},"score":13.5}
+{"tVideoMs":5574700,"type":"teamTotal","team":"ARMY","score":235.15}
+{"tVideoMs":5604000,"type":"greenLight","event":"HORSE","team":"ARMY","athlete":{"id":"8260","name":"Jake Prabhakaran"}}
+{"tVideoMs":5604000,"type":"greenLight","event":"RINGS","team":"GRN","athlete":{"id":"7969","name":"Ethan Poole"}}
+{"tVideoMs":5649625,"type":"scorePosted","event":"VAULT","team":"SPR","athlete":{"id":"8441","name":"Michael Dalton"},"score":13.75}
+{"tVideoMs":5649625,"type":"teamTotal","team":"SPR","score":230.8}
+{"tVideoMs":5649625,"type":"scorePosted","event":"FLOOR","team":"SIM","athlete":{"id":"8498","name":"Noah Doiron"},"score":12.25}
+{"tVideoMs":5649625,"type":"teamTotal","team":"SIM","score":223.2}
+{"tVideoMs":5649625,"type":"scorePosted","event":"BAR","team":"W&M","athlete":{"id":"8106","name":"Evan Wilkins"},"score":12.75}
+{"tVideoMs":5649625,"type":"teamTotal","team":"W&M","score":231.45}
+{"tVideoMs":5649625,"type":"scorePosted","event":"PBARS","team":"NAVY","athlete":{"id":"7989","name":"Danilo Viciana"},"score":13.4}
+{"tVideoMs":5649625,"type":"teamTotal","team":"NAVY","score":236.65}
+{"tVideoMs":5685000,"type":"greenLight","event":"PBARS","team":"NAVY","athlete":{"id":"8217","name":"Brian Solomon"}}
+{"tVideoMs":5685000,"type":"greenLight","event":"BAR","team":"W&M","athlete":{"id":"7901","name":"Ricky Pizem"}}
+{"tVideoMs":5685000,"type":"greenLight","event":"FLOOR","team":"SIM","athlete":{"id":"8096","name":"Jake Smith"}}
+{"tVideoMs":5685000,"type":"greenLight","event":"VAULT","team":"SPR","athlete":{"id":"8445","name":"Kaleb Palacio"}}
+{"tVideoMs":5736700,"type":"scorePosted","event":"RINGS","team":"GRN","athlete":{"id":"7969","name":"Ethan Poole"},"score":12.4}
+{"tVideoMs":5736700,"type":"teamTotal","team":"GRN","score":245.8}
+{"tVideoMs":5736700,"type":"scorePosted","event":"HORSE","team":"ARMY","athlete":{"id":"8260","name":"Jake Prabhakaran"},"score":13.9}
+{"tVideoMs":5736700,"type":"teamTotal","team":"ARMY","score":249.05}
+{"tVideoMs":5766000,"type":"greenLight","event":"HORSE","team":"ARMY","athlete":{"id":"7849","name":"Maddox Pabellon"}}
+{"tVideoMs":5766000,"type":"greenLight","event":"RINGS","team":"GRN","athlete":{"id":"8211","name":"Sergey Popov"}}
+{"tVideoMs":5852125,"type":"scorePosted","event":"VAULT","team":"SPR","athlete":{"id":"8445","name":"Kaleb Palacio"},"score":13.7}
+{"tVideoMs":5852125,"type":"teamTotal","team":"SPR","score":244.5}
+{"tVideoMs":5852125,"type":"scorePosted","event":"FLOOR","team":"SIM","athlete":{"id":"8096","name":"Jake Smith"},"score":12.8}
+{"tVideoMs":5852125,"type":"teamTotal","team":"SIM","score":236}
+{"tVideoMs":5852125,"type":"scorePosted","event":"BAR","team":"W&M","athlete":{"id":"7901","name":"Ricky Pizem"},"score":12.75}
+{"tVideoMs":5852125,"type":"teamTotal","team":"W&M","score":244.2}
+{"tVideoMs":5852125,"type":"scorePosted","event":"PBARS","team":"NAVY","athlete":{"id":"8217","name":"Brian Solomon"},"score":13.15}
+{"tVideoMs":5852125,"type":"teamTotal","team":"NAVY","score":249.8}
+{"tVideoMs":5887500,"type":"greenLight","event":"PBARS","team":"NAVY","athlete":{"id":"7985","name":"Matthew Petros"}}
+{"tVideoMs":5887500,"type":"greenLight","event":"BAR","team":"W&M","athlete":{"id":"8295","name":"Luke Tully"}}
+{"tVideoMs":5887500,"type":"greenLight","event":"FLOOR","team":"SIM","athlete":{"id":"8300","name":"Braxton Jones"}}
+{"tVideoMs":5887500,"type":"greenLight","event":"VAULT","team":"SPR","athlete":{"id":"8223","name":"Evan Reichert"}}
+{"tVideoMs":5898700,"type":"scorePosted","event":"RINGS","team":"GRN","athlete":{"id":"8211","name":"Sergey Popov"},"score":12.05}
+{"tVideoMs":5898700,"type":"teamTotal","team":"GRN","score":257.85}
+{"tVideoMs":5898700,"type":"scorePosted","event":"HORSE","team":"ARMY","athlete":{"id":"7849","name":"Maddox Pabellon"},"score":13.95}
+{"tVideoMs":5898700,"type":"teamTotal","team":"ARMY","score":263}
+{"tVideoMs":5928000,"type":"greenLight","event":"HORSE","team":"ARMY","athlete":{"id":"8228","name":"Jaden Blank"}}
+{"tVideoMs":5928000,"type":"greenLight","event":"RINGS","team":"GRN","athlete":{"id":"8430","name":"Kyler Hinson"}}
+{"tVideoMs":6054625,"type":"scorePosted","event":"VAULT","team":"SPR","athlete":{"id":"8223","name":"Evan Reichert"},"score":13.5}
+{"tVideoMs":6054625,"type":"teamTotal","team":"SPR","score":258}
+{"tVideoMs":6054625,"type":"scorePosted","event":"FLOOR","team":"SIM","athlete":{"id":"8300","name":"Braxton Jones"},"score":13.9}
+{"tVideoMs":6054625,"type":"teamTotal","team":"SIM","score":249.9}
+{"tVideoMs":6054625,"type":"scorePosted","event":"BAR","team":"W&M","athlete":{"id":"8295","name":"Luke Tully"},"score":12.95}
+{"tVideoMs":6054625,"type":"teamTotal","team":"W&M","score":257.15}
+{"tVideoMs":6054625,"type":"scorePosted","event":"PBARS","team":"NAVY","athlete":{"id":"7985","name":"Matthew Petros"},"score":11.2}
+{"tVideoMs":6054625,"type":"teamTotal","team":"NAVY","score":261}
+{"tVideoMs":6060700,"type":"scorePosted","event":"RINGS","team":"GRN","athlete":{"id":"8430","name":"Kyler Hinson"},"score":12.3}
+{"tVideoMs":6060700,"type":"scorePosted","event":"HORSE","team":"ARMY","athlete":{"id":"8228","name":"Jaden Blank"},"score":11.7}
+{"tVideoMs":6343000,"type":"greenLight","event":"BAR","team":"NAVY","athlete":{"id":"8425","name":"Jonah Soltz"}}
+{"tVideoMs":6343000,"type":"greenLight","event":"FLOOR","team":"W&M","athlete":{"id":"8296","name":"Michael Weiner"}}
+{"tVideoMs":6343000,"type":"greenLight","event":"HORSE","team":"SIM","athlete":{"id":"8094","name":"Tristan Shorey"}}
+{"tVideoMs":6343000,"type":"greenLight","event":"RINGS","team":"ARMY","athlete":{"id":"8260","name":"Jake Prabhakaran"}}
+{"tVideoMs":6343000,"type":"greenLight","event":"VAULT","team":"GRN","athlete":{"id":"7977","name":"Michael Avery"}}
+{"tVideoMs":6343000,"type":"greenLight","event":"PBARS","team":"SPR","athlete":{"id":"8440","name":"Skyler Cook"}}
+{"tVideoMs":6468390,"type":"scorePosted","event":"HORSE","team":"SIM","athlete":{"id":"8094","name":"Tristan Shorey"},"score":12.3}
+{"tVideoMs":6468390,"type":"teamTotal","team":"SIM","score":262.2}
+{"tVideoMs":6468390,"type":"scorePosted","event":"BAR","team":"NAVY","athlete":{"id":"8425","name":"Jonah Soltz"},"score":12.15}
+{"tVideoMs":6468390,"type":"teamTotal","team":"NAVY","score":273.15}
+{"tVideoMs":6496400,"type":"greenLight","event":"BAR","team":"NAVY","athlete":{"id":"8536","name":"Sean Armstrong"}}
+{"tVideoMs":6496400,"type":"greenLight","event":"HORSE","team":"SIM","athlete":{"id":"7961","name":"Milo Staley"}}
+{"tVideoMs":6500988,"type":"scorePosted","event":"PBARS","team":"SPR","athlete":{"id":"8440","name":"Skyler Cook"},"score":12.65}
+{"tVideoMs":6500988,"type":"teamTotal","team":"SPR","score":270.65}
+{"tVideoMs":6500988,"type":"scorePosted","event":"VAULT","team":"GRN","athlete":{"id":"7977","name":"Michael Avery"},"score":13.7}
+{"tVideoMs":6500988,"type":"teamTotal","team":"GRN","score":271.55}
+{"tVideoMs":6500988,"type":"scorePosted","event":"RINGS","team":"ARMY","athlete":{"id":"8260","name":"Jake Prabhakaran"},"score":12.05}
+{"tVideoMs":6500988,"type":"teamTotal","team":"ARMY","score":275.05}
+{"tVideoMs":6500988,"type":"scorePosted","event":"FLOOR","team":"W&M","athlete":{"id":"8296","name":"Michael Weiner"},"score":12.75}
+{"tVideoMs":6500988,"type":"teamTotal","team":"W&M","score":269.9}
+{"tVideoMs":6534750,"type":"greenLight","event":"FLOOR","team":"W&M","athlete":{"id":"8106","name":"Evan Wilkins"}}
+{"tVideoMs":6534750,"type":"greenLight","event":"RINGS","team":"ARMY","athlete":{"id":"8259","name":"Cash Johnston"}}
+{"tVideoMs":6534750,"type":"greenLight","event":"VAULT","team":"GRN","athlete":{"id":"8430","name":"Kyler Hinson"}}
+{"tVideoMs":6534750,"type":"greenLight","event":"PBARS","team":"SPR","athlete":{"id":"8654","name":"Brian Delf"}}
+{"tVideoMs":6621790,"type":"scorePosted","event":"HORSE","team":"SIM","athlete":{"id":"7961","name":"Milo Staley"},"score":12.15}
+{"tVideoMs":6621790,"type":"teamTotal","team":"SIM","score":274.35}
+{"tVideoMs":6621790,"type":"scorePosted","event":"BAR","team":"NAVY","athlete":{"id":"8536","name":"Sean Armstrong"},"score":12.5}
+{"tVideoMs":6621790,"type":"teamTotal","team":"NAVY","score":285.65}
+{"tVideoMs":6649800,"type":"greenLight","event":"BAR","team":"NAVY","athlete":{"id":"7985","name":"Matthew Petros"}}
+{"tVideoMs":6649800,"type":"greenLight","event":"HORSE","team":"SIM","athlete":{"id":"8087","name":"William Bacus"}}
+{"tVideoMs":6692738,"type":"scorePosted","event":"PBARS","team":"SPR","athlete":{"id":"8654","name":"Brian Delf"},"score":12.85}
+{"tVideoMs":6692738,"type":"teamTotal","team":"SPR","score":283.5}
+{"tVideoMs":6692738,"type":"scorePosted","event":"VAULT","team":"GRN","athlete":{"id":"8430","name":"Kyler Hinson"},"score":13.7}
+{"tVideoMs":6692738,"type":"teamTotal","team":"GRN","score":285.25}
+{"tVideoMs":6692738,"type":"scorePosted","event":"RINGS","team":"ARMY","athlete":{"id":"8259","name":"Cash Johnston"},"score":12.6}
+{"tVideoMs":6692738,"type":"teamTotal","team":"ARMY","score":287.65}
+{"tVideoMs":6692738,"type":"scorePosted","event":"FLOOR","team":"W&M","athlete":{"id":"8106","name":"Evan Wilkins"},"score":13.05}
+{"tVideoMs":6692738,"type":"teamTotal","team":"W&M","score":282.95}
+{"tVideoMs":6726500,"type":"greenLight","event":"FLOOR","team":"W&M","athlete":{"id":"8108","name":"Niko Greenly"}}
+{"tVideoMs":6726500,"type":"greenLight","event":"RINGS","team":"ARMY","athlete":{"id":"8230","name":"Noah Duran"}}
+{"tVideoMs":6726500,"type":"greenLight","event":"VAULT","team":"GRN","athlete":{"id":"8207","name":"Jaxon Clapper"}}
+{"tVideoMs":6726500,"type":"greenLight","event":"PBARS","team":"SPR","athlete":{"id":"8447","name":"Blaise Rousseau"}}
+{"tVideoMs":6775190,"type":"scorePosted","event":"HORSE","team":"SIM","athlete":{"id":"8087","name":"William Bacus"},"score":13.1}
+{"tVideoMs":6775190,"type":"teamTotal","team":"SIM","score":287.45}
+{"tVideoMs":6775190,"type":"scorePosted","event":"BAR","team":"NAVY","athlete":{"id":"7985","name":"Matthew Petros"},"score":13.4}
+{"tVideoMs":6775190,"type":"teamTotal","team":"NAVY","score":299.05}
+{"tVideoMs":6803200,"type":"greenLight","event":"BAR","team":"NAVY","athlete":{"id":"8426","name":"Boone Washburn"}}
+{"tVideoMs":6803200,"type":"greenLight","event":"HORSE","team":"SIM","athlete":{"id":"8497","name":"Garrett Alexander"}}
+{"tVideoMs":6884488,"type":"scorePosted","event":"PBARS","team":"SPR","athlete":{"id":"8447","name":"Blaise Rousseau"},"score":12.6}
+{"tVideoMs":6884488,"type":"teamTotal","team":"SPR","score":296.1}
+{"tVideoMs":6884488,"type":"scorePosted","event":"VAULT","team":"GRN","athlete":{"id":"8207","name":"Jaxon Clapper"},"score":14.1}
+{"tVideoMs":6884488,"type":"teamTotal","team":"GRN","score":299.35}
+{"tVideoMs":6884488,"type":"scorePosted","event":"RINGS","team":"ARMY","athlete":{"id":"8230","name":"Noah Duran"},"score":12.05}
+{"tVideoMs":6884488,"type":"teamTotal","team":"ARMY","score":299.7}
+{"tVideoMs":6884488,"type":"scorePosted","event":"FLOOR","team":"W&M","athlete":{"id":"8108","name":"Niko Greenly"},"score":13.7}
+{"tVideoMs":6884488,"type":"teamTotal","team":"W&M","score":296.65}
+{"tVideoMs":6918250,"type":"greenLight","event":"FLOOR","team":"W&M","athlete":{"id":"8295","name":"Luke Tully"}}
+{"tVideoMs":6918250,"type":"greenLight","event":"RINGS","team":"ARMY","athlete":{"id":"8228","name":"Jaden Blank"}}
+{"tVideoMs":6918250,"type":"greenLight","event":"VAULT","team":"GRN","athlete":{"id":"7978","name":"Ricky Mays"}}
+{"tVideoMs":6918250,"type":"greenLight","event":"PBARS","team":"SPR","athlete":{"id":"8449","name":"Carl Jacob Soederqvist"}}
+{"tVideoMs":6928590,"type":"scorePosted","event":"HORSE","team":"SIM","athlete":{"id":"8497","name":"Garrett Alexander"},"score":12.7}
+{"tVideoMs":6928590,"type":"teamTotal","team":"SIM","score":300.15}
+{"tVideoMs":6928590,"type":"scorePosted","event":"BAR","team":"NAVY","athlete":{"id":"8426","name":"Boone Washburn"},"score":13.15}
+{"tVideoMs":6928590,"type":"teamTotal","team":"NAVY","score":312.2}
+{"tVideoMs":6956600,"type":"greenLight","event":"BAR","team":"NAVY","athlete":{"id":"8217","name":"Brian Solomon"}}
+{"tVideoMs":6956600,"type":"greenLight","event":"HORSE","team":"SIM","athlete":{"id":"8498","name":"Noah Doiron"}}
+{"tVideoMs":7076238,"type":"scorePosted","event":"PBARS","team":"SPR","athlete":{"id":"8449","name":"Carl Jacob Soederqvist"},"score":12}
+{"tVideoMs":7076238,"type":"teamTotal","team":"SPR","score":308.1}
+{"tVideoMs":7076238,"type":"scorePosted","event":"VAULT","team":"GRN","athlete":{"id":"7978","name":"Ricky Mays"},"score":13.85}
+{"tVideoMs":7076238,"type":"teamTotal","team":"GRN","score":313.2}
+{"tVideoMs":7076238,"type":"scorePosted","event":"RINGS","team":"ARMY","athlete":{"id":"8228","name":"Jaden Blank"},"score":12.35}
+{"tVideoMs":7076238,"type":"teamTotal","team":"ARMY","score":312.05}
+{"tVideoMs":7076238,"type":"scorePosted","event":"FLOOR","team":"W&M","athlete":{"id":"8295","name":"Luke Tully"},"score":13.8}
+{"tVideoMs":7076238,"type":"teamTotal","team":"W&M","score":310.45}
+{"tVideoMs":7081990,"type":"scorePosted","event":"HORSE","team":"SIM","athlete":{"id":"8498","name":"Noah Doiron"},"score":11.85}
+{"tVideoMs":7081990,"type":"scorePosted","event":"BAR","team":"NAVY","athlete":{"id":"8217","name":"Brian Solomon"},"score":12.7}
