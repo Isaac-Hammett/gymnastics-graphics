@@ -15,6 +15,7 @@ import GraphicsControl from '../components/GraphicsControl';
 import CameraRuntimePanel from '../components/CameraRuntimePanel';
 // TimesheetPanel removed - functionality consolidated into main content area (PRD-Rundown-00)
 import OverrideLog from '../components/OverrideLog';
+import XavierPanel from '../components/XavierPanel';
 import AlertPanel from '../components/AlertPanel';
 import ScoreBugPanel from '../components/ScoreBugPanel';
 import ScoringFeedPanel from '../components/ScoringFeedPanel';
@@ -1272,6 +1273,9 @@ export default function ProducerView() {
 
           {/* Right Column - Status */}
           <div className="space-y-4">
+            {/* Xavier recommendations (ISA2-276) */}
+            <XavierPanel socket={socket} compId={compId} />
+
             {/* Override Log */}
             <OverrideLog collapsed={true} defaultVisible={5} serverUrl={serverUrl} />
 

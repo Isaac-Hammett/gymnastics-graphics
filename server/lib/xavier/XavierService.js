@@ -96,6 +96,16 @@ export class XavierService extends EventEmitter {
     return { compId: this.compId, running: !!this._started, status: this._status, last: this._last };
   }
 
+  /** The producer dismissed one card. Drops it from the snapshot and tells the room. */
+  dismiss(recommendationId) {
+    if (!recommendationId || !this._last) return false;
+    const before = this._last.recommendations.length;
+    this._last = { ...this._last, recommendations: this._last.recommendations.filter(r => r.recommendationId !== recommendationId) };
+    if (this._last.recommendations.length === before) return false;
+    this._io?.to(`competition:${this.compId}`).emit('xavier:dismissed', { compId: this.compId, recommendationId });
+    return true;
+  }
+
   _tick() {
     const state = this._cs.getPublicState();
     const anyInProgress = Object.values(state.events || {}).some(ev =>
@@ -166,6 +176,7 @@ export class XavierService extends EventEmitter {
       .sort((a, b) => b[1] - a[1])
       .slice(0, MAX_RECOMMENDATIONS)
       .map(([actionId, probability], i) => ({
+        recommendationId: `${this.compId}:${version}:${actionId}`,
         rank: i + 1, actionId, label: labels.get(actionId), probability, trigger
       }));
 

@@ -129,6 +129,14 @@ describe('XavierService', () => {
     assert.equal(rec.p.recommendations[0].trigger, 'Score posted: Beam, Smith 9.875');
     assert.equal(rec.p.flags.routine_in_progress_FX, 0.8);
     assert.equal(rec.p.stateVersion, 1);
+
+    // dismiss (ISA2-276): drops the card from the snapshot and tells the room
+    const id = rec.p.recommendations[0].recommendationId;
+    assert.equal(id, 'c1:1:graphic:a');
+    assert.equal(svc.dismiss(id), true);
+    assert.deepEqual(svc.getSnapshot().last.recommendations.map(r => r.actionId), ['graphic:b', 'graphic:c']);
+    assert.deepEqual(emitted.find(e => e.ev === 'xavier:dismissed').p, { compId: 'c1', recommendationId: id });
+    assert.equal(svc.dismiss(id), false);
   });
 
   it('keeps at most one request in flight and coalesces bursts into one follow-up', async () => {
