@@ -14,7 +14,7 @@ You change the show controller: `show-controller/src/` (pages, components, hooks
 
 ## How to verify
 - `npm run build` must pass. Then screenshot the page in the app the runner started for you (Run facts); it serves your worktree and hot-reloads.
-- Log in with `VERIFY_LOGIN_EMAIL` / `VERIFY_LOGIN_PASSWORD` from `agent-team/.env` (read them with `grep`; never print or commit them). Use `TEST_COMP_ID` for any `/:compId/...` route.
+- Log in with `VERIFY_LOGIN_EMAIL` / `VERIFY_LOGIN_PASSWORD` from the environment (`$VERIFY_LOGIN_EMAIL` / `$VERIFY_LOGIN_PASSWORD`, already set in your shell; `agent-team/.env` is not readable from a run; never print or commit them). Use `TEST_COMP_ID` for any `/:compId/...` route.
 - Read the screenshot back. Check the console. Save under `docs/verification/<TICKET>/` and commit it with the code.
 
 ## CLI calls you use
