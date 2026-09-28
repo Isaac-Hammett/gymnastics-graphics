@@ -40,7 +40,7 @@ One Node process hosts every server-side tool and fans state out over sockets. P
 | Jev decision service (TypeSafe AI) | Asks a TypeSafe Jev model what the broadcast should do next and returns ranked recommendations (Suggest mode only; never run with a real key) | socket event | built |
 | Jev recommendation panel and mode toggle (Producer View widget) | Shows up to 3 recommendations with Take, Dismiss, and an Off/Suggest toggle | UI button | built |
 
-Depends on: Firebase Admin credential, AWS EC2, PM2, Virtius API. Gaps: no server auth; wake path dead; no /health; noCutDuringRoutine rule inert without routine state; Producer View doesn't show guardrail refusals. Workbook: prod-live, gfx-delivery.
+Depends on: Firebase Admin credential, AWS EC2, PM2, Virtius API. Gaps: no server auth; wake path dead; no /health; noCutDuringRoutine only acts while a state source is attached (wired ISA2-311); Producer View doesn't show guardrail refusals. Workbook: prod-live, gfx-delivery.
 
 ### VM pool
 

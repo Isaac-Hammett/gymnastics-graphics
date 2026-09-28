@@ -153,7 +153,9 @@ export class XavierService extends EventEmitter {
       this._setStatus({ ok: false, reason: err.code || 'error', message: err.message });
       return;
     }
-    this._log(`[Xavier:${this.compId}] ${result.model} latency=${result.latencyMs}ms questions=${Object.keys(questions).length} stateVersion=${version}`);
+    const u = result.usage;
+    const tokens = u ? ` inputTokens=${u.input_tokens ?? u.prompt_tokens ?? u.inputTokens ?? '?'} usage=${JSON.stringify(u)}` : '';
+    this._log(`[Xavier:${this.compId}] ${result.model} latency=${result.latencyMs}ms${tokens} questions=${Object.keys(questions).length} stateVersion=${version}`);
     this.emit('latency', { compId: this.compId, latencyMs: result.latencyMs, model: result.model, stateVersion: version });
 
     if (this._cs.getPublicState().stateVersion !== version) {
