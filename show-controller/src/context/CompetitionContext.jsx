@@ -60,7 +60,7 @@ export function CompetitionProvider({ children }) {
 
     // Local dev with VITE_LOCAL_SERVER set: route every competition to the
     // local coordinator instead of its (possibly dead) VM address
-    if (import.meta.env.VITE_LOCAL_SERVER && window.location.hostname === 'localhost') {
+    if (import.meta.env.VITE_LOCAL_SERVER && ['localhost', '127.0.0.1'].includes(window.location.hostname)) {
       return import.meta.env.VITE_LOCAL_SERVER;
     }
 

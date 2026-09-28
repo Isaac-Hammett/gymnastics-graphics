@@ -146,7 +146,8 @@ merge commit is the whole job: update the answer file to say so, and exit 0."
   local ARGS=(-p --model "$MODEL" --max-turns "$MAX_TURNS" --permission-mode acceptEdits
               --allowedTools "$ALLOWED" --disallowedTools "$DISALLOWED"
               --mcp-config "$ROOT/.mcp.json" --strict-mcp-config --agents "$AGENTS_JSON"
-              --add-dir "$RUNS" --output-format stream-json --verbose)
+              --add-dir "$RUNS" --add-dir "$(cd "$ROOT/show-controller/node_modules" 2>/dev/null && pwd -P || echo "$RUNS")"
+              --output-format stream-json --verbose)
   [ -n "$FALLBACK" ] && ARGS+=(--fallback-model "$FALLBACK")
 
   # No background tasks in headless runs. A Bash call over the default 2-minute timeout (the server test suite

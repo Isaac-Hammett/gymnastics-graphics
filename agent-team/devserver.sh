@@ -35,10 +35,10 @@ main() {
       start_api "$WT" "$API_PORT" "$RUNS" "$LOGS" "$TAG"
       # vite via node directly (see node_bin): the registry files it would rebuild in predev are committed.
       ( cd "$WT/show-controller" && VITE_API_URL="http://localhost:$API_PORT" VITE_LOCAL_SERVER="http://localhost:$API_PORT" \
-          nohup $(node_bin) node_modules/vite/bin/vite.js --port "$SPA_PORT" --strictPort > "$LOGS/devserver-spa-$TAG.log" 2>&1 & echo $! > "$RUNS/devserver-spa-$TAG.pid" )
-      wait_for "http://localhost:$SPA_PORT/" 90 || { echo "devserver.sh: SPA did not answer on :$SPA_PORT (see $LOGS/devserver-spa-$TAG.log)" >&2; return 1; }
+          nohup $(node_bin) node_modules/vite/bin/vite.js --host 127.0.0.1 --port "$SPA_PORT" --strictPort > "$LOGS/devserver-spa-$TAG.log" 2>&1 & echo $! > "$RUNS/devserver-spa-$TAG.pid" )
+      wait_for "http://127.0.0.1:$SPA_PORT/" 90 || { echo "devserver.sh: SPA did not answer on :$SPA_PORT (see $LOGS/devserver-spa-$TAG.log)" >&2; return 1; }
       wait_for "http://localhost:$API_PORT/api/coordinator/status" 90 || { echo "devserver.sh: coordinator did not answer on :$API_PORT (see $LOGS/devserver-api-$TAG.log)" >&2; return 1; }
-      echo "SPA http://localhost:$SPA_PORT   API http://localhost:$API_PORT"
+      echo "SPA http://127.0.0.1:$SPA_PORT   API http://127.0.0.1:$API_PORT"
       ;;
     restart-api)
       if [ -f "$RUNS/devserver-api-$TAG.pid" ]; then
@@ -54,7 +54,7 @@ main() {
       stop_all "$RUNS" "$API_PORT" "$SPA_PORT" "$TAG"; echo "stopped"
       ;;
     status)
-      curl -s -o /dev/null --max-time 3 -w "SPA :$SPA_PORT -> %{http_code}\n" "http://localhost:$SPA_PORT/" || echo "SPA :$SPA_PORT -> down"
+      curl -s -o /dev/null --max-time 3 -w "SPA :$SPA_PORT -> %{http_code}\n" "http://127.0.0.1:$SPA_PORT/" || echo "SPA :$SPA_PORT -> down"
       curl -s -o /dev/null --max-time 3 -w "API :$API_PORT -> %{http_code}\n" "http://localhost:$API_PORT/api/coordinator/status" || echo "API :$API_PORT -> down"
       ;;
     logs)
