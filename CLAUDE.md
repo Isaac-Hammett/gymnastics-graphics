@@ -93,7 +93,7 @@ The board is Linear team **Isaac_Production** (prefix `ISA2`). Projects are the 
 - Women's: VT UB BB FX.
 - Competition types: `mens-dual`, `womens-dual` (head-to-head by default), `mens-tri`, `womens-tri`, `mens-quad`, `womens-quad`, `mens-5`, `mens-6`, `womens-5`, `womens-6`, `womens-7`.
 - Local dev: SPA `show-controller` on :5173 (`npm run dev`), coordinator `server` on :3003 (`npm start`); `show-controller/.env.local` points the SPA at the local coordinator. The verify lane uses :5199 / :3099 inside the `_verify` worktree (`agent-team/devserver.sh`).
-- Test login for Playwright is in the run's environment (`$VERIFY_LOGIN_EMAIL` / `$VERIFY_LOGIN_PASSWORD`, loaded from `agent-team/.env`, which runs cannot read directly). Never paste credentials into prompts, tickets, or commits.
+- Test login for Playwright is in the run's environment (`$VERIFY_LOGIN_EMAIL` / `$VERIFY_LOGIN_PASSWORD`, loaded from `agent-team/.env`, which runs cannot read directly). Typing them into the login form with the Playwright tools is their purpose; never write them into answers, tickets, commits, or docs. Never paste credentials into prompts, tickets, or commits.
 
 ## Full Reference
 
