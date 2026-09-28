@@ -28,9 +28,15 @@
  *    `{ok: false, error: 'guardrail', guardrail: {rule, reason}}`, touches
  *    neither OBS nor Firebase, and is broadcast as `action:refused`. A human
  *    command with `force: true` runs anyway and the override is logged;
- *    Xavier senders can never force. Still off the bus: playout
- * and Who to Watch scene switches, and GraphicsControl's rotation-slate,
- * event-summary, and custom-graphic sends.
+ *    Xavier senders can never force.
+ *  - **Coverage (ISA2-302).** Who to Watch steps (sender 'rundown') and
+ *    GraphicsControl's custom, rotation-slate, and event-summary sends also run
+ *    through `execute`; prebuilt payloads ride in `params.payload`. Custom
+ *    graphics are in the catalog as `graphic:custom-{key}`. Still off the bus:
+ *    playout (clip) scene switches.
+ *  - **Lifecycle.** One shared 'obsEvent' listener per connection manager;
+ *    index.js disposes a competition's bus when its last client leaves and no
+ *    rundown is running (releaseActionBusIfIdle), and on engine teardown.
  *
  * @module actionBus
  */
@@ -167,7 +173,10 @@ export class ActionBus extends EventEmitter {
     this._lastProgramChangeAt = null;
 
     this._observing = false;
-    this._onObsEvent = null;
+    this._unsubscribeObs = null;
+    // Callbacks for this competition's forwarded OBS events. The bus holds one
+    // shared listener per connection manager, not one per competition.
+    this._obsSubscribers = new Set();
     this._graphicRef = null;
     this._graphicListener = null;
 
@@ -283,6 +292,8 @@ export class ActionBus extends EventEmitter {
     }
 
     // --- Graphics -----------------------------------------------------------
+    const customGraphics = await this._readCustomGraphics(warnings);
+
     actions.push({
       id: `${ACTION_KINDS.GRAPHIC}:clear`,
       kind: ACTION_KINDS.GRAPHIC,
@@ -325,6 +336,19 @@ export class ActionBus extends EventEmitter {
           });
         }
       }
+    }
+
+    // The producer's own uploads (GraphicsControl's custom graphics).
+    for (const [customKey, custom] of Object.entries(customGraphics)) {
+      if (!custom?.url) continue;
+      const graphicId = `custom-${customKey}`;
+      actions.push({
+        id: `${ACTION_KINDS.GRAPHIC}:${graphicId}`,
+        kind: ACTION_KINDS.GRAPHIC,
+        label: custom.label || customKey,
+        category: 'custom',
+        params: { graphicId, customKey },
+      });
     }
 
     const catalog = {
@@ -378,7 +402,9 @@ export class ActionBus extends EventEmitter {
    * @param {Object} [request.params] - Per-invocation extras. Scenes: `transition`
    *   `{type, durationMs, transitionName}`. Graphics: `graphicParams`, `segmentId`,
    *   `manual` (build the GraphicsControl-shaped payload), `frameTitle`,
-   *   `leaderboardEvent`, `leaderboardGender`.
+   *   `leaderboardEvent`, `leaderboardGender`, and `payload` (a prebuilt
+   *   currentGraphic object, honoured only with `uncatalogued`: Who to Watch
+   *   steps and GraphicsControl's rotation-slate and event-summary sends).
    * @param {boolean} [request.uncatalogued] - Trusted server callers (the rundown,
    *   the producer's own controls) may run a `scene:` or `graphic:` ID that is not
    *   in the catalog, e.g. a custom graphic or a scene only the rundown names.
@@ -450,7 +476,9 @@ export class ActionBus extends EventEmitter {
     if (action.kind === ACTION_KINDS.SCENE) {
       result = await this._executeScene(action, params || {});
     } else if (action.kind === ACTION_KINDS.GRAPHIC) {
-      result = await this._executeGraphic(action, params || {});
+      // Only trusted callers may hand the bus a payload to write verbatim.
+      const { payload: prebuilt, ...rest } = params || {};
+      result = await this._executeGraphic(action, uncatalogued ? (params || {}) : rest);
     } else {
       result = { ok: false, error: ACTION_ERRORS.UNKNOWN_ACTION };
     }
@@ -546,32 +574,31 @@ export class ActionBus extends EventEmitter {
    */
   _waitForSceneChange(sceneName) {
     const obs = this._getObsConnection();
-    const manager = this.obsConnectionManager;
     let settle;
     let timer;
 
     const promise = new Promise((resolve) => {
       let done = false;
+      let unsubscribe = null;
       settle = (value) => {
         if (done) return;
         done = true;
         clearTimeout(timer);
         if (obs?.off) obs.off('CurrentProgramSceneChanged', onDirect);
-        if (manager?.off) manager.off('obsEvent', onForwarded);
+        unsubscribe?.();
         resolve(value);
       };
 
       const onDirect = (data) => {
         if (data?.sceneName === sceneName) settle(true);
       };
-      const onForwarded = ({ compId, eventName, data }) => {
-        if (compId !== this.compId) return;
+      const onForwarded = (eventName, data) => {
         if (eventName !== 'CurrentProgramSceneChanged') return;
         if (data?.sceneName === sceneName) settle(true);
       };
 
       if (obs?.on) obs.on('CurrentProgramSceneChanged', onDirect);
-      if (manager?.on) manager.on('obsEvent', onForwarded);
+      unsubscribe = this._subscribeObs(onForwarded);
 
       timer = setTimeout(() => {
         console.warn(`${this.logPrefix} No CurrentProgramSceneChanged for "${sceneName}" within ${this.sceneConfirmTimeoutMs}ms`);
@@ -607,6 +634,8 @@ export class ActionBus extends EventEmitter {
       // credential-less or unreachable Firebase still produces an ack.
       if (graphicId === 'clear') {
         payload = buildClearPayload();
+      } else if (params.payload && typeof params.payload === 'object') {
+        payload = { ...params.payload, timestamp: params.payload.timestamp ?? Date.now() };
       } else if (params.manual) {
         payload = await withTimeout(
           buildManualGraphicPayload({
@@ -723,16 +752,12 @@ export class ActionBus extends EventEmitter {
     this._observing = true;
     this.guardrailRules?.start?.();
 
-    if (this.obsConnectionManager?.on) {
-      this._onObsEvent = ({ compId, eventName, data }) => {
-        if (compId !== this.compId) return;
-        if (eventName !== 'CurrentProgramSceneChanged') return;
-        this._recordObservation('scene', {
-          sceneName: data?.sceneName || null,
-        }, this._recentSceneWrite, w => w.sceneName === data?.sceneName);
-      };
-      this.obsConnectionManager.on('obsEvent', this._onObsEvent);
-    }
+    this._unsubscribeObs = this._subscribeObs((eventName, data) => {
+      if (eventName !== 'CurrentProgramSceneChanged') return;
+      this._recordObservation('scene', {
+        sceneName: data?.sceneName || null,
+      }, this._recentSceneWrite, w => w.sceneName === data?.sceneName);
+    });
 
     const db = resolveDb(this.firebase);
     if (db) {
@@ -753,10 +778,8 @@ export class ActionBus extends EventEmitter {
 
   /** Stop watching. Safe to call when not observing. */
   stopObserving() {
-    if (this._onObsEvent && this.obsConnectionManager?.off) {
-      this.obsConnectionManager.off('obsEvent', this._onObsEvent);
-    }
-    this._onObsEvent = null;
+    this._unsubscribeObs?.();
+    this._unsubscribeObs = null;
 
     if (this._graphicRef && this._graphicListener) {
       this._graphicRef.off('value', this._graphicListener);
@@ -800,9 +823,32 @@ export class ActionBus extends EventEmitter {
     };
   }
 
+  /**
+   * Receive this competition's forwarded OBS events. The first subscriber
+   * joins the manager's shared dispatcher; the last one leaves it.
+   * @param {Function} fn - `(eventName, data) => void`
+   * @returns {Function} unsubscribe
+   * @private
+   */
+  _subscribeObs(fn) {
+    this._obsSubscribers.add(fn);
+    if (this._obsSubscribers.size === 1) attachToDispatcher(this);
+    return () => {
+      if (!this._obsSubscribers.delete(fn)) return;
+      if (this._obsSubscribers.size === 0) detachFromDispatcher(this);
+    };
+  }
+
+  /** Called by the dispatcher with one of this competition's OBS events. @private */
+  _handleObsEvent(eventName, data) {
+    for (const fn of [...this._obsSubscribers]) fn(eventName, data);
+  }
+
   /** Release listeners. Call when the competition's session ends. */
   shutdown() {
     this.stopObserving();
+    this._obsSubscribers.clear();
+    detachFromDispatcher(this);
     this.removeAllListeners();
   }
 
@@ -833,6 +879,24 @@ export class ActionBus extends EventEmitter {
     } catch (error) {
       warnings.push(`could not read competition config: ${error.message}`);
       return null;
+    }
+  }
+
+  /** @private @returns {Promise<Object>} customGraphics keyed by push ID */
+  async _readCustomGraphics(warnings) {
+    const db = resolveDb(this.firebase);
+    if (!db) return {};
+    try {
+      const snapshot = await withTimeout(
+        db.ref(`competitions/${this.compId}/customGraphics`).once('value'),
+        this.firebaseTimeoutMs,
+        ACTION_ERRORS.FIREBASE_TIMEOUT
+      );
+      const value = snapshot.val();
+      return value && typeof value === 'object' ? value : {};
+    } catch (error) {
+      warnings.push(`could not read custom graphics: ${error.message}`);
+      return {};
     }
   }
 
@@ -872,6 +936,49 @@ export class ActionBus extends EventEmitter {
       warnings.push(`could not read rundown segments: ${error.message}`);
       return [];
     }
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Shared OBS event dispatch
+// -----------------------------------------------------------------------------
+
+// One 'obsEvent' listener per connection manager, routing by compId, so a
+// coordinator serving a dozen competitions never trips MaxListeners.
+// manager -> { listener, buses: Map<compId, Set<ActionBus>> }
+const obsDispatchers = new WeakMap();
+
+function attachToDispatcher(bus) {
+  const manager = bus.obsConnectionManager;
+  if (!manager?.on) return;
+  let dispatcher = obsDispatchers.get(manager);
+  if (!dispatcher) {
+    const buses = new Map();
+    const listener = ({ compId, eventName, data } = {}) => {
+      const targets = buses.get(compId);
+      if (!targets) return;
+      for (const target of [...targets]) target._handleObsEvent(eventName, data);
+    };
+    dispatcher = { listener, buses };
+    obsDispatchers.set(manager, dispatcher);
+    manager.on('obsEvent', listener);
+  }
+  if (!dispatcher.buses.has(bus.compId)) dispatcher.buses.set(bus.compId, new Set());
+  dispatcher.buses.get(bus.compId).add(bus);
+}
+
+function detachFromDispatcher(bus) {
+  const manager = bus.obsConnectionManager;
+  const dispatcher = manager && obsDispatchers.get(manager);
+  if (!dispatcher) return;
+  const targets = dispatcher.buses.get(bus.compId);
+  if (targets) {
+    targets.delete(bus);
+    if (targets.size === 0) dispatcher.buses.delete(bus.compId);
+  }
+  if (dispatcher.buses.size === 0) {
+    if (manager.off) manager.off('obsEvent', dispatcher.listener);
+    obsDispatchers.delete(manager);
   }
 }
 
@@ -981,6 +1088,37 @@ export function disposeActionBus(compId) {
   if (!bus) return;
   bus.shutdown();
   actionBuses.delete(compId);
+  console.log(`[ActionBus] Disposed bus for competition: ${compId} (remaining buses: ${actionBuses.size})`);
+}
+
+/**
+ * Dispose a competition's bus once nobody needs it: no clients left in its
+ * room and nothing (a running rundown) still sending through it.
+ * @param {string} compId
+ * @param {Object} [state]
+ * @param {number} [state.clientsRemaining=0] - Sockets still in the competition room
+ * @param {boolean} [state.busy=false] - True while a rundown is running
+ * @returns {boolean} Whether the bus was disposed
+ */
+export function releaseActionBusIfIdle(compId, { clientsRemaining = 0, busy = false } = {}) {
+  if (!actionBuses.has(compId) || clientsRemaining > 0 || busy) return false;
+  disposeActionBus(compId);
+  return true;
+}
+
+/**
+ * A stand-in for a competition's bus that resolves the live one on every call,
+ * so a long-lived holder (the rundown engine) keeps working after the bus is
+ * disposed and recreated.
+ * @param {string} compId
+ * @param {Object} [options] - Passed to getOrCreateActionBus
+ * @returns {{execute: Function}}
+ */
+export function actionBusHandle(compId, options = {}) {
+  return {
+    compId,
+    execute: (request) => getOrCreateActionBus(compId, options).execute(request),
+  };
 }
 
 export default ActionBus;
