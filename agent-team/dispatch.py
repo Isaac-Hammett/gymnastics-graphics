@@ -309,6 +309,24 @@ def vm_in_use(sessions, by_id) -> bool:
     return False
 
 
+def retry_verify(t: str, key: str, state: dict, why: str) -> bool:
+    """Once per verification cycle, a verifier that ends without a verdict, or FAILs without filing a fix ticket,
+    gets a fresh verifier instead of a `stuck` label: both happened on 2026-09-27 and both were verifier faults.
+    Sets the verdict aside so verify_candidates picks the ticket up again. False when the retry is used up."""
+    retries = state.setdefault("verify_retries", {})
+    if retries.get(t, 0) >= env_int("VERIFY_RETRIES", 1):
+        retries.pop(t, None)
+        return False
+    retries[t] = retries.get(t, 0) + 1
+    af = answer_file(key)
+    if af.exists():
+        af.rename(RUNS / f"{key}.try{retries[t]}.md")
+    log(f"{t}: verifier {why}; retrying with a fresh verifier ({retries[t]})")
+    L_comment(t, f"Verifier ended with {why}. Starting one fresh verifier before marking this stuck. "
+                 f"The first verdict is kept at `agent-team/runs/{key}.try{retries[t]}.md`.")
+    return True
+
+
 def open_fix_blockers(t: str) -> list:
     """Open blockers of T, read fresh from Linear (the pass's board is stale by the time a verifier finishes)."""
     try:
@@ -364,10 +382,14 @@ def finalize(key: str, by_id: dict, state: dict):
                 state["last_close"] = iso()
                 state["planner_due"] = True
             state["recently_done"][t] = iso()
+            state.setdefault("verify_retries", {}).pop(t, None)
             run_sync()
         elif "FAIL" in verdict:
             blockers = [] if DRY else open_fix_blockers(t)
-            if blockers or DRY:
+            if not blockers and not DRY and retry_verify(t, key, state, "FAIL without a fix ticket"):
+                pass
+            elif blockers or DRY:
+                state.setdefault("verify_retries", {}).pop(t, None)
                 L_comment(t, f"Verifier: **FAIL**. Open blockers: {', '.join(blockers) or '(dry run)'}. This ticket stays In Review "
                              "until they close, then it is re-verified.")
             else:
@@ -375,6 +397,8 @@ def finalize(key: str, by_id: dict, state: dict):
                 L_comment(t, "Verifier: **FAIL**, but it filed no fix ticket, so nothing would ever re-verify this. Marked stuck: "
                              "read the verdict, file a fix ticket that blocks this one (or set Todo to redo it), then remove `stuck`.")
                 notify(f"{t} verify FAIL without a fix ticket")
+        elif not DRY and retry_verify(t, key, state, f"rc={rc}, verdict `{verdict or 'none'}`"):
+            pass
         else:
             L_label(t, "stuck")
             L_comment(t, f"Verifier run ended rc={rc} with verdict `{verdict or 'none'}`.\n\nLog tail:\n```\n{log_tail(key)}\n```")
@@ -712,6 +736,7 @@ def main(argv=None) -> int:
     a = ap.parse_args(argv)
     DRY = a.dry_run or a.offline
     OFFLINE = a.offline
+    LOADED_KEYS[:] = [k for k in common.config() if k not in os.environ]
     load_env()
     if OFFLINE:
         os.environ["LINEAR_OFFLINE"] = "1"
@@ -720,6 +745,7 @@ def main(argv=None) -> int:
     log(f"dispatch start once={a.once} dry_run={DRY} offline={OFFLINE} max_agents={env_int('MAX_AGENTS', 2)} "
         f"max_verifiers={env_int('MAX_VERIFIERS', 1)} poll={env_int('POLL_SECONDS', 240)}s")
     state = load_state()
+    stamp = code_stamp()
     while True:
         try:
             one_pass(state)
@@ -730,7 +756,46 @@ def main(argv=None) -> int:
         if a.once:
             break
         time.sleep(env_int("POLL_SECONDS", 240))
+        if code_stamp() != stamp:
+            reload_self(state)
+            stamp = code_stamp()  # reload refused (the new code does not compile); keep running the old code
     return 0
+
+
+LOADED_KEYS: list = []  # settings main() put into os.environ from the config files
+RELOAD_FILES = ("dispatch.py", "sync.py", "loops.py", "settings.conf", "models.conf", ".env")
+
+
+def code_stamp() -> tuple:
+    """Modification times of the dispatcher's code and settings. A change makes the loop reload itself, so
+    edits and .env changes take effect without a tmux restart."""
+    paths = [TEAM_DIR / f for f in RELOAD_FILES] + sorted((TEAM_DIR / "tools").glob("*.py"))
+    out = []
+    for p in paths:
+        try:
+            out.append((p.name, p.stat().st_mtime))
+        except OSError:
+            out.append((p.name, None))
+    return tuple(out)
+
+
+def reload_self(state: dict):
+    for p in [TEAM_DIR / "dispatch.py", TEAM_DIR / "sync.py", TEAM_DIR / "loops.py"] + sorted((TEAM_DIR / "tools").glob("*.py")):
+        try:
+            compile(p.read_text(), str(p), "exec")
+        except (SyntaxError, OSError) as e:
+            if p.exists():
+                log(f"code changed but {p.name} does not compile ({e}); not reloading")
+                notify(f"dispatcher not reloaded: {p.name} does not compile")
+                return
+    log("code or settings changed; reloading the dispatcher")
+    save_state(state)
+    # load_env never overrides a variable already set, and exec keeps this environment: drop every setting the
+    # config files define (old and new keys), so the new process reads them fresh. Shell-exported values that
+    # the files do not define stay.
+    for k in set(LOADED_KEYS) | set(common.config()):
+        os.environ.pop(k, None)
+    os.execv(sys.executable, [sys.executable, str(TEAM_DIR / "dispatch.py")] + sys.argv[1:])
 
 
 if __name__ == "__main__":
