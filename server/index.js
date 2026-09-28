@@ -31,8 +31,8 @@ import { isXavierSender } from './lib/guardrails.js';
 import { getOrCreateActionBus, actionBusHandle, disposeActionBus, releaseActionBusIfIdle } from './lib/actionBus.js';
 import { onceValue } from './lib/firebaseRead.js';
 import { getOrCreateCompetitionState, getCompetitionState, LiveVirtiusSource } from './lib/competitionState/index.js';
-import { registerStateInjection, stateInjectionEnabled } from './lib/competitionState/devInject.js';
-import { getOrCreateXavier, getXavier, JevProvider } from './lib/xavier/index.js';
+import { registerStateInjection, stateInjectionEnabled, devInjectAllowedComps } from './lib/competitionState/devInject.js';
+import { getOrCreateXavier, getXavier, getOrCreateXavierControl, getXavierControl, JevProvider } from './lib/xavier/index.js';
 import { DEFAULT_PRESETS } from './lib/obsAudioManager.js';
 import { encryptStreamKey, decryptStreamKey, isEncryptedKey } from './lib/obsStreamManager.js';
 import { mapEditorSegmentsToEngine, validateEngineSegments, diffSegments, detectDuplicateIds, deduplicateSegmentsById } from './lib/segmentMapper.js';
@@ -1106,6 +1106,34 @@ function getActionBusForComp(compId) {
     firebase: productionConfigService.getDb(),
     io,
     obsConnectionManager: getOBSConnectionManager()
+  });
+}
+
+/**
+ * Get or create a competition's Xavier control levels (ISA2-277) and the
+ * decision service they drive. The control watches `config/xavier`, starts or
+ * stops the service with the mode, and in Auto/Full executes on the action bus
+ * as 'xavier-auto'. Each execution attempt is appended to
+ * `competitions/{compId}/xavier/decisions` for the decision log (ISA2-279).
+ * @param {string} compId
+ */
+function getXavierControlForComp(compId) {
+  return getOrCreateXavierControl(compId, {
+    io,
+    firebase: productionConfigService.getDb(),
+    service: getOrCreateXavier(compId, {
+      io,
+      competitionState: getOrCreateCompetitionState(compId, { io }),
+      provider: new JevProvider(),
+      getActions: async () => (await getActionBusForComp(compId).buildCatalog()).actions || []
+    }),
+    getBus: () => getActionBusForComp(compId),
+    onDecision: (record) => {
+      const db = productionConfigService.getDb();
+      if (!db) return;
+      db.ref(`competitions/${compId}/xavier/decisions`).push(record)
+        .catch(err => console.warn(`[Xavier:${compId}] decision log write failed: ${err.message}`));
+    }
   });
 }
 
@@ -4906,45 +4934,72 @@ io.on('connection', async (socket) => {
     if (typeof ack === 'function') ack({ ok: true });
   });
 
-  // Xavier decision service (ISA2-275). Registered synchronously (BUG-021).
-  // Asks Jev three typed questions per state change; emits 'xavier:recommendations'
-  // and 'xavier:status' to the competition room. Without TYPESAFE_API_KEY it
+  // Xavier decision service (ISA2-275) and control levels (ISA2-277).
+  // Registered synchronously (BUG-021). The mode (off|suggest|auto|full) lives
+  // at competitions/{compId}/config/xavier; the service emits
+  // 'xavier:recommendations' / 'xavier:status', the control emits
+  // 'xavier:control' (mode, cooldown, pending) and 'xavier:auto' (each Xavier
+  // execution with its confidence and outcome). Without TYPESAFE_API_KEY it
   // shows no recommendations and status says why; nothing else is affected.
-  socket.on('xavier:start', (payload, maybeAck) => {
+  const xavierCompId = (payload) => (payload && typeof payload === 'object' && payload.compId) || clientCompId;
+  const xavierSnapshot = (compId) => {
+    const snap = getXavier(compId)?.getSnapshot() || { compId, running: false, status: { ok: true, reason: null }, last: null };
+    return { ...snap, control: getXavierControl(compId)?.getState() || null };
+  };
+  const xavierSetMode = async (payload, maybeAck, forcedMode) => {
     const ack = typeof payload === 'function' ? payload : maybeAck;
-    const compId = (payload && typeof payload === 'object' && payload.compId) || clientCompId;
-    if (!compId) { if (typeof ack === 'function') ack({ ok: false, error: 'no_comp_id' }); return; }
-    const svc = getOrCreateXavier(compId, {
-      io,
-      competitionState: getOrCreateCompetitionState(compId, { io }),
-      provider: new JevProvider(),
-      getActions: async () => (await getActionBusForComp(compId).buildCatalog()).actions || []
-    });
-    svc.start();
-    if (typeof ack === 'function') ack({ ok: true, ...svc.getSnapshot() });
-  });
-
-  socket.on('xavier:stop', (payload, maybeAck) => {
-    const ack = typeof payload === 'function' ? payload : maybeAck;
-    const compId = (payload && typeof payload === 'object' && payload.compId) || clientCompId;
-    getXavier(compId)?.stop();
-    if (typeof ack === 'function') ack({ ok: true });
-  });
+    const reply = (r) => { if (typeof ack === 'function') ack(r); };
+    const compId = xavierCompId(payload);
+    if (!compId) return reply({ ok: false, error: 'no_comp_id' });
+    const mode = forcedMode || payload?.mode;
+    const result = await getXavierControlForComp(compId).setMode(mode);
+    reply({ ...result, ...xavierSnapshot(compId) });
+  };
+  socket.on('xavier:setMode', (payload, maybeAck) => xavierSetMode(payload, maybeAck));
+  // Older clients: start = Suggest, stop = Off.
+  socket.on('xavier:start', (payload, maybeAck) => xavierSetMode(payload, maybeAck, 'suggest'));
+  socket.on('xavier:stop', (payload, maybeAck) => xavierSetMode(payload, maybeAck, 'off'));
 
   socket.on('xavier:dismiss', (payload, maybeAck) => {
     const ack = typeof payload === 'function' ? payload : maybeAck;
-    const compId = (payload && typeof payload === 'object' && payload.compId) || clientCompId;
+    const compId = xavierCompId(payload);
     const ok = !!getXavier(compId)?.dismiss(payload?.recommendationId);
     if (typeof ack === 'function') ack({ ok });
   });
 
   socket.on('xavier:get', (payload, maybeAck) => {
     const ack = typeof payload === 'function' ? payload : maybeAck;
-    const compId = (payload && typeof payload === 'object' && payload.compId) || clientCompId;
-    const snap = getXavier(compId)?.getSnapshot() || { compId, running: false, status: { ok: true, reason: null }, last: null };
+    const compId = xavierCompId(payload);
+    // Creating the control reads the saved mode, so Auto survives a coordinator restart.
+    if (compId) getXavierControlForComp(compId);
+    const snap = xavierSnapshot(compId);
     socket.emit('xavier:snapshot', snap);
     if (typeof ack === 'function') ack(snap);
   });
+
+  // Test competitions only, behind ALLOW_STATE_INJECTION=1 (same gate as
+  // competitionState:inject): publish a recommendation set as if Jev had sent it.
+  if (stateInjectionEnabled()) {
+    socket.on('xavier:inject', (payload, maybeAck) => {
+      const ack = typeof payload === 'function' ? payload : maybeAck;
+      const reply = (r) => { if (typeof ack === 'function') ack(r); };
+      const compId = xavierCompId(payload);
+      if (!compId) return reply({ ok: false, error: 'no_comp_id' });
+      if (!devInjectAllowedComps().includes(compId)) return reply({ ok: false, error: 'inject_not_allowed_for_competition' });
+      if (!Array.isArray(payload?.recommendations)) return reply({ ok: false, error: 'no_recommendations' });
+      const ctl = getXavierControlForComp(compId);
+      const at = Date.now();
+      getXavier(compId).publish({
+        compId, stateVersion: payload.stateVersion ?? `inject-${at}`, holdProbability: payload.holdProbability ?? null,
+        confidence: null, flags: {}, trigger: payload.trigger || 'injected', latencyMs: 0, model: 'injected', at,
+        recommendations: payload.recommendations.map((r, i) => ({
+          recommendationId: `${compId}:inject-${at}:${r.actionId}`, rank: i + 1, label: r.label || r.actionId,
+          trigger: payload.trigger || 'injected', ...r
+        }))
+      });
+      reply({ ok: true, control: ctl.getState() });
+    });
+  }
 
   // Send the catalog of actions available for this competition.
   socket.on('action:catalog', async (payload, maybeAck) => {
