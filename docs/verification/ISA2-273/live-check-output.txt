@@ -1,0 +1,12 @@
+obsConnected: true scenes: ["sdfasdfasdf","Multi View","Cam FX","Cam PH","Cam SR","Cam VT","Cam PB","Cam HB","awefaef","NEW Scene for example","test for connection close v2","aewtasdglaskdjf","Scene"]
+1. producer force cut to "sdfasdfasdf" (+370ms): {"ok":true,"actionId":"scene:sdfasdfasdf","error":null,"guardrail":null}
+2. producer cut to "Multi View" inside hold (+6ms): {"ok":false,"actionId":"scene:Multi View","error":"guardrail","guardrail":{"rule":"minShotHoldMs","reason":"Current shot has been on program 9ms; hold it at least 3000ms"}}
+3. xavier-auto force cut to "Multi View" (+5ms): {"ok":false,"actionId":"scene:Multi View","error":"guardrail","guardrail":{"rule":"minShotHoldMs","reason":"Current shot has been on program 15ms; hold it at least 3000ms"}}
+4. probe: is "sdfasdfasdf" still on program? (+79ms): {"ok":true,"actionId":"scene:sdfasdfasdf","error":null,"guardrail":null}
+   probe broadcast: {"ok":true,"actionId":"scene:sdfasdfasdf","error":null,"guardrail":null,"kind":"scene","sender":"producer","recommendationId":null,"at":1790555733121,"confirmed":true,"alreadyActive":true,"sceneName":"sdfasdfasdf"}
+5. producer force cut to "Multi View" (+524ms): {"ok":true,"actionId":"scene:Multi View","error":null,"guardrail":null,"guardrailOverride":[{"rule":"minShotHoldMs","reason":"Current shot has been on program 309ms; hold it at least 3000ms"}]}
+action:refused broadcasts: 2 [{"sender":"producer","rule":"minShotHoldMs"},{"sender":"xavier-auto","rule":"minShotHoldMs"}]
+PASS
+Cam FX {"ok":true,"actionId":"scene:Cam FX","error":null,"guardrail":null}
+Cam PH {"ok":true,"actionId":"scene:Cam PH","error":null,"guardrail":null}
+Multi View {"ok":true,"actionId":"scene:Multi View","error":null,"guardrail":null}

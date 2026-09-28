@@ -27,6 +27,7 @@ import { getSelfStopService } from './lib/selfStop.js';
 import { getOBSStateSync } from './lib/obsStateSync.js';
 import { setupOBSRoutes } from './routes/obs.js';
 import { getOBSConnectionManager } from './lib/obsConnectionManager.js';
+import { isXavierSender } from './lib/guardrails.js';
 import { getOrCreateActionBus } from './lib/actionBus.js';
 import { DEFAULT_PRESETS } from './lib/obsAudioManager.js';
 import { encryptStreamKey, decryptStreamKey, isEncryptedKey } from './lib/obsStreamManager.js';
@@ -4857,14 +4858,15 @@ io.on('connection', async (socket) => {
   // Execute one action and acknowledge it.
   socket.on('action:execute', async (payload, maybeAck) => {
     const ack = typeof payload === 'function' ? payload : maybeAck;
-    const { actionId, sender, recommendationId, params, compId: payloadCompId } =
+    const { actionId, sender, recommendationId, params, force, compId: payloadCompId } =
       (typeof payload === 'object' && payload) || {};
     const compId = payloadCompId || clientCompId;
     // A producer's own button press may run a scene or graphic the catalog does
     // not list (custom graphics, per-button variants). Everyone else, Xavier
     // included, stays inside the catalog.
     const requester = showState.connectedClients.find(c => c.id === socket.id);
-    const trustedProducer = requester?.role === 'producer' && sender !== 'xavier';
+    const xavier = isXavierSender(sender);
+    const trustedProducer = requester?.role === 'producer' && !xavier;
 
     if (!compId) {
       const result = { ok: false, actionId: actionId || null, error: 'no_comp_id', guardrail: null };
@@ -4879,7 +4881,10 @@ io.on('connection', async (socket) => {
         sender: sender || `socket:${socket.id}`,
         recommendationId,
         params: trustedProducer ? params : undefined,
-        uncatalogued: trustedProducer
+        uncatalogued: trustedProducer,
+        // The producer's override (a deliberate second tap). Guardrails
+        // (ISA2-273) apply to every sender; Xavier can never force.
+        force: force === true && !xavier
       });
     } catch (error) {
       // execute() is designed not to throw; this is the belt-and-braces path.
@@ -4956,7 +4961,7 @@ io.on('connection', async (socket) => {
   });
 
   // Override scene (producer only)
-  socket.on('overrideScene', async ({ sceneName }) => {
+  socket.on('overrideScene', async ({ sceneName, force }) => {
     const client = showState.connectedClients.find(c => c.id === socket.id);
     if (client?.role !== 'producer') {
       socket.emit('error', { message: 'Only producers can override scenes' });
@@ -4972,15 +4977,18 @@ io.on('connection', async (socket) => {
     const ack = await getActionBusForComp(compId).execute({
       actionId: `scene:${sceneName}`,
       sender: 'producer',
-      uncatalogued: true
+      uncatalogued: true,
+      force: force === true
     });
     if (!ack.ok) {
-      socket.emit('error', { message: `Failed to switch to scene: ${sceneName} (${ack.error})` });
+      socket.emit('error', { message: ack.guardrail
+        ? `Scene ${sceneName} refused: ${ack.guardrail.reason}`
+        : `Failed to switch to scene: ${sceneName} (${ack.error})` });
     }
   });
 
   // Switch scene (alias for overrideScene - used by OBS Manager UI)
-  socket.on('switchScene', async ({ sceneName }) => {
+  socket.on('switchScene', async ({ sceneName, force }) => {
     console.log(`[switchScene] Received request to switch to: ${sceneName}`);
     const client = showState.connectedClients.find(c => c.id === socket.id);
     console.log(`[switchScene] Client:`, client ? { id: client.id, role: client.role, compId: client.compId } : 'not found');
@@ -5000,7 +5008,8 @@ io.on('connection', async (socket) => {
     const ack = await getActionBusForComp(clientCompId).execute({
       actionId: `scene:${sceneName}`,
       sender: 'producer',
-      uncatalogued: true
+      uncatalogued: true,
+      force: force === true
     });
     if (ack.ok) {
       console.log(`[switchScene] Switched to scene: ${sceneName} for ${clientCompId}`);
@@ -5009,7 +5018,9 @@ io.on('connection', async (socket) => {
       socket.emit('error', {
         message: ack.error === 'obs_not_connected'
           ? 'OBS not connected for this competition'
-          : `Failed to switch to scene: ${sceneName}`
+          : ack.guardrail
+            ? `Scene ${sceneName} refused: ${ack.guardrail.reason}`
+            : `Failed to switch to scene: ${sceneName}`
       });
     }
   });
