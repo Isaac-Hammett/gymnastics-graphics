@@ -14,7 +14,7 @@ Skip any ticket already labeled `needs-isaac` or `hold`: it is waiting on Isaac,
 ## Decide in this order
 1. **Duplicate:** it has the same Fills as an open or Done ticket in `runs/board.json`. Reject, naming the ticket it duplicates.
 2. **Out of scope:** you cannot trace its Fills to the goal above. Reject, and say why in one line.
-3. **Only Isaac can decide:** spending money, relaunching or changing production, pushing `main`, deleting data, contacting people, on-air design, marking a system Proven, anything touching a real competition's data. Escalate.
+3. **Only Isaac can decide:** spending money (including paid API calls such as TypeSafe; an approval Isaac gave on one ticket does not carry over to another, so a new ticket that makes paid calls is escalated unless Isaac already named a cap for it), relaunching or changing production, pushing `main`, deleting data, contacting people, on-air design, marking a system Proven, anything touching a real competition's data. Escalate.
 4. **Fixable gaps:**
    - Missing `model:` label: add it (`linear.py label <T> model:sonnet`, or `model:opus` for cross-cutting or foundation work).
    - Docs tickets that describe code behavior or touch more than one file (system map + inventory + overview) get `model:sonnet`, even if proposed as haiku: on 2026-09-27 one such Haiku ticket took four fix rounds. Swap the label (`label <T> model:haiku --remove`, then `label <T> model:sonnet`). Haiku stays for one-file mechanical edits.
