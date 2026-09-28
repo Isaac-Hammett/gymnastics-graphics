@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { db, ref, set, get, onValue, push, remove } from '../lib/firebase';
+import { db, ref, get, onValue, push, remove } from '../lib/firebase';
 import { PhotoIcon, XMarkIcon, ClipboardDocumentIcon, CheckIcon, Cog6ToothIcon, PlusIcon, TrashIcon } from '@heroicons/react/24/solid';
 import useEventConfig from '../hooks/useEventConfig';
 import { getGraphicsForCompetition, getGraphicsByCategory, CATEGORIES } from '../lib/graphicsRegistry';
@@ -285,20 +285,11 @@ export default function GraphicsControl({ competitionId, socket }) {
     remove(ref(db, `competitions/${compId}/customGraphics/${customId}`));
   };
 
-  // Send a custom graphic to the output
-  const sendCustomGraphic = (customId, customGraphic) => {
+  // Send a custom graphic to the output. The coordinator reads its URL and
+  // label from customGraphics, the same way the rundown fires it (ISA2-302).
+  const sendCustomGraphic = (customId) => {
     if (!compId) return;
-
-    set(ref(db, `competitions/${compId}/currentGraphic`), {
-      graphic: 'custom',
-      graphicId: `custom-${customId}`,
-      renderer: 'output',
-      data: {
-        customUrl: customGraphic.url,
-        customLabel: customGraphic.label,
-      },
-      timestamp: Date.now(),
-    });
+    executeAction(`graphic:custom-${customId}`, {});
   };
 
   // Fire or clear a graphic through the coordinator's action bus (ISA2-281), so
@@ -336,12 +327,14 @@ export default function GraphicsControl({ competitionId, socket }) {
       layout: slateLayout || 'classic',
     };
 
-    set(ref(db, `competitions/${compId}/currentGraphic`), {
-      graphic: 'rotation-slate',
-      graphicId: `rotation-slate-r${rotation}`,
-      renderer: 'output',
-      data: data,
-      timestamp: Date.now()
+    // Through the action bus with a prebuilt payload (ISA2-302)
+    executeAction(`graphic:rotation-slate-r${rotation}`, {
+      payload: {
+        graphic: 'rotation-slate',
+        graphicId: `rotation-slate-r${rotation}`,
+        renderer: 'output',
+        data: data,
+      },
     });
   };
 
@@ -349,16 +342,17 @@ export default function GraphicsControl({ competitionId, socket }) {
   const sendAutoSlate = () => {
     if (!compId || !config) return;
 
-    set(ref(db, `competitions/${compId}/currentGraphic`), {
-      graphic: 'rotation-slate-auto',
-      graphicId: 'rotation-slate-auto',
-      renderer: 'output',
-      data: {
-        compId: compId,
-        layout: slateLayout || 'classic',
-        meetTheme: config.meetTheme || '',
+    executeAction('graphic:rotation-slate-auto', {
+      payload: {
+        graphic: 'rotation-slate-auto',
+        graphicId: 'rotation-slate-auto',
+        renderer: 'output',
+        data: {
+          compId: compId,
+          layout: slateLayout || 'classic',
+          meetTheme: config.meetTheme || '',
+        },
       },
-      timestamp: Date.now()
     });
   };
 
@@ -409,12 +403,13 @@ export default function GraphicsControl({ competitionId, socket }) {
       };
     }
 
-    set(ref(db, `competitions/${compId}/currentGraphic`), {
-      graphic: 'event-summary',
-      graphicId: graphicId,
-      renderer: 'output',
-      data: data,
-      timestamp: Date.now()
+    executeAction(`graphic:${graphicId}`, {
+      payload: {
+        graphic: 'event-summary',
+        graphicId: graphicId,
+        renderer: 'output',
+        data: data,
+      },
     });
   };
 
@@ -438,18 +433,19 @@ export default function GraphicsControl({ competitionId, socket }) {
       }
     }
 
-    set(ref(db, `competitions/${compId}/currentGraphic`), {
-      graphic: 'now-competing',
-      graphicId: `now-competing-${athlete.id}`,
-      renderer: 'output',
-      data: {
-        athleteName: athlete.name,
-        athleteTeam: athlete.team,
-        athleteEvent: athlete.eventDisplay,
-        athleteLogo: athleteLogo,
-        team1Logo: config.team1Logo || '',
+    executeAction(`graphic:now-competing-${athlete.id}`, {
+      payload: {
+        graphic: 'now-competing',
+        graphicId: `now-competing-${athlete.id}`,
+        renderer: 'output',
+        data: {
+          athleteName: athlete.name,
+          athleteTeam: athlete.team,
+          athleteEvent: athlete.eventDisplay,
+          athleteLogo: athleteLogo,
+          team1Logo: config.team1Logo || '',
+        },
       },
-      timestamp: Date.now()
     });
   };
 
@@ -929,7 +925,7 @@ export default function GraphicsControl({ competitionId, socket }) {
                 {Object.entries(customGraphics).map(([id, cg]) => (
                   <div key={id} className="flex items-center gap-1.5">
                     <button
-                      onClick={() => sendCustomGraphic(id, cg)}
+                      onClick={() => sendCustomGraphic(id)}
                       className={`flex-1 text-left px-3 py-2 rounded text-xs font-medium transition-colors truncate ${
                         currentGraphicId === `custom-${id}`
                           ? 'bg-blue-600 text-white'
