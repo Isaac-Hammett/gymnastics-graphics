@@ -20,7 +20,7 @@ import { useAuth } from '../context/AuthContext';
  * ```
  */
 export default function RequireAuth({ children }) {
-  const { user, loading, signOut } = useAuth();
+  const { user, loading, signOut, isTalentSession } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -46,6 +46,11 @@ export default function RequireAuth({ children }) {
   // If not authenticated, redirect to login with the current path stored
   if (!user) {
     return <Navigate to="/login" state={{ from: location.pathname }} replace />;
+  }
+
+  // Email-link (talent) sessions cannot use producer pages
+  if (isTalentSession) {
+    return <Navigate to="/talent-sign-in" replace />;
   }
 
   // User is authenticated, render the protected content with sign-out button

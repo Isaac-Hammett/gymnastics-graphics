@@ -5,6 +5,7 @@ import { ShowProvider } from '../context/ShowContext';
 import { OBSProvider } from '../context/OBSContext';
 import CompetitionError from './CompetitionError';
 import CompetitionHeader from './CompetitionHeader';
+import TalentGate from './TalentGate';
 
 // Reserved path prefixes that should NOT be treated as competition IDs
 const RESERVED_PREFIXES = ['_admin', 'admin', 'api', '_'];
@@ -76,7 +77,7 @@ function CompetitionLayoutInner() {
  */
 export default function CompetitionLayout() {
   const { compId } = useParams();
-  const { user, loading } = useAuth();
+  const { user, loading, isTalentSession } = useAuth();
   const location = useLocation();
 
   // Check if this is a reserved path that shouldn't be treated as a competition
@@ -88,17 +89,25 @@ export default function CompetitionLayout() {
     return null;
   }
 
-  // /:compId/talent is a public route (talent-facing view) — skip auth check
   const isTalentPath = location.pathname.endsWith('/talent');
 
-  // Auth check for non-talent paths
-  if (!isTalentPath && !loading && !user) {
-    return <Navigate to="/login" state={{ from: location.pathname }} replace />;
+  // Every route needs sign-in; Talent View sends signed-out users to the email-link page
+  if (!loading && !user) {
+    return isTalentPath
+      ? <Navigate to="/talent-sign-in" state={{ from: location.pathname }} replace />
+      : <Navigate to="/login" state={{ from: location.pathname }} replace />;
+  }
+
+  // Email-link (talent) sessions may only use Talent View
+  if (!loading && isTalentSession && !isTalentPath) {
+    return <Navigate to={`/${compId}/talent`} replace />;
   }
 
   return (
-    <CompetitionProvider>
-      <CompetitionLayoutInner />
-    </CompetitionProvider>
+    <TalentGate compId={compId}>
+      <CompetitionProvider>
+        <CompetitionLayoutInner />
+      </CompetitionProvider>
+    </TalentGate>
   );
 }
