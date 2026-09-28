@@ -20,7 +20,7 @@
 
 **Firebase paths written:** none — the auth system itself persists nothing to RTDB (identity lives in Firebase Auth). For contrast, the *unauthenticated* public routes write `bookingTokens/{token}`, `competitions/{compId}/commentary/{talentId}`, `talentRoster/{talentId}/interested`, `surveyResponses/{year}` (`BookingPage.jsx:84,90,152,155`; `SurveyPage.jsx:111`).
 **Firebase paths read:** none by auth itself. Public unauthenticated reads: `bookingTokens/{token}`, `competitions` (full list), `competitions/{compId}/config`, `talentRoster/{talentId}` (`BookingPage.jsx:35,60,66,110`; `SurveyPage.jsx:41`).
-**Socket events:** `emits:` none / `listens:` none — no socket handshake auth exists.
+**Socket events:** `emits:` `identity` `{role}` to each socket once its role resolves; `shakespeare:*` only through `emitShakespeare()` to room `competition:{compId}:verified` / `listens:` none. Socket identity (ISA2-331, `server/lib/socketIdentity.js`): the SPA sends a Firebase ID token in `handshake.auth.token` (`ShowContext.jsx`); the coordinator verifies it with `admin.auth().verifyIdToken` and sets `socket.data.role` to `talent` (confirmed assignment in `competitions/{compId}/commentary` whose `talentRoster/{id}/email` matches), `producer` (any other valid account), `renderer` (no token, `clientType: 'renderer'`), or `anonymous`. Resolution is not awaited, so handlers register first; no existing handler checks the role.
 **HTTP routes:** none — the coordinator exposes no login, token-exchange, or session endpoint; all 82 routes are open.
 **External services:**
 - Firebase Authentication (email/password provider) — the only identity store; accounts created by hand in the Firebase Console (`docs/PRD-Auth-Login/PRD-Auth-Login-2026-03-11.md:23-27`, no self-serve signup or invite flow in code)
@@ -41,7 +41,7 @@
 - Floating sign-out chip on every protected page — `show-controller/src/components/RequireAuth.jsx:52-88`
 
 **Known gaps:**
-- The coordinator server is entirely unauthenticated. All 82 HTTP routes and ~176 socket events (including VM start/stop, OBS control, stream-key handling, Anthropic-backed AI routes) accept any caller; `io` is created with `cors.origin: "*"` (`server/index.js:84-87`).
+- The coordinator server is unauthenticated apart from socket identity (ISA2-331), which only gates `shakespeare:*` emits. All 82 HTTP routes and ~176 socket events (including VM start/stop, OBS control, stream-key handling, Anthropic-backed AI routes) accept any caller; `io` is created with `cors.origin: "*"` (`server/index.js:84-87`).
 - No RTDB security rules in the repo. Nothing to review, diff, or deploy — the only boundary that could exist is unversioned console state.
 - The PRD's own acceptance criterion "Firebase rules for `talentRoster` and `surveyResponses` rely on `auth != null` (already set)" (`PRD-Auth-Login-2026-03-11.md:49`) **contradicts the code**: `SurveyPage.jsx:111` pushes to `surveyResponses/{year}` and `BookingPage.jsx:152` updates `talentRoster/{talentId}/interested`, both while signed out (no `signInAnonymously` anywhere in the repo). Either those rules are not auth-gated or the two public pages are broken.
 - Firebase web config is hard-coded in `firebase.js:5-13` rather than injected — the shipped bundle hands any visitor the `databaseURL`, so RTDB rules are the only real perimeter.

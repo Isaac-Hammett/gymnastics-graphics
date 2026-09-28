@@ -1,6 +1,8 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { io } from 'socket.io-client';
 import { useCompetition } from './CompetitionContext';
+import { useAuth } from './AuthContext';
+import { auth } from '../lib/firebase';
 
 const ShowContext = createContext(null);
 
@@ -45,6 +47,8 @@ const INITIAL_TIMESHEET_STATE = {
 export function ShowProvider({ children }) {
   // Get socket URL and competition info from CompetitionContext
   const { socketUrl, compId } = useCompetition();
+  const { user } = useAuth();
+  const authUid = user?.uid || null;
 
   const [socket, setSocket] = useState(null);
   const [connected, setConnected] = useState(false);
@@ -83,7 +87,14 @@ export function ShowProvider({ children }) {
 
     const newSocket = io(socketUrl, {
       transports: ['websocket', 'polling'],
-      query: { compId }  // Include competition ID for server to route to correct VM
+      query: { compId },  // Include competition ID for server to route to correct VM
+      // Firebase ID token for socket identity (ISA2-331). Runs on every
+      // (re)connect, so a refreshed token is sent; signed-out users send none.
+      auth: (cb) => {
+        const currentUser = auth.currentUser;
+        if (!currentUser) return cb({});
+        currentUser.getIdToken().then((token) => cb({ token })).catch(() => cb({}));
+      }
     });
 
     newSocket.on('connect', () => {
@@ -406,7 +417,7 @@ export function ShowProvider({ children }) {
       setSocket(null);
       setConnected(false);
     };
-  }, [socketUrl, compId]);
+  }, [socketUrl, compId, authUid]);
 
   const identify = useCallback((role, name) => {
     socket?.emit('identify', { role, name });
