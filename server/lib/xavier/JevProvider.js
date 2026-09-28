@@ -18,7 +18,7 @@ export class JevProvider extends DecisionProvider {
     fetchImpl = globalThis.fetch,
     maxRetries = 3,
     baseDelayMs = 200,
-    timeoutMs = 5000,
+    timeoutMs = Number(process.env.XAVIER_JEV_TIMEOUT_MS) || 5000,
     sleepFn = sleep,
     now = Date.now
   } = {}) {
@@ -51,7 +51,7 @@ export class JevProvider extends DecisionProvider {
           signal: ctrl.signal
         });
       } catch (err) {
-        throw new DecisionError(err?.name === 'AbortError' ? 'timeout' : 'unreachable', `Jev request failed: ${err.message}`);
+        throw new DecisionError(err?.name === 'AbortError' ? 'timeout' : 'unreachable', `Jev request failed: ${err.message}${err.cause?.code ? ` (${err.cause.code})` : ''}`);
       } finally {
         clearTimeout(timer);
       }
