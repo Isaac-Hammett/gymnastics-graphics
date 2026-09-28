@@ -78,6 +78,12 @@ test('applyLayout re-crops at a boundary and hides absent tiles', async () => {
   assert.equal(at('Cam FX').t.cropRight, 1280 - 638);
   assert.equal(at('Cam PH').enabled, false);
 
-  const same = await applyLayout(obs, pkg, 4_900_000);
+  const same = await applyLayout(obs, pkg, 4_820_000);
   assert.deepEqual(same.changed, []);
+
+  // 1:20:54 is a 2-panel cutaway: no fixed tiles, so every Cam scene shows the full frame again.
+  const cut = await applyLayout(obs, pkg, 4_900_000);
+  assert.equal(cut.layout, '2-panel');
+  assert.equal(at('Cam FX').t.cropLeft, 0);
+  assert.equal(at('Cam PH').enabled, true);
 });
