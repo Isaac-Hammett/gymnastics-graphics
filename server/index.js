@@ -32,7 +32,7 @@ import { getOrCreateActionBus, actionBusHandle, disposeActionBus, releaseActionB
 import { onceValue } from './lib/firebaseRead.js';
 import { getOrCreateCompetitionState, getCompetitionState, LiveVirtiusSource } from './lib/competitionState/index.js';
 import { registerStateInjection, stateInjectionEnabled, devInjectAllowedComps } from './lib/competitionState/devInject.js';
-import { getOrCreateXavier, getXavier, getOrCreateXavierControl, getXavierControl, JevProvider } from './lib/xavier/index.js';
+import { getOrCreateXavier, getXavier, getOrCreateXavierControl, getXavierControl, getOrCreateXavierLog, JevProvider } from './lib/xavier/index.js';
 import { DEFAULT_PRESETS } from './lib/obsAudioManager.js';
 import { encryptStreamKey, decryptStreamKey, isEncryptedKey } from './lib/obsStreamManager.js';
 import { mapEditorSegmentsToEngine, validateEngineSegments, diffSegments, detectDuplicateIds, deduplicateSegmentsById } from './lib/segmentMapper.js';
@@ -1115,12 +1115,11 @@ function getActionBusForComp(compId) {
  * Get or create a competition's Xavier control levels (ISA2-277) and the
  * decision service they drive. The control watches `config/xavier`, starts or
  * stops the service with the mode, and in Auto/Full executes on the action bus
- * as 'xavier-auto'. Each execution attempt is appended to
- * `competitions/{compId}/xavier/decisions` for the decision log (ISA2-279).
+ * as 'xavier-auto'. Also starts the decision log (ISA2-279).
  * @param {string} compId
  */
 function getXavierControlForComp(compId) {
-  return getOrCreateXavierControl(compId, {
+  const control = getOrCreateXavierControl(compId, {
     io,
     firebase: productionConfigService.getDb(),
     service: getOrCreateXavier(compId, {
@@ -1130,13 +1129,51 @@ function getXavierControlForComp(compId) {
       getActions: async () => (await getActionBusForComp(compId).buildCatalog()).actions || []
     }),
     getBus: () => getActionBusForComp(compId),
-    onDecision: (record) => {
+  });
+  getXavierLogForComp(compId);
+  return control;
+}
+
+/**
+ * The competition's decision log (ISA2-279): one record per recommendation set
+ * at `competitions/{compId}/xavier/decisions`, with the producer's outcome.
+ * `runId` groups records by recorded-meet load (or 'live') for the take rate view.
+ */
+function getXavierLogForComp(compId) {
+  return getOrCreateXavierLog(compId, {
+    service: getOrCreateXavier(compId),
+    getBus: () => getActionBusForComp(compId),
+    getContext: () => {
+      const show = getRecordedShow(compId);
+      return show
+        ? { clockMs: Math.round(show.clock.now()), runKey: show, runLabel: show.recording || 'recorded' }
+        : { clockMs: null, runKey: null, runLabel: 'live' };
+    },
+    write: async (record) => {
       const db = productionConfigService.getDb();
-      if (!db) return;
-      db.ref(`competitions/${compId}/xavier/decisions`).push(record)
-        .catch(err => console.warn(`[Xavier:${compId}] decision log write failed: ${err.message}`));
+      if (!db) return null;
+      const ref = db.ref(`competitions/${compId}/xavier/decisions`).push();
+      await ref.set(firebaseSafe(record));
+      return ref.key;
+    },
+    update: async (id, patch) => {
+      const db = productionConfigService.getDb();
+      if (db) await db.ref(`competitions/${compId}/xavier/decisions/${id}`).update(firebaseSafe(patch));
     }
   });
+}
+
+/** JSON-clone with Firebase-illegal key characters (. # $ [ ] /) replaced and undefined dropped. */
+function firebaseSafe(value) {
+  const walk = (v) => {
+    if (Array.isArray(v)) return v.map(walk);
+    if (v && typeof v === 'object') {
+      return Object.fromEntries(Object.entries(v).filter(([, x]) => x !== undefined)
+        .map(([k, x]) => [k.replace(/[.#$\[\]/]/g, '_'), walk(x)]));
+    }
+    return v === undefined ? null : v;
+  };
+  return walk(JSON.parse(JSON.stringify(value)));
 }
 
 /**

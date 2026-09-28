@@ -16,6 +16,7 @@ import GraphicsManagerPage from './pages/GraphicsManagerPage';
 import ThemeEditorPage from './pages/ThemeEditorPage';
 import BackgroundGeneratorPage from './pages/BackgroundGeneratorPage';
 import ChecklistPage from './pages/ChecklistPage';
+import XavierLogPage from './pages/XavierLogPage';
 import TalentPage from './pages/TalentPage';
 import TalentProfilePage from './pages/TalentProfilePage';
 import TalentDiscoveryPage from './pages/TalentDiscoveryPage';
@@ -135,6 +136,7 @@ function App() {
           <Route path="obs-manager" element={<OBSManager />} />
           <Route path="commentary" element={<CommentaryPage />} />
           <Route path="rundown" element={<RundownEditorPage />} />
+          <Route path="xavier-log" element={<XavierLogPage />} />
           <Route path="checklist" element={
             <ErrorBoundary>
               <ChecklistPage />

@@ -90,6 +90,7 @@ export class XavierService extends EventEmitter {
     this._cs?.off('update', this._onUpdate);
     if (this._timer) clearInterval(this._timer);
     this._timer = null;
+    this.emit('stopped', { compId: this.compId });
   }
 
   getSnapshot() {
@@ -103,6 +104,7 @@ export class XavierService extends EventEmitter {
     this._last = { ...this._last, recommendations: this._last.recommendations.filter(r => r.recommendationId !== recommendationId) };
     if (this._last.recommendations.length === before) return false;
     this._io?.to(`competition:${this.compId}`).emit('xavier:dismissed', { compId: this.compId, recommendationId });
+    this.emit('dismissed', { recommendationId, remaining: this._last.recommendations.length });
     return true;
   }
 
@@ -199,16 +201,17 @@ export class XavierService extends EventEmitter {
       model: result.model,
       at: this._now()
     };
-    this.publish(payload);
+    this.publish(payload, { state, questions, answers });
   }
 
   /**
    * Record a recommendation set, tell listeners (the control levels, ISA2-277)
    * and the room. The dev injection path (test competitions only) calls this too.
+   * `detail` ({state, questions, answers}) goes to listeners only, for the decision log (ISA2-279).
    */
-  publish(payload) {
+  publish(payload, detail = {}) {
     this._last = payload;
-    this.emit('recommendations', payload);
+    this.emit('recommendations', payload, detail);
     this._io?.to(`competition:${this.compId}`).emit('xavier:recommendations', payload);
   }
 
