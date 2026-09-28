@@ -4,7 +4,7 @@ import https from 'https';
 import { Server } from 'socket.io';
 import OBSWebSocket from 'obs-websocket-js';
 import cors from 'cors';
-import { readFileSync, writeFileSync, watchFile } from 'fs';
+import { readFileSync, writeFileSync, watchFile, mkdirSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import dotenv from 'dotenv';
@@ -29,6 +29,7 @@ import { setupOBSRoutes } from './routes/obs.js';
 import { getOBSConnectionManager } from './lib/obsConnectionManager.js';
 import { isXavierSender } from './lib/guardrails.js';
 import { getOrCreateActionBus } from './lib/actionBus.js';
+import { getOrCreateCompetitionState, getCompetitionState, LiveVirtiusSource } from './lib/competitionState/index.js';
 import { DEFAULT_PRESETS } from './lib/obsAudioManager.js';
 import { encryptStreamKey, decryptStreamKey, isEncryptedKey } from './lib/obsStreamManager.js';
 import { mapEditorSegmentsToEngine, validateEngineSegments, diffSegments, detectDuplicateIds, deduplicateSegmentsById } from './lib/segmentMapper.js';
@@ -4835,6 +4836,55 @@ io.on('connection', async (socket) => {
   // acknowledged with { ok, actionId, error, guardrail }; successes are
   // broadcast to the competition room as 'action:executed' by the bus itself.
   // Registered synchronously, before any await in this handler (BUG-021).
+
+  // Competition state service (ISA2-274): Virtius polls -> typed state events.
+  // Registered synchronously, before any await (BUG-021). Events go to the
+  // competition room as 'competitionState:event' / 'competitionState:update'.
+  socket.on('competitionState:get', (payload, maybeAck) => {
+    const ack = typeof payload === 'function' ? payload : maybeAck;
+    const compId = (payload && typeof payload === 'object' && payload.compId) || clientCompId;
+    const svc = compId && getCompetitionState(compId);
+    const snapshot = svc ? svc.getSnapshot() : { compId, running: false, state: null, recentEvents: [] };
+    socket.emit('competitionState:snapshot', snapshot);
+    if (typeof ack === 'function') ack(snapshot);
+  });
+
+  socket.on('competitionState:start', async (payload, maybeAck) => {
+    const ack = typeof payload === 'function' ? payload : maybeAck;
+    const opts = (payload && typeof payload === 'object') ? payload : {};
+    const compId = opts.compId || clientCompId;
+    const reply = (r) => { if (typeof ack === 'function') ack(r); };
+    if (!compId) return reply({ ok: false, error: 'no_comp_id' });
+    try {
+      let sessionId = opts.sessionId;
+      if (!sessionId) {
+        const snap = await productionConfigService.getDb().ref(`competitions/${compId}/config/virtiusSessionId`).once('value');
+        sessionId = snap.val();
+      }
+      if (!sessionId) return reply({ ok: false, error: 'no_virtius_session_id' });
+      const svc = getOrCreateCompetitionState(compId, { io, emitInitial: !!opts.emitInitial });
+      const logPath = opts.logToFile
+        ? join(__dirname, 'logs', `virtius-poll-${compId}-${Date.now()}.jsonl`)
+        : null;
+      if (logPath) mkdirSync(dirname(logPath), { recursive: true });
+      svc.attach(new LiveVirtiusSource({
+        sessionId,
+        pollIntervalMs: Math.max(2, Number(opts.pollIntervalSec) || 15) * 1000,
+        logPath
+      }));
+      reply({ ok: true, compId, sessionId, logPath });
+    } catch (error) {
+      console.error(`[CompetitionState:${compId}] start failed:`, error.message);
+      reply({ ok: false, error: error.message });
+    }
+  });
+
+  socket.on('competitionState:stop', (payload, maybeAck) => {
+    const ack = typeof payload === 'function' ? payload : maybeAck;
+    const compId = (payload && typeof payload === 'object' && payload.compId) || clientCompId;
+    getCompetitionState(compId)?.stop();
+    if (typeof ack === 'function') ack({ ok: true });
+  });
 
   // Send the catalog of actions available for this competition.
   socket.on('action:catalog', async (payload, maybeAck) => {

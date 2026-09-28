@@ -58,3 +58,4 @@ recordings/*/*
 !recordings/*/meta.json
 !recordings/*/events.jsonl
 !recordings/*/virtius-final.json
+server/logs/virtius-poll-*.jsonl
