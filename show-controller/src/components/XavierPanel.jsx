@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import useXavier from '../hooks/useXavier';
 
 const MODES = [
@@ -131,7 +132,16 @@ export default function XavierPanel({ socket, compId }) {
   return (
     <div className="bg-zinc-900 rounded-lg border border-zinc-800 p-3 space-y-3" data-testid="xavier-panel">
       <div className="flex items-center justify-between gap-2">
-        <span className="text-sm text-zinc-400 uppercase tracking-wide">Xavier</span>
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-zinc-400 uppercase tracking-wide">Xavier</span>
+          <Link
+            to={`/${compId}/xavier-log`}
+            className="text-xs text-zinc-500 hover:text-zinc-300 underline"
+            title="View decision log and take rate"
+          >
+            Log
+          </Link>
+        </div>
         <div className="flex rounded overflow-hidden border border-zinc-700">
           {MODES.map(m => (
             <button
