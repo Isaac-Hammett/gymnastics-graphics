@@ -38,7 +38,7 @@ One Node process hosts every server-side tool and fans state out over sockets. P
 | Competition state service (typed event stream) | Ingests Virtius or recorded logs, emits confidence-rated events | socket event | built |
 | Guardrails (action enforcement rules) | Four rules refuse risky actions unless forced by a human | config file | built |
 
-Depends on: Firebase Admin credential, AWS EC2, PM2, Virtius API. Gaps: no server auth; wake path dead; no /health; noCutDuringRoutine rule inert without routine state; Producer View doesn't show guardrail refusals. Workbook: prod-live, gfx-delivery.
+Depends on: Firebase Admin credential, AWS EC2, PM2, Virtius API. Gaps: no server auth; wake path dead; no /health; noCutDuringRoutine only acts while a state source is attached (wired ISA2-311); Producer View doesn't show guardrail refusals. Workbook: prod-live, gfx-delivery.
 
 ### VM pool
 
