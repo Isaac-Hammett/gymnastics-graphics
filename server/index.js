@@ -40,6 +40,8 @@ import { sendEmail, inviteEmail, briefingEmail, reminderEmail } from './lib/gmai
 import { createCompetitionEvent, createPreProdMeeting } from './lib/googleCalendarService.js';
 import { discoverAlumni } from './lib/talentDiscoveryService.js';
 import { fetchClips } from './lib/clipService.js';
+import { loadRecordingPackage } from './lib/recordings/recordingPackage.js';
+import { buildRecordedScenes, applyLayout as applyRecordedLayout, DEFAULT_RECORDING, RECORDED_SOURCE_NAME } from './scripts/buildRecordedScenes.js';
 import { PlayoutEngine, getPlayoutEngine as getPlayoutEngineFromModule, removePlayoutEngine as removePlayoutEngineFromModule, PLAYOUT_MODE, CLIP_STATUS } from './lib/playoutEngine.js';
 import { getScoringService, removeScoringService, getAllScoringServices } from './lib/scoringIngestionService.js';
 
@@ -4886,6 +4888,37 @@ io.on('connection', async (socket) => {
     }
     if (typeof ack === 'function') ack(result);
   });
+
+  // ── Recorded-source scenes (ISA2-295) ──────────────────────────────────
+  // Build the playback scenes on the competition's OBS, re-crop them for a
+  // layout, or seek the recorded source. Acks { ok, ... } or { ok: false, error }.
+  const recordedObsCall = async (payload, maybeAck, work) => {
+    const ack = typeof payload === 'function' ? payload : maybeAck;
+    const opts = (typeof payload === 'object' && payload) || {};
+    const compId = opts.compId || clientCompId;
+    let result;
+    try {
+      const obsManager = getOBSConnectionManager();
+      const compObs = compId && obsManager.getConnection(compId);
+      if (!compObs || !obsManager.isConnected(compId)) throw new Error('OBS not connected for this competition');
+      result = { ok: true, ...(await work(compObs, opts)) };
+    } catch (error) {
+      console.error(`[RecordedScenes] ${error.message}`);
+      result = { ok: false, error: error.message };
+    }
+    if (typeof ack === 'function') ack(result);
+  };
+
+  socket.on('recorded:build-scenes', (payload, maybeAck) => recordedObsCall(payload, maybeAck, (obs, opts) =>
+    buildRecordedScenes(obs, { recording: opts.recording, videoPath: opts.videoPath })));
+
+  socket.on('recorded:apply-layout', (payload, maybeAck) => recordedObsCall(payload, maybeAck, (obs, opts) =>
+    applyRecordedLayout(obs, loadRecordingPackage(opts.recording || DEFAULT_RECORDING), Number(opts.tMs) || 0)));
+
+  socket.on('recorded:seek', (payload, maybeAck) => recordedObsCall(payload, maybeAck, async (obs, opts) => {
+    await obs.call('SetMediaInputCursor', { inputName: RECORDED_SOURCE_NAME, mediaCursor: Math.max(0, Number(opts.tMs) || 0) });
+    return { tMs: Number(opts.tMs) || 0 };
+  }));
 
   // Client identifies themselves
   socket.on('identify', ({ role, name }) => {
