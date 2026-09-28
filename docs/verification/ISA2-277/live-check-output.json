@@ -1,0 +1,177 @@
+[
+  {
+    "step": "control before",
+    "result": {
+      "mode": "off",
+      "thresholds": {
+        "scene": 0.92,
+        "graphic": 0.8
+      },
+      "cooldownMs": 10000
+    }
+  },
+  {
+    "step": "catalog",
+    "result": {
+      "obsScenes": 13,
+      "graphics": 83
+    }
+  },
+  {
+    "step": "inject rejected for a real comp",
+    "result": {
+      "ok": false,
+      "error": "inject_not_allowed_for_competition"
+    }
+  },
+  {
+    "step": "setMode auto",
+    "result": {
+      "ok": true,
+      "persisted": true,
+      "mode": "auto",
+      "running": true
+    }
+  },
+  {
+    "step": "producer clears graphic",
+    "result": {
+      "ok": true,
+      "actionId": "graphic:clear",
+      "error": null,
+      "guardrail": null
+    }
+  },
+  {
+    "step": "inject graphic:team1-roster at 0.90 (graphic threshold 0.80)",
+    "result": true
+  },
+  {
+    "step": "after auto graphic",
+    "result": {
+      "auto": [
+        {
+          "actionId": "graphic:team1-roster",
+          "outcome": "auto",
+          "confidence": 0.9,
+          "threshold": 0.8,
+          "reason": null,
+          "rule": null
+        }
+      ],
+      "executed": [
+        {
+          "actionId": "graphic:team1-roster",
+          "sender": "xavier-auto",
+          "ok": true,
+          "guardrail": null,
+          "at": 1790572642242
+        }
+      ]
+    }
+  },
+  {
+    "step": "inject scene:Cam PH at 0.85 (scene threshold 0.92): suggest only",
+    "result": true
+  },
+  {
+    "step": "xavier-auto commands so far",
+    "result": 1
+  },
+  {
+    "step": "producer manual cut to Cam FX",
+    "result": {
+      "ok": true,
+      "actionId": "scene:Cam FX",
+      "error": null,
+      "guardrail": null
+    }
+  },
+  {
+    "step": "inject scene:Cam PH at 0.99 during cooldown",
+    "result": true
+  },
+  {
+    "step": "during cooldown",
+    "result": {
+      "cooldownUntil": 1790572657625,
+      "pending": null,
+      "xavierAutoCommands": [
+        "graphic:team1-roster"
+      ]
+    }
+  },
+  {
+    "step": "program still Cam FX (probe re-cut is a no-op)",
+    "result": {
+      "ok": true,
+      "alreadyActive": null,
+      "error": null
+    }
+  },
+  {
+    "step": "pending before producer action",
+    "result": "graphic:clear"
+  },
+  {
+    "step": "xavier:auto records",
+    "result": [
+      {
+        "actionId": "graphic:team1-roster",
+        "outcome": "auto",
+        "confidence": 0.9,
+        "threshold": 0.8,
+        "reason": null,
+        "rule": null
+      },
+      {
+        "actionId": "graphic:clear",
+        "outcome": "cancelled",
+        "confidence": 0.95,
+        "threshold": 0.8,
+        "reason": "producer override: command graphic:team1-roster from producer",
+        "rule": null
+      }
+    ]
+  },
+  {
+    "step": "all commands",
+    "result": [
+      {
+        "actionId": "graphic:clear",
+        "sender": "producer",
+        "ok": true,
+        "guardrail": null,
+        "at": 1790572630575
+      },
+      {
+        "actionId": "graphic:team1-roster",
+        "sender": "xavier-auto",
+        "ok": true,
+        "guardrail": null,
+        "at": 1790572642242
+      },
+      {
+        "actionId": "scene:Cam FX",
+        "sender": "producer",
+        "ok": true,
+        "guardrail": null,
+        "at": 1790572647625
+      },
+      {
+        "actionId": "scene:Cam FX",
+        "sender": "producer-probe",
+        "ok": true,
+        "guardrail": null,
+        "at": 1790572650304
+      },
+      {
+        "actionId": "graphic:team1-roster",
+        "sender": "producer",
+        "ok": true,
+        "guardrail": null,
+        "at": 1790572661083
+      }
+    ]
+  }
+]
