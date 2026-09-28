@@ -64,9 +64,20 @@ main() {
       BRANCH="$(python3 -c 'import sys,json; print(json.load(open(sys.argv[1])).get("branch") or "")' "$RUNS/$T.ticket.json")"
       [ -z "$BRANCH" ] && BRANCH="agent/$(echo "$T" | tr '[:upper:]' '[:lower:]')"
       echo "$BRANCH" > "$RUNS/$T.branch"
-      prepare_ticket_worktree "$WT_DIR/$T" "$BRANCH" "$MAIN" "$ROOT" || {
+      rm -f "$RUNS/$T.conflict"
+      CONFLICT_FILE="$RUNS/$T.conflict" prepare_ticket_worktree "$WT_DIR/$T" "$BRANCH" "$MAIN" "$ROOT" || {
         echo "agent_run.sh: ticket worktree prep failed (branch $BRANCH)" >&2; echo 3 > "$RUNS/$KEY.exit"; return 3; }
       WORKDIR="$WT_DIR/$T"
+      if [ -s "$RUNS/$T.conflict" ]; then
+        EXTRA="# FIRST: finish a merge of \`$MAIN\` into your branch
+Your branch conflicts with \`$MAIN\` (another ticket changed the same files after yours started). The merge is in
+progress in your worktree. Conflicted files:
+$(sed 's/^/- /' "$RUNS/$T.conflict")
+Resolve every conflict keeping both sides' intent (for docs and CSV: keep both changes, and keep the file's existing
+format and line endings; never re-serialize a whole file). Then run the tests the ticket needs, and commit the merge
+with the trailer line \`Ticket: $T\`. If this ticket's Done-when lines were already met before the conflict, the
+merge commit is the whole job: update the answer file to say so, and exit 0."
+      fi
       ;;
   esac
 
@@ -192,13 +203,29 @@ git_or_fail() {  # run git, print its stderr on failure so the dispatcher log sa
   out="$(git "$@" 2>&1)" || { echo "git ${*:1:4}...: $out" | tail -5 >&2; return 1; }
 }
 
+# Merge MAIN into the ticket branch. On a content conflict, leave the merge in progress and list the files in
+# $CONFLICT_FILE: the agent resolves it as the first step of its run (the dispatcher requeues a ticket whose
+# merge into main conflicted). Any other failure aborts.
+merge_main_into() {
+  local DIR="$1" MAIN="$2"
+  git -C "$DIR" merge --no-edit "$MAIN" >/dev/null 2>&1 && return 0
+  local files; files="$(git -C "$DIR" diff --name-only --diff-filter=U 2>/dev/null)"
+  if git -C "$DIR" rev-parse -q --verify MERGE_HEAD >/dev/null && [ -n "$files" ] && [ -n "${CONFLICT_FILE:-}" ]; then
+    printf '%s\n' "$files" > "$CONFLICT_FILE"
+    return 0
+  fi
+  git -C "$DIR" merge --abort >/dev/null 2>&1
+  echo "git merge $MAIN into $DIR failed" >&2
+  return 1
+}
+
 prepare_ticket_worktree() {
   local DIR="$1" BRANCH="$2" MAIN="$3" ROOT="$4"
   if [ -e "$DIR/.git" ]; then
-    git_or_fail -C "$DIR" merge --no-edit "$MAIN" || { git -C "$DIR" merge --abort >/dev/null 2>&1; return 1; }
+    merge_main_into "$DIR" "$MAIN" || return 1
   elif git -C "$ROOT" show-ref --verify --quiet "refs/heads/$BRANCH"; then
     git_or_fail -C "$ROOT" worktree add "$DIR" "$BRANCH" || return 1
-    git_or_fail -C "$DIR" merge --no-edit "$MAIN" || { git -C "$DIR" merge --abort >/dev/null 2>&1; return 1; }
+    merge_main_into "$DIR" "$MAIN" || return 1
   else
     git_or_fail -C "$ROOT" worktree add -b "$BRANCH" "$DIR" "$MAIN" || return 1
   fi

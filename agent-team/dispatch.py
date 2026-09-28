@@ -299,6 +299,7 @@ def merge_ticket(t: str, branch: str):
 # One test VM and one test competition: two runs driving the same OBS would switch scenes under each other.
 # Tickets labeled `vm` (and their verifiers) run one at a time; everything else runs in parallel.
 VM_LABEL = "vm"
+CONFLICT_LABEL = "merge-conflict"  # set when a merge into main conflicted and the ticket was requeued once
 
 
 def vm_in_use(sessions, by_id) -> bool:
@@ -434,12 +435,22 @@ def finalize(key: str, by_id: dict, state: dict):
                 state["merge_warned"][t] = iso()
             log(f"{t}: merge deferred: {msg}")
             return  # keep the exit file; retry next pass
-        if not ok:
+        if not ok and msg.startswith("merge conflict") and CONFLICT_LABEL not in ((i or {}).get("labels") or []):
+            # Parallel tickets touch the same docs (system map, inventory). Send it back once: the next run starts
+            # with main merged in and the conflict in progress, and resolves it (agent_run.sh merge_main_into).
+            L_label(t, CONFLICT_LABEL)
+            L_state(t, "Todo")
+            L_comment(t, f"Dispatcher: merging into `{main_branch()}` conflicted (another ticket changed the same files). "
+                         f"Requeued once: the next run starts with the conflict in progress and resolves it.\n\n```\n{msg[-800:]}\n```")
+            log(f"{t}: merge conflict; requeued to resolve")
+        elif not ok:
             L_label(t, "stuck")
             L_comment(t, f"Merge into `{main_branch()}` failed; resolve by hand in `{worktrees_dir() / t}` "
                          f"(merge `{main_branch()}` into the branch and commit), then remove `stuck` and set Todo.\n\n```\n{msg}\n```")
             notify(f"{t} merge failed")
         else:
+            if CONFLICT_LABEL in ((i or {}).get("labels") or []):
+                L_label(t, CONFLICT_LABEL, remove=True)
             note = "" if rc == 0 else f" (the harness exited rc={rc} after the work was done; counted as done)"
             L_state(t, "In Review")
             L_comment(t, f"Dispatcher: {msg}{note}. Queued for verification.")

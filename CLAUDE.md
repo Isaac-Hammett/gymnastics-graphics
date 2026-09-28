@@ -85,6 +85,7 @@ The board is Linear team **Isaac_Production** (prefix `ISA2`). Projects are the 
 - **TypeSafe (the `typesafe-ai` skill) is for AI-judgment features only** (Xavier-style choose/score/yes-no calls), not ordinary code. Read the key from `TYPESAFE_API_KEY` in the environment (`agent-team/.env` for runs, `server/.env` for the coordinator); call it server-side only, never from the SPA; never print, log, or commit the key. Any new integration or rise in call volume costs money, so it needs Isaac's go-ahead on the ticket first.
 - **Build, test, and deploy one at a time.** Fan out reads and searches freely; never run two builds in one checkout concurrently.
 - **When a system changes materially,** update `docs/system-map/<system>.md`, the SYSTEM-OVERVIEW summary table, and the rows in `docs/tool-inventory.csv`.
+- **Edit shared docs in place, row by row.** Never re-serialize a whole file: `docs/tool-inventory.csv` quotes every field and uses LF line endings; a rewrite (ISA2-300 turned it CRLF with minimal quoting) conflicts with every parallel ticket.
 
 ## Domain Quick Facts
 

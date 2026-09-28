@@ -9,6 +9,8 @@ You decide each proposed ticket in `agent-team/runs/proposed.json` on your own (
 2. **Longer term:** every page Producer View uses works at Built or better (CLAUDE.md, "Goal").
 A ticket is in scope only if you can name which part of the goal it moves forward. Put that in the `--why`.
 
+Skip any ticket already labeled `needs-isaac` or `hold`: it is waiting on Isaac, and re-escalating it only adds noise.
+
 ## Decide in this order
 1. **Duplicate:** it has the same Fills as an open or Done ticket in `runs/board.json`. Reject, naming the ticket it duplicates.
 2. **Out of scope:** you cannot trace its Fills to the goal above. Reject, and say why in one line.
