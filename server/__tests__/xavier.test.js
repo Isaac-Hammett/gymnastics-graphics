@@ -224,6 +224,14 @@ describe('XavierService', () => {
     await svc.request();
     assert.ok(lines.some(l => /jev-x latency=123ms/.test(l)));
   });
+
+  it('logs provider input tokens with the latency line', async () => {
+    const lines = [];
+    const svc = new XavierService({ compId: 'c1', competitionState: fakeCs(), getActions: async () => ACTIONS,
+      provider: new MockProvider({ latencyMs: 50, model: 'jev-x', usage: { input_tokens: 4321 } }), log: (l) => lines.push(l) });
+    await svc.request();
+    assert.ok(lines.some(l => /jev-x latency=50ms inputTokens=4321 /.test(l)));
+  });
 });
 
 describe('request building from recorded ECAC state', () => {

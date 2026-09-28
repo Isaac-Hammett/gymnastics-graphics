@@ -7,13 +7,14 @@
 import { DecisionProvider, DecisionError } from './DecisionProvider.js';
 
 export class MockProvider extends DecisionProvider {
-  constructor({ answers = {}, latencyMs = 1, model = 'mock', delayMs = 0, error = null } = {}) {
+  constructor({ answers = {}, latencyMs = 1, model = 'mock', delayMs = 0, error = null, usage } = {}) {
     super();
     this.answers = answers;
     this.latencyMs = latencyMs;
     this.model = model;
     this.delayMs = delayMs;
     this.error = error;
+    this.usage = usage;
     this.calls = [];
   }
 
@@ -33,6 +34,6 @@ export class MockProvider extends DecisionProvider {
         probabilities: Object.fromEntries(options.map(o => [o, p]))
       };
     }
-    return { answers: out, latencyMs: this.latencyMs, model: this.model };
+    return { answers: out, latencyMs: this.latencyMs, model: this.model, usage: this.usage };
   }
 }
