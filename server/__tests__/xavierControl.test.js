@@ -298,3 +298,77 @@ describe('guardrails stop auto actions (real ActionBus)', () => {
     bus.shutdown();
   });
 });
+
+describe('shakespeare gate (ISA2-336)', () => {
+  it('engine on and brief in draft: auto only suggests, logs a ladder-unverified refusal once', async () => {
+    const { ctl, bus, timers, decisions } = setup({ mode: 'auto' });
+    ctl.setShakespeare({ engine: 'running', briefStatus: 'draft' });
+    const d = ctl.handleRecommendations(recs('graphic:team1-roster', 0.99));
+    assert.equal(d.execute, false);
+    assert.equal(d.reason, 'ladder unverified');
+    await timers.flush();
+    assert.equal(bus.calls.length, 0);
+    assert.equal(decisions.length, 1);
+    assert.equal(decisions[0].outcome, 'refused');
+    assert.equal(decisions[0].guardrail.rule, 'ladder-unverified');
+    assert.equal(ctl.getState().ladderUnverified, true);
+    // The same recommendation is not logged again.
+    ctl.handleRecommendations(recs('graphic:team1-roster', 0.99));
+    assert.equal(decisions.length, 1);
+  });
+
+  it('full is held too; suggest is not flagged', async () => {
+    const { ctl, bus, timers } = setup({ mode: 'full' });
+    ctl.setShakespeare({ engine: 'running', briefStatus: undefined });
+    ctl.handleRecommendations(recs('scene:BRB', 0.5));
+    await timers.flush();
+    assert.equal(bus.calls.length, 0);
+    await ctl.setMode('suggest');
+    assert.equal(ctl.getState().ladderUnverified, false);
+  });
+
+  it('engine on and brief approved: auto executes above threshold', async () => {
+    const { ctl, bus, timers, decisions } = setup({ mode: 'auto' });
+    ctl.setShakespeare({ engine: 'running', briefStatus: 'approved' });
+    ctl.handleRecommendations(recs('graphic:team1-roster', 0.9));
+    await timers.flush();
+    assert.equal(bus.calls.length, 1);
+    assert.equal(decisions[0].outcome, 'auto');
+    assert.equal(ctl.getState().ladderUnverified, false);
+  });
+
+  it('engine absent or off: auto executes above threshold as before', async () => {
+    for (const engine of [null, 'off']) {
+      const { ctl, bus, timers } = setup({ mode: 'auto' });
+      ctl.setShakespeare({ engine, briefStatus: 'draft' });
+      ctl.handleRecommendations(recs('graphic:team1-roster', 0.9));
+      await timers.flush();
+      assert.equal(bus.calls.length, 1, `engine ${engine}`);
+    }
+  });
+
+  it('losing the approval cancels a pending action, and the run re-checks', async () => {
+    const { ctl, bus, timers, decisions } = setup({ mode: 'auto' });
+    ctl.setShakespeare({ engine: 'running', briefStatus: 'approved' });
+    ctl.handleRecommendations(recs('graphic:team1-roster', 0.9));
+    ctl.setShakespeare({ briefStatus: 'draft' });
+    await timers.flush();
+    assert.equal(bus.calls.length, 0);
+    assert.equal(decisions[0].outcome, 'cancelled');
+  });
+
+  it('follows shakespeare nodes in Firebase', async () => {
+    const db = createFakeDb();
+    db._seed(XAVIER_CONFIG_PATH(COMP_ID), { mode: 'auto' });
+    db._seed(`competitions/${COMP_ID}/shakespeare/status`, { engine: 'running' });
+    db._seed(`competitions/${COMP_ID}/shakespeare/brief`, { status: 'draft' });
+    const ctl = new XavierControl({ compId: COMP_ID, service: new FakeService(), firebase: db, getBus: () => null, log: () => {} });
+    ctl.start();
+    await new Promise(r => setImmediate(r));
+    assert.equal(ctl.getState().ladderUnverified, true);
+    await db.ref(`competitions/${COMP_ID}/shakespeare/brief/status`).set('approved');
+    await new Promise(r => setImmediate(r));
+    assert.equal(ctl.getState().ladderUnverified, false);
+    ctl.stop();
+  });
+});
