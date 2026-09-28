@@ -28,6 +28,8 @@ import CameraStatusPanel from '../components/playout/CameraStatusPanel';
 import ClipQueuePanel from '../components/playout/ClipQueuePanel';
 import PlayoutControls from '../components/playout/PlayoutControls';
 import MomentReplayDialog from '../components/playout/MomentReplayDialog';
+import useGuardedAction from '../hooks/useGuardedAction';
+import { GuardrailNotice, GuardrailActivity } from '../components/GuardrailNotice';
 import PlayoutEventLog from '../components/playout/PlayoutEventLog';
 import KeyboardShortcutsPanel from '../components/playout/KeyboardShortcutsPanel';
 
@@ -86,7 +88,6 @@ export default function ProducerView() {
     socket,
     state,
     jumpTo,
-    overrideScene,
     lockTalent,
     togglePause,
     resetShow,
@@ -543,6 +544,9 @@ export default function ProducerView() {
   }, [socket]);
 
   // Common OBS scenes for quick access
+  const { run: runGuarded, refusal: guardrailRefusal, events: guardrailEvents } = useGuardedAction(socket, compId);
+  const overrideScene = (scene) => runGuarded(`scene:${scene}`, `scene:${scene}`);
+
   const sceneOverrides = [
     'Intro Video',
     'Talent Camera',
@@ -1004,6 +1008,7 @@ export default function ProducerView() {
                       eventLog={eventLog}
                       actions={{ retryClip }}
                     />
+                    <GuardrailActivity events={guardrailEvents} />
                   </div>
                 ) : (
                   <>
@@ -1205,6 +1210,8 @@ export default function ProducerView() {
                     <div className="bg-zinc-800 rounded-xl p-4">
                       <div className="text-sm text-zinc-400 uppercase tracking-wide mb-3">Scene Override</div>
 
+                      <GuardrailNotice refusal={guardrailRefusal} className="mb-3" />
+
                       <div className="grid grid-cols-4 gap-2">
                         {sceneOverrides.map((scene) => (
                           <button
@@ -1236,6 +1243,7 @@ export default function ProducerView() {
                         </div>
                       )}
                     </div>
+                    <GuardrailActivity events={guardrailEvents} />
                   </>
                 )}
               </>
