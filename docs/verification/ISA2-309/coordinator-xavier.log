@@ -1,0 +1,13 @@
+[Xavier:ecac-2026-agent-test] jev-1.13.0 latency=5300ms inputTokens=9398 usage={"input_tokens":9398,"output_tokens":1281} questions=13 stateVersion=43
+[Xavier:ecac-2026-agent-test] decision provider failed (unreachable): Jev request failed: fetch failed
+[Xavier:ecac-2026-agent-test] decision provider failed (unreachable): Jev request failed: fetch failed
+[Xavier:ecac-2026-agent-test] decision provider failed (unreachable): Jev request failed: fetch failed
+[Xavier:ecac-2026-agent-test] decision provider failed (unreachable): Jev request failed: fetch failed
+[Xavier:ecac-2026-agent-test] decision provider failed (unreachable): Jev request failed: fetch failed
+[Xavier:ecac-2026-agent-test] decision provider failed (unreachable): Jev request failed: fetch failed
+[Xavier:ecac-2026-agent-test] decision provider failed (unreachable): Jev request failed: fetch failed
+[Xavier:ecac-2026-agent-test] decision provider failed (unreachable): Jev request failed: fetch failed
+[Xavier:ecac-2026-agent-test] jev-1.13.0 latency=316ms inputTokens=9398 usage={"input_tokens":9398,"output_tokens":1281} questions=13 stateVersion=43
+[Xavier:ecac-2026-agent-test] decision provider failed (unreachable): Jev request failed: fetch failed (UND_ERR_CONNECT_TIMEOUT)
+[Xavier:ecac-2026-agent-test] decision provider failed (unreachable): Jev request failed: fetch failed (UND_ERR_CONNECT_TIMEOUT)
+[Xavier:ecac-2026-agent-test] decision provider failed (unreachable): Jev request failed: fetch failed (UND_ERR_CONNECT_TIMEOUT)

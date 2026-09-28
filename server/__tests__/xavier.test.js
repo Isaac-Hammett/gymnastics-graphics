@@ -253,3 +253,18 @@ describe('request building from recorded ECAC state', () => {
     assert.equal(triggerText(null), null);
   });
 });
+
+describe('JevProvider timeout config (ISA2-320)', () => {
+  it('reads XAVIER_JEV_TIMEOUT_MS, defaults to 5000, explicit option wins', () => {
+    const prev = process.env.XAVIER_JEV_TIMEOUT_MS;
+    try {
+      delete process.env.XAVIER_JEV_TIMEOUT_MS;
+      assert.equal(new JevProvider({ apiKey: 'k' }).timeoutMs, 5000);
+      process.env.XAVIER_JEV_TIMEOUT_MS = '30000';
+      assert.equal(new JevProvider({ apiKey: 'k' }).timeoutMs, 30000);
+      assert.equal(new JevProvider({ apiKey: 'k', timeoutMs: 1234 }).timeoutMs, 1234);
+    } finally {
+      if (prev === undefined) delete process.env.XAVIER_JEV_TIMEOUT_MS; else process.env.XAVIER_JEV_TIMEOUT_MS = prev;
+    }
+  });
+});
