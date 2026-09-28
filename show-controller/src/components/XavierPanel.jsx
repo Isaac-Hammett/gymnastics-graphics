@@ -152,10 +152,18 @@ export default function XavierPanel({ socket, compId }) {
               className={`px-2 py-1 text-xs ${m.id === mode ? (m.id === 'auto' || m.id === 'full' ? 'bg-amber-600 text-white' : 'bg-emerald-600 text-white') : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'}`}
             >
               {m.label}
+              {m.id === mode && control?.ladderUnverified && (
+                <span className="ml-1 text-[10px] uppercase" data-testid="xavier-toggle-ladder-unverified">ladder unverified</span>
+              )}
             </button>
           ))}
         </div>
       </div>
+      {control?.ladderUnverified && (
+        <div className="text-xs text-amber-400" data-testid="xavier-ladder-unverified" title="Shakespeare is running and its brief is not approved. Approve the brief to let Xavier act.">
+          Ladder unverified: {mode === 'full' ? 'Full' : 'Auto'} is holding to suggestions until the Shakespeare brief is approved.
+        </div>
+      )}
       <AutoActivity control={control} />
       {running && !status.ok && (
         <div className="text-xs text-amber-400">{STATUS_TEXT[status.reason] || status.message || 'Xavier is unavailable'}</div>

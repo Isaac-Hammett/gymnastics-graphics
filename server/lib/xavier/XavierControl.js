@@ -22,6 +22,12 @@
  * refusal is logged and broadcast, and the same recommendation is never tried
  * again (Xavier can never force).
  *
+ * Shakespeare gate (ISA2-336): while `competitions/{compId}/shakespeare/status/engine`
+ * exists and is not `off`, auto and full also need `shakespeare/brief/status` to be
+ * `approved`. Without that the recommendation stays a suggestion, the refusal is logged
+ * like a guardrail refusal (rule `ladder-unverified`), and the toggle shows "ladder
+ * unverified". With the engine off or absent nothing changes.
+ *
  * Every execution attempt becomes a decision record (`outcome: 'auto'` when it
  * ran), passed to `onDecision` for the decision log and broadcast as `xavier:auto`.
  */
@@ -33,6 +39,12 @@ import { isXavierSender } from '../guardrails.js';
 export const XAVIER_MODES = ['off', 'suggest', 'auto', 'full'];
 export const AUTO_SENDER = 'xavier-auto';
 export const XAVIER_CONFIG_PATH = (compId) => `competitions/${compId}/config/xavier`;
+export const SHAKESPEARE_ENGINE_PATH = (compId) => `competitions/${compId}/shakespeare/status/engine`;
+export const SHAKESPEARE_BRIEF_STATUS_PATH = (compId) => `competitions/${compId}/shakespeare/brief/status`;
+export const LADDER_UNVERIFIED = Object.freeze({
+  rule: 'ladder-unverified',
+  reason: 'Shakespeare is running and its brief is not approved',
+});
 export const DEFAULT_XAVIER_CONFIG = Object.freeze({
   mode: 'off',
   thresholds: Object.freeze({ scene: 0.92, graphic: 0.8 }),
@@ -128,6 +140,8 @@ export class XavierControl extends EventEmitter {
     this._bus = null;
     this._ref = null;
     this._listener = null;
+    this._shakespeareRefs = [];
+    this._shakespeare = { engine: null, briefStatus: null };
 
     this._onRecommendations = (payload) => this.handleRecommendations(payload);
     this._onExecuted = (rec) => { if (!isXavierSender(rec?.sender)) this.producerAction(`command ${rec?.actionId} from ${rec?.sender}`); };
@@ -148,12 +162,38 @@ export class XavierControl extends EventEmitter {
     this._ref.on('value', this._listener, (err) => {
       this._log(`[XavierControl:${this.compId}] config listener failed, keeping current config: ${err.message}`);
     });
+    for (const [path, key] of [[SHAKESPEARE_ENGINE_PATH(this.compId), 'engine'], [SHAKESPEARE_BRIEF_STATUS_PATH(this.compId), 'briefStatus']]) {
+      const ref = db.ref(path);
+      const cb = (snap) => this.setShakespeare({ [key]: snap?.val?.() ?? null });
+      ref.on('value', cb, (err) => {
+        this._log(`[XavierControl:${this.compId}] ${path} listener failed: ${err.message}`);
+      });
+      this._shakespeareRefs.push({ ref, cb });
+    }
+  }
+
+  /** Apply Shakespeare's engine or brief status (from Firebase, or tests). */
+  setShakespeare(patch) {
+    const before = this.ladderUnverified();
+    this._shakespeare = { ...this._shakespeare, ...patch };
+    if (before !== this.ladderUnverified()) {
+      if (this.ladderUnverified()) this.cancelPending('ladder unverified');
+      this._broadcastState();
+    }
+  }
+
+  /** True when Shakespeare is running and its brief is not approved: auto and full are held to suggest. */
+  ladderUnverified() {
+    const { engine, briefStatus } = this._shakespeare;
+    return !!engine && engine !== 'off' && briefStatus !== 'approved';
   }
 
   stop() {
     if (this._ref && this._listener) this._ref.off('value', this._listener);
     this._ref = null;
     this._listener = null;
+    for (const { ref, cb } of this._shakespeareRefs) ref.off('value', cb);
+    this._shakespeareRefs = [];
     this.cancelPending('stopped');
     this._service?.off?.('recommendations', this._onRecommendations);
     this._detachBus();
@@ -186,6 +226,7 @@ export class XavierControl extends EventEmitter {
       compId: this.compId,
       ...this.getConfig(),
       configErrors: [...this._configErrors],
+      ladderUnverified: this.ladderUnverified() && (this._config.mode === 'auto' || this._config.mode === 'full'),
       cooldownUntil: this._cooldownUntil > now ? this._cooldownUntil : null,
       pending: this._pending ? { ...this._pending.record } : null,
       recent: this._recent.map(r => ({ ...r })),
@@ -267,6 +308,7 @@ export class XavierControl extends EventEmitter {
     const probability = Number(rec.probability) || 0;
     const base = { rec, kind, threshold: threshold ?? null, probability };
     if (!kind) return { ...base, execute: false, reason: 'unknown action type' };
+    if (this.ladderUnverified()) return { ...base, execute: false, reason: 'ladder unverified', ladder: true };
     if (payload.holdProbability != null && payload.holdProbability >= probability) {
       return { ...base, execute: false, reason: 'hold is more likely' };
     }
@@ -279,6 +321,7 @@ export class XavierControl extends EventEmitter {
   /** Called with every `recommendations` payload from the service. */
   handleRecommendations(payload) {
     const d = this.decide(payload);
+    if (d.ladder) return this._refuseLadder(d, payload);
     if (!d.execute) return d;
     const { rec } = d;
     if (this._handled.has(rec.recommendationId)) return { ...d, execute: false, reason: 'already handled' };
@@ -311,12 +354,37 @@ export class XavierControl extends EventEmitter {
     return { ...d, pending: record };
   }
 
+  /** Auto/full blocked by an unapproved Shakespeare brief: log it once per recommendation, like a guardrail refusal. */
+  _refuseLadder(d, payload) {
+    const { rec } = d;
+    if (this._handled.has(rec.recommendationId)) return { ...d, reason: 'already handled' };
+    this._handled.add(rec.recommendationId);
+    this._finish({
+      recommendationId: rec.recommendationId,
+      actionId: rec.actionId,
+      label: rec.label || rec.actionId,
+      kind: d.kind,
+      confidence: d.probability,
+      threshold: d.threshold,
+      mode: this._config.mode,
+      sender: AUTO_SENDER,
+      trigger: rec.trigger ?? payload.trigger ?? null,
+      stateVersion: payload.stateVersion ?? null,
+      decidedAt: this._now(),
+      outcome: 'refused',
+      error: null,
+      guardrail: { ...LADDER_UNVERIFIED },
+    });
+    return d;
+  }
+
   async _run(record) {
     if (this._pending?.record.recommendationId !== record.recommendationId) return;
     this._pending = null;
     const { mode } = this._config;
     if (mode !== 'auto' && mode !== 'full') return this._finish({ ...record, outcome: 'cancelled', reason: `mode ${mode}` });
     if (this.inCooldown()) return this._finish({ ...record, outcome: 'cancelled', reason: 'cooldown' });
+    if (this.ladderUnverified()) return this._finish({ ...record, outcome: 'refused', guardrail: { ...LADDER_UNVERIFIED } });
     const bus = this.attachBus();
     if (!bus) return this._finish({ ...record, outcome: 'failed', error: 'no_action_bus' });
     let ack;
