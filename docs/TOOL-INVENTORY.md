@@ -1,11 +1,11 @@
 # Tool inventory
 
-Generated 2026-09-10 from SYSTEM-OVERVIEW.md, docs/system-map/, and the live Firebase evidence they cite. Companion CSV: docs/tool-inventory.csv, 144 feature rows. Reliability follows the survey, never PRD status lines. Stream types are inferred throughout (lite: graphics and scoring; full: rundown, OBS, talent; championship: full plus themes, sponsors, composites, sessions; open: offline clip show).
+Generated 2026-09-10 from SYSTEM-OVERVIEW.md, docs/system-map/, and the live Firebase evidence they cite. Companion CSV: docs/tool-inventory.csv, 151 feature rows. Reliability follows the survey, never PRD status lines. Stream types are inferred throughout (lite: graphics and scoring; full: rundown, OBS, talent; championship: full plus themes, sponsors, composites, sessions; open: offline clip show).
 
 ## 1. Summary
 
-- 144 feature rows across 19 systems: proven 45, built 47, partial 32, legacy 3, orphaned 17.
-- 31 rows assume gymnastics; eight of 19 systems are bound, all through the competition model's apparatus and format rules.
+- 151 feature rows across 19 systems (the CSV also carries Producer View surface rows): proven 45, built 54, partial 32, legacy 3, orphaned 17.
+- 35 rows assume gymnastics; eight of 19 systems are bound, all through the competition model's apparatus and format rules.
 - Proven core: coordinator, competition model, teams database, RTN stats, legacy graphics with themes and sponsors, the rundown engine, and the checklist. The stage engine, VM pool, and OBS remote are complete but unproven; the rest is partial.
 - Gap 1: clip playout never ran LIVE; its last WCGNIC heartbeat was fallback mode about 15 hours before first pixel (playoutEngine.js:155,1030; Firebase wcgnic-2026-prelim1/production/engineHeartbeat).
 - Gap 2: the scoring feed writes bare arrays while the stage block waits for a rows envelope never implemented, so the new leaderboards render empty (scoringIngestionService.js:1132; stage/blocks/leaderboard-table.js:146-152).
@@ -37,6 +37,8 @@ One Node process hosts every server-side tool and fans state out over sockets. P
 | Action bus (scene and graphic actions) | One path for scene and graphic commands with acks and guardrail checks | socket event | built |
 | Competition state service (typed event stream) | Ingests Virtius or recorded logs, emits confidence-rated events | socket event | built |
 | Guardrails (action enforcement rules) | Four rules refuse risky actions unless forced by a human | config file | built |
+| Jev decision service (TypeSafe AI) | Asks a TypeSafe Jev model what the broadcast should do next and returns ranked recommendations (Suggest mode only; never run with a real key) | socket event | built |
+| Jev recommendation panel and mode toggle (Producer View widget) | Shows up to 3 recommendations with Take, Dismiss, and an Off/Suggest toggle | UI button | built |
 
 Depends on: Firebase Admin credential, AWS EC2, PM2, Virtius API. Gaps: no server auth; wake path dead; no /health; noCutDuringRoutine rule inert without routine state; Producer View doesn't show guardrail refusals. Workbook: prod-live, gfx-delivery.
 

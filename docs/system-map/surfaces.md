@@ -111,6 +111,7 @@
 | `GraphicsControl` | `components/GraphicsControl.jsx` (49,085 bytes) | Graphics rendering (+ Sponsors, Themes) | Trigger any graphic — writes `competitions/{compId}/currentGraphic`, reads `customGraphics`, `themes/{theme}/sponsors` |
 | Connected Clients | inline `ProducerView.jsx:1474-1503` | Coordinator server | See producer/talent sockets |
 | Show Stats (Status / Talent Controls / OBS) | inline `ProducerView.jsx:1505-1535` | Rundown + OBS integration | At-a-glance state |
+| `XavierPanel` (Jev recommendation widget) | `components/XavierPanel.jsx`, `hooks/useXavier.js` | Coordinator server (Jev decision service) | Up to 3 ranked recommendations with probability bars, trigger context and guardrail warnings; **Take** fires the action through the action bus as `xavier-suggest`, **Dismiss** removes the card from the view; mode toggle Off / Suggest (Auto and Full buttons disabled). Built (ISA2-276); never shown with real recommendations because no `TYPESAFE_API_KEY` has been configured |
 | `PlayoutStatusBar` | `components/playout/PlayoutStatusBar.jsx` | Clip playout | NOW / NEXT / QUEUE cards, mode badge, coordinator heartbeat, preload state |
 | `CameraStatusPanel` | `components/playout/CameraStatusPanel.jsx` | Clip playout | Force a camera with keyboard hints |
 | `PlayoutControls` | `components/playout/PlayoutControls.jsx` | Clip playout | Pause / Skip / Force / Stop / Release override |
