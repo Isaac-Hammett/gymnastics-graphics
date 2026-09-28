@@ -1,0 +1,63 @@
+{
+  "_note": "Registry fixtures for the six ECAC 2026 teams. urlStatus 'unverified' means the URL follows the Sidearm Sports pattern but was not confirmed by hand (ISA2-329 ran with the team sites blocked). Confirm them with the online test, then flip to 'verified'.",
+  "navy": {
+    "teamKey": "navy", "name": "Navy", "site": "navysports.com", "urlStatus": "unverified",
+    "robotsTxt": "https://navysports.com/robots.txt",
+    "registry": {
+      "bioUrl": "https://navysports.com/sports/mens-gymnastics/roster",
+      "bioUrlPattern": "https://navysports.com/sports/mens-gymnastics/roster/{slug}",
+      "recapArchiveUrl": "https://navysports.com/sports/mens-gymnastics/schedule",
+      "notes": "Sidearm Sports site. Roster page lists athletes; bio slugs are firstname-lastname plus a numeric id."
+    }
+  },
+  "william-and-mary": {
+    "teamKey": "william-and-mary", "name": "William & Mary", "site": "tribeathletics.com", "urlStatus": "unverified",
+    "robotsTxt": "https://tribeathletics.com/robots.txt",
+    "registry": {
+      "bioUrl": "https://tribeathletics.com/sports/mens-gymnastics/roster",
+      "bioUrlPattern": "https://tribeathletics.com/sports/mens-gymnastics/roster/{slug}",
+      "recapArchiveUrl": "https://tribeathletics.com/sports/mens-gymnastics/schedule",
+      "notes": "Sidearm Sports site. Older seasons via the schedule page season selector."
+    }
+  },
+  "simpson": {
+    "teamKey": "simpson", "name": "Simpson", "site": "simpsonsports.com", "urlStatus": "unverified",
+    "robotsTxt": "https://simpsonsports.com/robots.txt",
+    "registry": {
+      "bioUrl": "https://simpsonsports.com/sports/mens-gymnastics/roster",
+      "bioUrlPattern": "https://simpsonsports.com/sports/mens-gymnastics/roster/{slug}",
+      "recapArchiveUrl": "https://simpsonsports.com/sports/mens-gymnastics/schedule",
+      "notes": "Host is a guess: confirm which Simpson (University, Redding CA vs College, Iowa) fields the men's program before trusting this entry."
+    }
+  },
+  "army": {
+    "teamKey": "army", "name": "Army", "site": "goarmywestpoint.com", "urlStatus": "unverified",
+    "robotsTxt": "https://goarmywestpoint.com/robots.txt",
+    "registry": {
+      "bioUrl": "https://goarmywestpoint.com/sports/mens-gymnastics/roster",
+      "bioUrlPattern": "https://goarmywestpoint.com/sports/mens-gymnastics/roster/{slug}",
+      "recapArchiveUrl": "https://goarmywestpoint.com/sports/mens-gymnastics/schedule",
+      "notes": "Sidearm Sports site. Home team at the 2026 ECAC meet (Gross Center, West Point)."
+    }
+  },
+  "greenville": {
+    "teamKey": "greenville", "name": "Greenville", "site": "greenvilleathletics.com", "urlStatus": "unverified",
+    "robotsTxt": "https://greenvilleathletics.com/robots.txt",
+    "registry": {
+      "bioUrl": "https://greenvilleathletics.com/sports/mens-gymnastics/roster",
+      "bioUrlPattern": "https://greenvilleathletics.com/sports/mens-gymnastics/roster/{slug}",
+      "recapArchiveUrl": "https://greenvilleathletics.com/sports/mens-gymnastics/schedule",
+      "notes": "Host is a guess; Greenville University (IL). Confirm the athletics domain."
+    }
+  },
+  "springfield": {
+    "teamKey": "springfield", "name": "Springfield", "site": "springfieldcollegepride.com", "urlStatus": "unverified",
+    "robotsTxt": "https://springfieldcollegepride.com/robots.txt",
+    "registry": {
+      "bioUrl": "https://springfieldcollegepride.com/sports/mens-gymnastics/roster",
+      "bioUrlPattern": "https://springfieldcollegepride.com/sports/mens-gymnastics/roster/{slug}",
+      "recapArchiveUrl": "https://springfieldcollegepride.com/sports/mens-gymnastics/schedule",
+      "notes": "Sidearm Sports site. Springfield College Pride."
+    }
+  }
+}

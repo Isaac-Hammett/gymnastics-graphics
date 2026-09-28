@@ -1,0 +1,21 @@
+{
+  "actorId": "ath:example athlete",
+  "facts": [
+    {
+      "id": "fact-001",
+      "type": "accolade",
+      "text": "Named to the all-conference first team in 2025.",
+      "date": "2025-04",
+      "source": { "url": "https://navysports.com/sports/mens-gymnastics/roster/example-athlete", "title": "Example Athlete bio", "fetchedAt": "2026-09-28T00:00:00Z", "quote": "all-conference first team" },
+      "confidence": 0.9,
+      "polarity": "positive",
+      "extractedBy": "model",
+      "verified": { "by": "isaac", "at": 1790000000000 }
+    }
+  ],
+  "socials": [
+    { "platform": "instagram", "handle": "example_athlete", "url": "https://www.instagram.com/example_athlete/", "public": true, "lastChecked": "2026-09-28T00:00:00Z" }
+  ],
+  "sourceRegistry": { "bioUrl": "https://navysports.com/sports/mens-gymnastics/roster/example-athlete" },
+  "updatedAt": "2026-09-28T00:00:00Z"
+}

@@ -1,0 +1,18 @@
+{
+  "actorId": "army",
+  "facts": [
+    {
+      "id": "army-fact-001",
+      "type": "history",
+      "text": "Army hosted the 2026 ECAC Championships at the Gross Center in West Point, NY.",
+      "date": "2026-04-04",
+      "source": { "url": "https://goarmywestpoint.com/sports/mens-gymnastics/schedule", "title": "Army Men's Gymnastics schedule", "fetchedAt": "2026-09-28T00:00:00Z", "quote": "ECAC Championships, Gross Center" },
+      "confidence": 0.7,
+      "polarity": "neutral",
+      "extractedBy": "human"
+    }
+  ],
+  "socials": [],
+  "sourceRegistry": { "bioUrl": "https://goarmywestpoint.com/sports/mens-gymnastics/roster", "recapArchiveUrl": "https://goarmywestpoint.com/sports/mens-gymnastics/schedule", "notes": "fixture" },
+  "updatedAt": "2026-09-28T00:00:00Z"
+}
