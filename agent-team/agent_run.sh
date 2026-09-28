@@ -288,6 +288,7 @@ build_prompt() {
   echo "- Your working directory: $WORKDIR (a git worktree; stay inside it)"
   echo "- Agent-team dir: $TEAM_DIR · board CLI: python3 $TEAM_DIR/tools/linear.py · store CLI: python3 $TEAM_DIR/tools/store.py"
   echo "- Answer file: $RUNS/$KEY.answer.md"
+  echo "- Temp files (ticket descriptions, test output): name them \$TMPDIR/$KEY-<name>. Other runs share the temp dir; a bare name like fix.md gets overwritten by another agent."
   echo "- Test competition (the only Firebase path you may write under): competitions/${TEST_COMP_ID:-UNSET}/"
   if [ -n "${GG_API_PORT:-}" ]; then
     echo "- **Servers are already running for you, outside your sandbox** (your own Bash cannot reach Firebase, the VM, or Linear; these can):"
