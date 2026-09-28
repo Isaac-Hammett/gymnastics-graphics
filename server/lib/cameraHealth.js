@@ -46,6 +46,7 @@ class CameraHealthMonitor extends EventEmitter {
   constructor(config) {
     super();
 
+    // An empty object means "not configured" (index.js passes {}), so no host default.
     this.nimbleServer = config.nimbleServer || {
       host: 'localhost',
       statsPort: 8086,
@@ -58,6 +59,9 @@ class CameraHealthMonitor extends EventEmitter {
     // Internal state
     this._pollTimer = null;
     this._isRunning = false;
+    this._polling = false;          // a poll is in flight; never overlap
+    this._failStreak = 0;           // consecutive Nimble fetch failures
+    this._skipUntil = 0;            // back-off: no fetch before this time
     this._cameraStates = new Map();
     this._lastStatusChange = new Map();
 
@@ -255,12 +259,30 @@ class CameraHealthMonitor extends EventEmitter {
    */
   async pollHealth() {
     if (!this._isRunning) return;
+    // Overlapping polls pile up hung connects in the process (ISA2-325).
+    if (this._polling) return;
+    // Backing off after repeated failures: skip this tick.
+    if (Date.now() < this._skipUntil) return;
+    this._polling = true;
+    try {
+      return await this._pollHealthOnce();
+    } finally {
+      this._polling = false;
+    }
+  }
 
+  async _pollHealthOnce() {
     let nimbleStats = null;
 
     try {
       nimbleStats = await this.fetchNimbleStats();
+      this._failStreak = 0;
+      this._skipUntil = 0;
     } catch (error) {
+      this._failStreak++;
+      // Exponential back-off while Nimble is unreachable: 2s, 4s, ... capped at 60s.
+      const backoff = Math.min(this.pollInterval * 2 ** this._failStreak, 60000);
+      this._skipUntil = Date.now() + backoff;
       this.emit('error', error);
       // Continue with null stats - cameras will be marked as reconnecting/offline
     }
@@ -315,6 +337,12 @@ class CameraHealthMonitor extends EventEmitter {
    */
   start() {
     if (this._isRunning) {
+      return;
+    }
+
+    // No Nimble host configured: nothing to poll. Do not fetch http://undefined:...
+    if (!this.nimbleServer.host) {
+      this.emit('disabled', 'no nimbleServer.host configured');
       return;
     }
 
