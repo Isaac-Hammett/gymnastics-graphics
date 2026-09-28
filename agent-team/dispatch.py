@@ -388,6 +388,11 @@ def finalize(key: str, by_id: dict, state: dict):
             run_sync()
         elif "FAIL" in verdict:
             blockers = [] if DRY else open_fix_blockers(t)
+            if not blockers and not DRY:
+                # The verifier's fix ticket may have been posted from the outbox a second ago; Linear can take a
+                # moment to show its `blocks` relation (ISA2-310/312, 2026-09-27). Look once more before retrying.
+                time.sleep(env_int("FIX_RELATION_WAIT_S", 6))
+                blockers = open_fix_blockers(t)
             if not blockers and not DRY and retry_verify(t, key, state, "FAIL without a fix ticket"):
                 pass
             elif blockers or DRY:
