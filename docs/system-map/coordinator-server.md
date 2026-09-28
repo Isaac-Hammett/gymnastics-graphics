@@ -42,7 +42,9 @@
 - **Acks** every command as `{ok, actionId, error, guardrail}`. Error codes: `no_action_id`, `unknown_action`, `obs_not_connected`, `obs_call_failed`, `obs_timeout`, `not_confirmed`, `firebase_unavailable`, `firebase_timeout`, `firebase_write_failed`, `guardrail`. Every OBS and Firebase call on the socket path is bounded — Firebase Admin without valid credentials never settles a read, which would otherwise hang the ack forever.
 - **Observes without rerouting.** Listens to the connection manager's forwarded `obsEvent`/`CurrentProgramSceneChanged` and to `currentGraphic`, and attributes each change to `bus` or `human` (3 s window after a bus write) so guardrails and the decision log know what the producer did. Guardrails are pluggable (`addGuardrail`); the bus ships with none.
 
-**Still a follow-up:** the rundown engine, the ProducerView scene buttons, and GraphicsControl continue to write `currentGraphic` and switch scenes on their own paths. The bus is additive so far.
+**Writers on the action bus (ISA2-281, 2026-09-27):** timesheetEngine `_applyTransitionAndSwitchScene`, `_triggerGraphic`, `overrideScene`, `overrideCamera`, index.js `overrideScene`, `switchScene`, and GraphicsControl `sendGraphic`/`clearGraphic` (as `action:execute` with `params.manual`). See ISA2-281 answer for the routing and the new `buildManualGraphicPayload` function.
+
+**Still off the bus:** playout engine, Who-to-Watch sequencer, rotation slate, event summary, custom graphic sends, OBS `createScene` temporary switch.
 
 **Socket events:**
 `emits:` action:catalog, action:executed (to `competition:{compId}`), connected, shutdownPending, shutdownCancelled, shutdownExecuting, serverShuttingDown, stateUpdate, vmPoolStatus, cameraHealth, cameraStatusChanged (124 distinct emit names total across index.js)

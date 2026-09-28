@@ -46,6 +46,8 @@
 - Firebase Realtime Database (`gymnastics-graphics-default-rtdb`) — config baked into output.html:7503 and stage.html:40
 - Google Fonts — Inter / Inter Tight / Roboto Mono / JetBrains Mono / Poppins
 
+**Recording package loader (ISA2-294, 2026-09-27) — tile geometry timeline for recorded broadcast playback.** The stage engine can play back a recorded show using tile geometry queries to position graphics correctly over the recorded video. `server/lib/recordings/recordingPackage.js` loads a per-recording package from `recordings/{name}/` (directory containing `meta.json`, `virtius-final.json`, and optional `events.jsonl`) with the API: `loadRecordingPackage(name)` returns `{meta, virtiusFinal, events, tileFor(event, tMs)}`, plus list/load functions for individual files. `layoutTimeline` in meta.json is an array of entries `{fromMs, layout, tiles, tickerRect, note}`, each entry a contiguous time window where the OBS layout is fixed; `tileFor(event, tMs)` returns the tile box for an event's apparatus at a timestamp, or null if cutaways or no-tile windows overlap. **Tile geometry caveats:** 3x2 layout tiles are NOT equal thirds (columns split at x=582/970, rows at y=332, measured by edge detection); 2x2 has ~28px margin (x 28-1252, y 8-628); tickerRect is {0,630,1280,90}. Cutaways (full-screen leaderboards, single cam, 2-panel, 5-tile) are not modeled in the timeline, so `tileFor()` may return a box not on screen during those moments. **Evidence:** ECAC 2026 recording metadata generated and verified with screenshots (ISA2-294 answer, `docs/verification/ISA2-294/`).
+
 **Depends on:**
 - Themes — direct import (`overlays/theme-loader.js`, 1,677 lines, loaded by output.html and 27 of 29 overlays) + Firebase `themes/{themeId}`; `GraphicsControl` calls `resolveTheme()` and bakes the result into the stage payload
 - Scoring feed — Firebase `competitions/{compId}/scoring/leaderboard/{apparatus}` written by `server/lib/scoringIngestionService.js`; the only data source for all 11 stage graphics
@@ -54,6 +56,7 @@
 - Sponsors — sponsor arrays resolved in `GraphicsControl` from `themes/{id}/sponsors` and `useTeamsDatabase`, passed as a JSON URL param to the three sponsor overlays
 - Who to Watch — Firebase `currentGraphic` writes from the server sequencer (`server/index.js:878`) that drive `who-to-watch-title` and the WTW clip lower-third
 - Clip playout — Firebase `currentGraphic` (`clip-playback`/`moment-replay`) plus `production/engineHeartbeat`; output.html `mode=clip` is the video surface
+- Recording package — `server/lib/recordings/recordingPackage.js` for tile geometry lookups in recorded-show playback
 
 **Used by:**
 - Producer View (surface) — `show-controller/src/views/ProducerView.jsx:1472` renders `GraphicsControl`
