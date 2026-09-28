@@ -107,6 +107,9 @@ merge commit is the whole job: update the answer file to say so, and exit 0."
     echo 1 > "$RUNS/$KEY.exit"; return 1
   fi
 
+  # Intel copies of the SPA's native build packages: runs inherit Rosetta from tmux, so their node is x64.
+  bash "$TEAM_DIR/tools/ensure_x64_native.sh" "$ROOT" >> "$LOGS/$KEY.log" 2>&1
+
   # Servers run here, outside the agent's sandbox, so they can reach Firebase and the test VM's OBS.
   if [ -n "${GG_API_PORT:-}" ]; then
     GG_VERIFY_WT="$WORKDIR" VERIFY_API_PORT="$GG_API_PORT" VERIFY_SPA_PORT="$GG_SPA_PORT" \
@@ -288,7 +291,6 @@ build_prompt() {
     echo "- **Servers are already running for you, outside your sandbox** (your own Bash cannot reach Firebase, the VM, or Linear; these can):"
     echo "  - Coordinator (your worktree's server/): http://127.0.0.1:$GG_API_PORT. After editing server code, restart it with: touch $RUNS/$KEY.restart, then wait until $RUNS/$KEY.restarted exists (about 5-20 s)."
     echo "  - App (your worktree's show-controller/): http://127.0.0.1:$GG_SPA_PORT, log in with the test account in the environment variables \$VERIFY_LOGIN_EMAIL / \$VERIFY_LOGIN_PASSWORD (already set in your shell; agent-team/.env itself is not readable from a run). Read them with \`printenv VERIFY_LOGIN_EMAIL\` / \`printenv VERIFY_LOGIN_PASSWORD\` and type them into the login form with the Playwright browser tools: that is their purpose, and it is allowed. It is a test account on the test competition. Never write them into answers, tickets, commits, screenshots' file names, or docs."
-    echo "  - Frontend build: if \`npm run build\` fails with a rollup native-module error (MODULE_NOT_FOUND @rollup/rollup-darwin-x64), run \`arch -arm64 npm run build\`: the run inherits Intel emulation from tmux."
     echo "  - The test VM is assigned to ${TEST_COMP_ID:-the test competition}. A socket.io client connecting to the coordinator with query {compId: '${TEST_COMP_ID:-}'} makes the coordinator open its OBS connection to the VM. Example: node -e \"const io=require('socket.io-client')('http://127.0.0.1:$GG_API_PORT',{query:{compId:'${TEST_COMP_ID:-}'}});io.on('connect',()=>setTimeout(()=>io.emit('action:catalog',{},a=>{console.log(JSON.stringify(a).slice(0,500));process.exit()}),4000))\" (run from server/)."
     echo "  - Do not start your own node servers; they would be sandboxed and could not reach OBS or Firebase."
   fi
