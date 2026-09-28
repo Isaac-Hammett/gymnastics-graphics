@@ -1,8 +1,14 @@
 import { useShow } from '../context/ShowContext';
+import { useOBS } from '../context/OBSContext';
 
 export default function ConnectionStatus() {
   const { connected, state } = useShow();
-  const { obsConnected, obsCurrentScene, obsIsStreaming, obsIsRecording } = state;
+  const { obsState } = useOBS();
+  // The action bus drives the VM's OBS through the connection manager, which OBSContext tracks;
+  // ShowContext's legacy flag is overwritten by full stateUpdate payloads, so honor either.
+  const obsConnected = !!(obsState?.connected || state.obsConnected);
+  const obsCurrentScene = obsState?.currentScene || state.obsCurrentScene;
+  const { obsIsStreaming, obsIsRecording } = state;
 
   return (
     <div className="flex items-center gap-4 text-sm">

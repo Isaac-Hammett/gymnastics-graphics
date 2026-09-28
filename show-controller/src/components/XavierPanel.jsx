@@ -78,7 +78,7 @@ const STATUS_TEXT = {
   bad_response: 'Jev sent an unusable reply'
 };
 
-function Card({ rec, result, onTake, onDismiss }) {
+function Card({ rec, result, ran, onTake, onDismiss }) {
   const pct = Math.round((rec.probability || 0) * 100);
   const warning = result?.guardrail || rec.guardrail;
   return (
@@ -101,6 +101,9 @@ function Card({ rec, result, onTake, onDismiss }) {
           {result.ok ? 'Done' : `Not run: ${result.guardrail ? 'blocked by guardrail' : (result.error || 'failed')}`}
         </div>
       )}
+      {ran ? (
+        <div className="text-xs text-emerald-400" data-testid="xavier-ran">Ran</div>
+      ) : (
       <div className="flex gap-2">
         <button
           onClick={() => onTake(rec)}
@@ -116,13 +119,14 @@ function Card({ rec, result, onTake, onDismiss }) {
           Dismiss
         </button>
       </div>
+      )}
     </div>
   );
 }
 
 /** Xavier recommendations, mode toggle, and auto activity for Producer View (ISA2-276, ISA2-277). */
 export default function XavierPanel({ socket, compId }) {
-  const { running, mode, control, status, recommendations, results, setMode, take, dismiss } = useXavier(socket, compId);
+  const { running, mode, control, status, recommendations, results, ranIds, setMode, take, dismiss } = useXavier(socket, compId);
 
   return (
     <div className="bg-zinc-900 rounded-lg border border-zinc-800 p-3 space-y-3" data-testid="xavier-panel">
@@ -150,7 +154,7 @@ export default function XavierPanel({ socket, compId }) {
         <div className="text-xs text-zinc-500">Watching the meet. No suggestions right now.</div>
       )}
       {running && recommendations.map(rec => (
-        <Card key={rec.recommendationId} rec={rec} result={results[rec.recommendationId]} onTake={take} onDismiss={dismiss} />
+        <Card key={rec.recommendationId} rec={rec} result={results[rec.recommendationId]} ran={!!ranIds[rec.recommendationId]} onTake={take} onDismiss={dismiss} />
       ))}
     </div>
   );
