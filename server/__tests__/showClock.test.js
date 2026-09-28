@@ -45,7 +45,7 @@ function fakeObs(wall, { drift = 1, keyframeMs = 6000 } = {}) {
 }
 
 const comparable = (state) => {
-  const { stateVersion, _scores, _totals, _digest, ...rest } = state;
+  const { stateVersion, _scores, _details, _lineups, _totals, _digest, ...rest } = state;
   return JSON.parse(JSON.stringify(rest));
 };
 

@@ -4946,6 +4946,9 @@ io.on('connection', async (socket) => {
       }
       if (!sessionId) return reply({ ok: false, error: 'no_virtius_session_id' });
       const svc = getOrCreateCompetitionState(compId, { io, emitInitial: !!opts.emitInitial });
+      // Team keys come from config.team{N}Key, never from team names (ISA2-333).
+      const cfgSnap = await productionConfigService.getDb().ref(`competitions/${compId}/config`).once('value');
+      svc.setConfig(cfgSnap.val());
       const logPath = opts.logToFile
         ? join(__dirname, 'logs', `virtius-poll-${compId}-${Date.now()}.jsonl`)
         : null;

@@ -41,7 +41,7 @@ export const STALE = {
 };
 
 export const EVENT_TYPES = [
-  'athleteUp', 'greenLight', 'routineEnded', 'scorePosted',
+  'lineupPosted', 'athleteUp', 'greenLight', 'routineEnded', 'scorePosted',
   'scoreCorrected', 'rotationChanged', 'teamTotalChanged'
 ];
 
@@ -58,6 +58,54 @@ function normalizeName(name) {
   return String(name || '').toLowerCase().replace(/\s+/g, ' ').trim();
 }
 
+const LINEUP_ROLES = { 1: 'lineup', 0: 'individual' };
+
+/** Virtius `type`: 1 is a lineup athlete, 0 an individual who never counts. */
+export function lineupRoleOf(type) {
+  const n = type == null || type === '' ? null : Number(type);
+  return LINEUP_ROLES[n] || 'unknown';
+}
+
+/**
+ * Match a Virtius team to `config.team{N}Key`: by `team{N}Tricode` first, then by
+ * Virtius `team_order` === N. Never derived from the team name. Null when the
+ * config has no match (callers fall back to the tricode).
+ */
+export function resolveTeamKey(team, config) {
+  if (!config) return null;
+  const tri = team.tricode ? String(team.tricode).toUpperCase() : null;
+  for (let n = 1; n <= 8; n++) {
+    const cfgTri = config[`team${n}Tricode`];
+    if (tri && cfgTri && String(cfgTri).toUpperCase() === tri && config[`team${n}Key`]) return config[`team${n}Key`];
+  }
+  const order = Number(team.team_order);
+  if (Number.isFinite(order) && order > 0 && config[`team${order}Key`]) return config[`team${order}Key`];
+  return null;
+}
+
+function num(raw) {
+  const n = parseScore(raw);
+  return n == null ? null : n;
+}
+
+/** Score components of one Virtius gymnast: final = d + e + bonus - neutral. */
+function scoreParts(g) {
+  const judges = Array.isArray(g.scores) ? g.scores.map(j => ({
+    judge: j.judge_number ?? null, performance: j.performance ?? null,
+    start: num(j.start), score: num(j.score)
+  })) : [];
+  const starts = judges.map(j => j.start).filter(v => v != null);
+  const neutral = num(g.neutral) ?? 0;
+  return {
+    d: starts.length ? starts[0] : null,
+    e: num(g.e_score),
+    nd: neutral,
+    bonus: num(g.bonus) ?? 0,
+    neutral,
+    judges
+  };
+}
+
 function parseScore(raw) {
   if (raw == null || raw === '') return null;
   const n = parseFloat(raw);
@@ -72,12 +120,13 @@ function hasScore(g) {
  * Flatten a raw Virtius payload into the shapes the reducer works on.
  * Accepts { meet: { teams } } or { teams }.
  */
-export function normalizeSnapshot(snapshot) {
+export function normalizeSnapshot(snapshot, config = null) {
   const meet = snapshot?.meet || snapshot || {};
   const teams = (meet.teams || []).map((team, idx) => {
     const key = team.tricode || team.short_name || team.name || `team${idx + 1}`;
     return {
       key,
+      teamKey: resolveTeamKey(team, config) || key,
       name: team.name || key,
       tricode: team.tricode || null,
       total: team.final_score,
@@ -88,6 +137,10 @@ export function normalizeSnapshot(snapshot) {
         code: EVENT_CODES[ev.event_name] || ev.short_name || ev.event_name || null,
         rotation: ev.rotation ?? null,
         gymnasts: (ev.gymnasts || []).map(g => ({
+          gymnastId: g.gymnast_id != null && g.gymnast_id !== '' ? String(g.gymnast_id) : null,
+          nameKey: normalizeName(g.full_name || [g.first_name, g.last_name].filter(Boolean).join(' ')),
+          lineupRole: lineupRoleOf(g.type),
+          parts: scoreParts(g),
           id: g.gymnast_id != null && g.gymnast_id !== ''
             ? String(g.gymnast_id)
             : `${key}|${normalizeName(g.full_name)}`,
@@ -218,6 +271,14 @@ function buildScoreMap(teams) {
   return map;
 }
 
+function buildDetailMap(teams) {
+  const map = {};
+  teams.forEach(t => t.events.forEach(e => e.gymnasts.forEach(g => {
+    if (g.score != null) map[`${t.key}|${e.name}|${g.id}`] = partsOf(g);
+  })));
+  return map;
+}
+
 /**
  * @returns {Array<{kind:'new'|'correction'|'removed',team,event,gymnast,prev,curr}>}
  */
@@ -252,6 +313,8 @@ export function createInitialState() {
     signals: {},         // vision / recorded-log signals, latest per type (step 9)
     freshness: { lastPollT: null, lastChangeT: null, unchangedPolls: 0 },
     _scores: {},
+    _details: {},
+    _lineups: {},
     _totals: {},
     _digest: null
   };
@@ -287,7 +350,31 @@ function computeStandings(teams) {
   });
 }
 
-const athleteRef = (g) => ({ id: g.id, name: g.name, order: g.order });
+const athleteRef = (g) => ({
+  id: g.id, gymnastId: g.gymnastId, nameKey: g.nameKey, name: g.name, order: g.order, lineupRole: g.lineupRole
+});
+
+/** Unit identity: { rotation, locus, teamKey, order } plus a stable string id. */
+export function unitRef(team, ev, g) {
+  const locus = ev.code || ev.name;
+  return {
+    id: `u:${ev.rotation ?? 0}:${locus}:${team.teamKey}:${g.order ?? 0}`,
+    rotation: ev.rotation ?? null, locus, teamKey: team.teamKey, order: g.order ?? null
+  };
+}
+
+const partsOf = (g) => ({ score: g.score, ...g.parts });
+
+/** Units of `team` that count toward its total: scored lineup athletes (top N per event when countPerEvent is set). */
+function countingUnits(team, countPerEvent) {
+  const ids = [];
+  for (const ev of team.events) {
+    let list = ev.gymnasts.filter(g => g.lineupRole === 'lineup' && g.scored);
+    if (countPerEvent) list = [...list].sort((a, b) => b.scoreNum - a.scoreNum).slice(0, countPerEvent);
+    list.forEach(g => ids.push(unitRef(team, ev, g).id));
+  }
+  return ids;
+}
 
 /**
  * Apply one input. Never mutates `state`.
@@ -313,7 +400,7 @@ export function reduce(prevState, input, opts = {}) {
 }
 
 function applySnapshot(state, t, snapshot, events, opts) {
-  const { teams, meetStatus } = normalizeSnapshot(snapshot);
+  const { teams, meetStatus } = normalizeSnapshot(snapshot, opts.config);
   const isBaseline = !state.hasSnapshot;
   const quiet = isBaseline && !opts.emitInitial;
   const stale = staleFactors(state, t);
@@ -324,13 +411,19 @@ function applySnapshot(state, t, snapshot, events, opts) {
   const postedTeamEvents = new Set();
   if (!quiet) {
     for (const c of changes) {
-      const base = { event: c.event.name, eventCode: c.event.code, team: c.team.key, athlete: athleteRef(c.gymnast) };
+      const base = {
+        event: c.event.name, eventCode: c.event.code, team: c.team.key, teamKey: c.team.teamKey,
+        athlete: athleteRef(c.gymnast), unit: unitRef(c.team, c.event, c.gymnast)
+      };
       if (c.kind === 'new') {
         postedTeamEvents.add(`${c.event.name}|${c.team.key}`);
-        events.push(makeEvent('scorePosted', t, { ...base, score: c.curr }, CONFIDENCE.SCORE_POSTED * stale.fact,
+        events.push(makeEvent('scorePosted', t, { ...base, score: c.curr, ...partsOf(c.gymnast) }, CONFIDENCE.SCORE_POSTED * stale.fact,
           [{ kind: 'virtius-score-appeared', value: c.curr }]));
       } else {
-        events.push(makeEvent('scoreCorrected', t, { ...base, score: c.curr, previousScore: c.prev, removed: c.kind === 'removed' },
+        events.push(makeEvent('scoreCorrected', t, {
+          ...base, score: c.curr, ...partsOf(c.gymnast), previousScore: c.prev, removed: c.kind === 'removed',
+          previous: state._details[`${c.team.key}|${c.event.name}|${c.gymnast.id}`] || { score: c.prev }
+        },
           CONFIDENCE.SCORE_CORRECTED * stale.fact,
           [{ kind: c.kind === 'removed' ? 'virtius-score-removed' : 'virtius-score-changed', from: c.prev, to: c.curr }]));
       }
@@ -345,7 +438,8 @@ function applySnapshot(state, t, snapshot, events, opts) {
       const prev = state._totals[tm.key];
       if (state.hasSnapshot && tm.total !== prev && tm.total != null) {
         events.push(makeEvent('teamTotalChanged', t,
-          { team: tm.key, total: tm.total, previousTotal: prev ?? null },
+          { team: tm.key, teamKey: tm.teamKey, total: tm.total, previousTotal: prev ?? null,
+            countingUnits: countingUnits(tm, opts.countPerEvent) },
           CONFIDENCE.TEAM_TOTAL * stale.fact, [{ kind: 'virtius-team-total', from: prev ?? null, to: tm.total }]));
       }
     }
@@ -367,6 +461,7 @@ function applySnapshot(state, t, snapshot, events, opts) {
 
   // --- per event / per team ---
   const nextEvents = {};
+  const nextLineups = { ...state._lineups };
   for (const tm of teams) {
     for (const ev of tm.events) {
       const evState = nextEvents[ev.name] || (nextEvents[ev.name] = { name: ev.name, code: ev.code, rotation: ev.rotation, teams: {} });
@@ -374,11 +469,26 @@ function applySnapshot(state, t, snapshot, events, opts) {
       const ts = computeTeamEvent(tm, ev, rotation, stale, prevTeamState, postedTeamEvents.has(`${ev.name}|${tm.key}`));
       evState.teams[tm.key] = ts;
 
+      if (ev.gymnasts.length > 0) {
+        const lkey = `${tm.key}|${ev.name}`;
+        const sig = JSON.stringify([...ev.gymnasts].sort(byOrder).map(g => [g.id, g.order, g.lineupRole]));
+        if (!quiet && nextLineups[lkey] !== sig) {
+          events.push(makeEvent('lineupPosted', t, {
+            event: ev.name, eventCode: ev.code, team: tm.key, teamKey: tm.teamKey, rotation: ev.rotation,
+            changed: nextLineups[lkey] != null,
+            lineup: [...ev.gymnasts].sort(byOrder).map(g => ({ ...athleteRef(g), unit: unitRef(tm, ev, g) }))
+          }, CONFIDENCE.SCORE_POSTED * stale.fact, [{ kind: 'virtius-lineup', size: ev.gymnasts.length }]));
+        }
+        nextLineups[lkey] = sig;
+      }
+
       const prevId = prevTeamState?.athleteUp?.id ?? null;
       const currId = ts.athleteUp?.id ?? null;
       if (!quiet && currId && currId !== prevId) {
         events.push(makeEvent('athleteUp', t,
-          { event: ev.name, eventCode: ev.code, team: tm.key, athlete: athleteRef(ts.athleteUp), routineStatus: ts.routineStatus },
+          { event: ev.name, eventCode: ev.code, team: tm.key, teamKey: tm.teamKey,
+            athlete: athleteRef(ev.gymnasts.find(g => g.id === currId) || ts.athleteUp),
+            unit: unitRef(tm, ev, ev.gymnasts.find(g => g.id === currId) || ts.athleteUp), routineStatus: ts.routineStatus },
           ts.athleteUp.confidence, ts.athleteUp.evidence));
       }
     }
@@ -387,6 +497,8 @@ function applySnapshot(state, t, snapshot, events, opts) {
 
   // --- bookkeeping ---
   state._scores = buildScoreMap(teams);
+  state._details = buildDetailMap(teams);
+  state._lineups = nextLineups;
   state._totals = newTotals;
   state._digest = digest;
   state.meetStatus = meetStatus;
@@ -410,7 +522,8 @@ function applySnapshot(state, t, snapshot, events, opts) {
 
 function computeTeamEvent(team, ev, rotation, stale, prev, justScored) {
   const lineup = [...ev.gymnasts].sort(byOrder).map(g => ({
-    id: g.id, name: g.name, order: g.order, score: g.score, type: g.type
+    id: g.id, gymnastId: g.gymnastId, nameKey: g.nameKey, name: g.name, order: g.order,
+    score: g.score, type: g.type, lineupRole: g.lineupRole, unitId: unitRef(team, ev, g).id
   }));
   const sorted = [...ev.gymnasts].sort(byOrder);
   const scored = sorted.filter(g => g.scored);
