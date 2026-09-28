@@ -1,11 +1,76 @@
+import { useEffect, useState } from 'react';
 import useXavier from '../hooks/useXavier';
 
 const MODES = [
-  { id: 'off', label: 'Off' },
-  { id: 'suggest', label: 'Suggest' },
-  { id: 'auto', label: 'Auto', disabled: true },
-  { id: 'full', label: 'Full', disabled: true }
+  { id: 'off', label: 'Off', title: 'Xavier is off' },
+  { id: 'suggest', label: 'Suggest', title: 'Suggestions only; you take them' },
+  { id: 'auto', label: 'Auto', title: 'Xavier runs actions that clear the threshold; suggests the rest' },
+  { id: 'full', label: 'Full', title: 'Xavier runs everything it recommends' }
 ];
+
+const OUTCOME_TEXT = {
+  auto: { text: 'Ran', cls: 'text-emerald-400' },
+  refused: { text: 'Blocked by guardrail', cls: 'text-amber-400' },
+  cancelled: { text: 'Cancelled', cls: 'text-zinc-400' },
+  failed: { text: 'Failed', cls: 'text-red-400' }
+};
+
+const pctOf = (p) => `${Math.round((p || 0) * 100)}%`;
+
+/** Seconds left until `until`, ticking once a second while it is in the future. */
+function useSecondsLeft(until) {
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    if (!until || until <= Date.now()) return undefined;
+    const t = setInterval(() => setNow(Date.now()), 500);
+    return () => clearInterval(t);
+  }, [until]);
+  return until && until > now ? Math.ceil((until - now) / 1000) : 0;
+}
+
+/** What Xavier did on its own (ISA2-277): pending action, cooldown, and recent executions. */
+function AutoActivity({ control }) {
+  const cooldownLeft = useSecondsLeft(control?.cooldownUntil);
+  if (!control) return null;
+  const { mode, thresholds = {}, pending, recent = [] } = control;
+  const auto = mode === 'auto' || mode === 'full';
+  const shown = recent.filter(r => r.outcome !== 'cancelled' || r.reason?.startsWith('producer')).slice(0, 5);
+  if (!auto && shown.length === 0) return null;
+  return (
+    <div className="space-y-1.5" data-testid="xavier-auto-activity">
+      {auto && (
+        <div className="text-xs text-zinc-400" data-testid="xavier-mode-line">
+          {mode === 'full'
+            ? 'Full: Xavier runs every action it recommends.'
+            : `Auto: runs graphics at ${pctOf(thresholds.graphic)}+ and scenes at ${pctOf(thresholds.scene)}+; suggests the rest.`}
+        </div>
+      )}
+      {auto && cooldownLeft > 0 && (
+        <div className="text-xs text-sky-400" data-testid="xavier-cooldown">
+          You took over. Xavier waits {cooldownLeft}s before acting again.
+        </div>
+      )}
+      {pending && (
+        <div className="text-xs text-amber-300" data-testid="xavier-pending">
+          About to run {pending.label} ({pctOf(pending.confidence)}). Any action of yours cancels it.
+        </div>
+      )}
+      {shown.map(r => {
+        const o = OUTCOME_TEXT[r.outcome] || OUTCOME_TEXT.failed;
+        return (
+          <div key={`${r.recommendationId}-${r.at}`} className="flex items-center justify-between gap-2 text-xs rounded bg-zinc-800/60 px-2 py-1" data-testid="xavier-auto-record">
+            <span className="text-zinc-200 truncate">{r.label}</span>
+            <span className="flex items-center gap-2 shrink-0">
+              <span className="text-zinc-400 tabular-nums">{pctOf(r.confidence)}</span>
+              <span className={o.cls} title={r.guardrail?.reason || r.reason || r.error || ''}>{o.text}</span>
+              <span className="text-zinc-500 tabular-nums">{new Date(r.at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 const STATUS_TEXT = {
   no_api_key: 'Jev key missing on the coordinator',
@@ -55,10 +120,9 @@ function Card({ rec, result, onTake, onDismiss }) {
   );
 }
 
-/** Xavier recommendations and mode toggle for Producer View (ISA2-276). */
+/** Xavier recommendations, mode toggle, and auto activity for Producer View (ISA2-276, ISA2-277). */
 export default function XavierPanel({ socket, compId }) {
-  const { running, status, recommendations, results, setMode, take, dismiss } = useXavier(socket, compId);
-  const mode = running ? 'suggest' : 'off';
+  const { running, mode, control, status, recommendations, results, setMode, take, dismiss } = useXavier(socket, compId);
 
   return (
     <div className="bg-zinc-900 rounded-lg border border-zinc-800 p-3 space-y-3" data-testid="xavier-panel">
@@ -68,16 +132,17 @@ export default function XavierPanel({ socket, compId }) {
           {MODES.map(m => (
             <button
               key={m.id}
-              disabled={m.disabled}
-              onClick={() => !m.disabled && m.id !== mode && setMode(m.id)}
-              title={m.disabled ? 'Not available yet' : undefined}
-              className={`px-2 py-1 text-xs ${m.id === mode ? 'bg-emerald-600 text-white' : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'} ${m.disabled ? 'opacity-40 cursor-not-allowed hover:bg-zinc-800' : ''}`}
+              onClick={() => m.id !== mode && setMode(m.id)}
+              title={m.title}
+              data-testid={`xavier-mode-${m.id}`}
+              className={`px-2 py-1 text-xs ${m.id === mode ? (m.id === 'auto' || m.id === 'full' ? 'bg-amber-600 text-white' : 'bg-emerald-600 text-white') : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'}`}
             >
               {m.label}
             </button>
           ))}
         </div>
       </div>
+      <AutoActivity control={control} />
       {running && !status.ok && (
         <div className="text-xs text-amber-400">{STATUS_TEXT[status.reason] || status.message || 'Xavier is unavailable'}</div>
       )}

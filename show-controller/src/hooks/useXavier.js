@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 
 /**
- * useXavier - Xavier AI producer state and actions (ISA2-276).
+ * useXavier - Xavier AI producer state and actions (ISA2-276, ISA2-277).
  *
- * State comes from the coordinator's XavierService over the socket:
+ * State comes from the coordinator's XavierService and XavierControl over the socket:
  *   xavier:snapshot / xavier:recommendations / xavier:status / xavier:dismissed
- * Actions: setMode('off' | 'suggest'), take(rec), dismiss(rec).
+ *   xavier:control (mode, thresholds, cooldown, pending) / xavier:auto (each Xavier execution)
+ * Actions: setMode('off' | 'suggest' | 'auto' | 'full'), take(rec), dismiss(rec).
  * Take runs the recommendation through the action bus as sender 'xavier-suggest',
  * so guardrails apply and the ack tells us whether it fired.
  *
@@ -16,6 +17,7 @@ export default function useXavier(socket, compId) {
   const [status, setStatus] = useState({ ok: true, reason: null });
   const [recommendations, setRecommendations] = useState([]);
   const [results, setResults] = useState({});
+  const [control, setControl] = useState(null);
 
   useEffect(() => {
     if (!socket || !compId) return undefined;
@@ -26,7 +28,9 @@ export default function useXavier(socket, compId) {
       setRunning(!!snap.running);
       if (snap.status) setStatus(snap.status);
       applyLast(snap.last);
+      if (snap.control) setControl(snap.control);
     };
+    const onControl = (c) => { if (mine(c)) setControl(c); };
     const onRecs = (payload) => {
       if (!mine(payload)) return;
       setRecommendations(payload.recommendations || []);
@@ -41,6 +45,7 @@ export default function useXavier(socket, compId) {
     socket.on('xavier:recommendations', onRecs);
     socket.on('xavier:status', onStatus);
     socket.on('xavier:dismissed', onDismissed);
+    socket.on('xavier:control', onControl);
     const ask = () => socket.emit('xavier:get', { compId });
     if (socket.connected) ask();
     socket.on('connect', ask);
@@ -49,24 +54,26 @@ export default function useXavier(socket, compId) {
       socket.off('xavier:recommendations', onRecs);
       socket.off('xavier:status', onStatus);
       socket.off('xavier:dismissed', onDismissed);
+      socket.off('xavier:control', onControl);
       socket.off('connect', ask);
     };
   }, [socket, compId]);
 
   const setMode = useCallback((mode) => {
     if (!socket) return;
-    if (mode === 'suggest') {
-      socket.emit('xavier:start', { compId }, (ack) => {
-        if (ack?.ok) { setRunning(true); if (ack.status) setStatus(ack.status); }
-      });
-    } else {
-      socket.emit('xavier:stop', { compId }, () => {
-        setRunning(false);
+    setControl(prev => prev ? { ...prev, mode } : prev);
+    socket.emit('xavier:setMode', { compId, mode }, (ack) => {
+      if (!ack?.ok) return;
+      setRunning(!!ack.running);
+      if (ack.control) setControl(ack.control);
+      if (mode === 'off') {
         setRecommendations([]);
         setResults({});
         setStatus({ ok: true, reason: null });
-      });
-    }
+      } else if (ack.status) {
+        setStatus(ack.status);
+      }
+    });
   }, [socket, compId]);
 
   const take = useCallback((rec) => {
@@ -84,5 +91,6 @@ export default function useXavier(socket, compId) {
     socket.emit('xavier:dismiss', { compId, recommendationId: rec.recommendationId });
   }, [socket, compId]);
 
-  return { running, status, recommendations, results, setMode, take, dismiss };
+  const mode = control?.mode || (running ? 'suggest' : 'off');
+  return { running, mode, control, status, recommendations, results, setMode, take, dismiss };
 }

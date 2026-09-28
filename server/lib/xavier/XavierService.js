@@ -199,6 +199,14 @@ export class XavierService extends EventEmitter {
       model: result.model,
       at: this._now()
     };
+    this.publish(payload);
+  }
+
+  /**
+   * Record a recommendation set, tell listeners (the control levels, ISA2-277)
+   * and the room. The dev injection path (test competitions only) calls this too.
+   */
+  publish(payload) {
     this._last = payload;
     this.emit('recommendations', payload);
     this._io?.to(`competition:${this.compId}`).emit('xavier:recommendations', payload);
