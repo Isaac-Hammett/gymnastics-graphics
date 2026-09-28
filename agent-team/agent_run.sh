@@ -153,7 +153,7 @@ merge commit is the whole job: update the answer file to say so, and exit 0."
 
   echo "=== $(date '+%F %T') start $KEY role=$ROLE model=$MODEL workdir=$WORKDIR" >> "$LOGS/$KEY.log"
   # Process substitution, not a pipe: a pipe hangs on tee when a child keeps stdout open.
-  ( cd "$WORKDIR" && "$TO" "${TIMEOUT_MIN}m" claude "${ARGS[@]}" < "$RUNS/$KEY.prompt.md" 2>> "$LOGS/$KEY.err" \
+  ( cd "$WORKDIR" && GG_IN_AGENT=1 "$TO" "${TIMEOUT_MIN}m" claude "${ARGS[@]}" < "$RUNS/$KEY.prompt.md" 2>> "$LOGS/$KEY.err" \
       > >(python3 "$TEAM_DIR/tools/streamlog.py" "$LOGS/$KEY.log" "$RUNS/$KEY.result.json") )
   local RC=$?
   if [ -n "${GG_API_PORT:-}" ]; then
@@ -303,7 +303,7 @@ build_prompt() {
 EOF
     ;;
     verify) cat <<EOF
-- You are the verifier. Do not edit code. Start the dev servers with \`bash $TEAM_DIR/devserver.sh start\` and stop them at the end.
+- You are the verifier. Do not edit code. The app and coordinator are already running for you (Run facts); never start or stop servers yourself.
 - Write $RUNS/$KEY.answer.md: line 1 is exactly \`VERDICT: PASS\`, \`VERDICT: FAIL\`, or \`VERDICT: BLOCKED\`; then one line per Done-when item with what you checked and the evidence path; then anything the implementer should know. Post it with:
   python3 $TEAM_DIR/tools/linear.py comment $T --file $RUNS/$KEY.answer.md
 - On FAIL, create one fix ticket per shape of failure (not per item):

@@ -17,6 +17,12 @@ main() {
   local RUNS="$TEAM_DIR/runs" LOGS="$TEAM_DIR/logs"
   local TAG="$API_PORT"
   mkdir -p "$RUNS" "$LOGS"
+  # Inside an agent run the runner owns the servers (they must run outside the sandbox). An agent calling
+  # start/stop here killed its own servers and could not restart them (ISA2-303 verify, 2026-09-27).
+  if [ "${GG_IN_AGENT:-}" = "1" ] && [ "$CMD" != "status" ] && [ "$CMD" != "logs" ]; then
+    echo "devserver.sh: the runner manages servers for this run; they are already up (Run facts). After server edits: touch \$RUNS/\$GG_KEY.restart" >&2
+    return 2
+  fi
   case "$CMD" in
     start)
       # No AWS credentials: the coordinator's boot-time VM-pool sync would otherwise delete vmPool entries in
