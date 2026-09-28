@@ -4,6 +4,8 @@ import { db, ref, get, onValue, push, remove } from '../lib/firebase';
 import { PhotoIcon, XMarkIcon, ClipboardDocumentIcon, CheckIcon, Cog6ToothIcon, PlusIcon, TrashIcon } from '@heroicons/react/24/solid';
 import useEventConfig from '../hooks/useEventConfig';
 import { getGraphicsForCompetition, getGraphicsByCategory, CATEGORIES } from '../lib/graphicsRegistry';
+import useGuardedAction from '../hooks/useGuardedAction';
+import { GuardrailNotice } from './GuardrailNotice';
 import CollapsibleSubcategory from './CollapsibleSubcategory';
 
 // Event button mapping for different genders (uses eventConfig IDs)
@@ -295,15 +297,9 @@ export default function GraphicsControl({ competitionId, socket }) {
   // Fire or clear a graphic through the coordinator's action bus (ISA2-281), so
   // guardrails and the decision log see it. The coordinator builds the payload
   // (config, sponsors, stage blocks, theme) and writes currentGraphic.
-  const executeAction = (actionId, params) => {
-    if (!socket) {
-      console.error(`GraphicsControl: no coordinator connection, cannot run ${actionId}`);
-      return;
-    }
-    socket.emit('action:execute', { actionId, sender: 'producer', compId, params }, (ack) => {
-      if (!ack?.ok) console.error(`GraphicsControl: ${actionId} failed`, ack);
-    });
-  };
+  // A refusal shows the guardrail rule and reason; a second tap forces it (ISA2-303).
+  const { run: runGuarded, refusal: guardrailRefusal } = useGuardedAction(socket, compId);
+  const executeAction = (actionId, params) => runGuarded(actionId, actionId, params);
 
   const sendGraphic = (graphicId, frameTitle = null, leaderboardEvent = null) => {
     if (!compId || !config) return;
@@ -508,6 +504,8 @@ export default function GraphicsControl({ competitionId, socket }) {
           </span>
         )}
       </div>
+
+      <GuardrailNotice refusal={guardrailRefusal} className="mb-3" />
 
       {/* Copy Output URL & URL Generator */}
       {compId && (
