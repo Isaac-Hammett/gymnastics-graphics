@@ -572,6 +572,10 @@ def main(argv=None) -> int:
                 parent = fetch_issue(a.for_ticket)
                 role = role or role_of(parent)
                 model = model or model_alias_of(parent)
+                # The parent's work failed verification: retrying on haiku repeats the failure (ISA2-307 → 310 →
+                # 312 → 315, 2026-09-27). A fix for a haiku ticket runs on sonnet.
+                if model == "haiku":
+                    model = "sonnet"
                 project_id = parent.get("project_id")
                 state = state or "Todo"
                 labels.append("fix")
