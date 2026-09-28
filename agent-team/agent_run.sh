@@ -146,6 +146,7 @@ merge commit is the whole job: update the answer file to say so, and exit 0."
   local ARGS=(-p --model "$MODEL" --max-turns "$MAX_TURNS" --permission-mode acceptEdits
               --allowedTools "$ALLOWED" --disallowedTools "$DISALLOWED"
               --mcp-config "$ROOT/.mcp.json" --strict-mcp-config --agents "$AGENTS_JSON"
+              --settings "$TEAM_DIR/hooks/settings.json"
               --add-dir "$RUNS" --add-dir "$(cd "$ROOT/show-controller/node_modules" 2>/dev/null && pwd -P || echo "$RUNS")"
               --output-format stream-json --verbose)
   [ -n "$FALLBACK" ] && ARGS+=(--fallback-model "$FALLBACK")
@@ -157,7 +158,7 @@ merge commit is the whole job: update the answer file to say so, and exit 0."
 
   echo "=== $(date '+%F %T') start $KEY role=$ROLE model=$MODEL workdir=$WORKDIR" >> "$LOGS/$KEY.log"
   # Process substitution, not a pipe: a pipe hangs on tee when a child keeps stdout open.
-  ( cd "$WORKDIR" && GG_IN_AGENT=1 "$TO" "${TIMEOUT_MIN}m" claude "${ARGS[@]}" < "$RUNS/$KEY.prompt.md" 2>> "$LOGS/$KEY.err" \
+  ( cd "$WORKDIR" && GG_IN_AGENT=1 GG_WORKDIR="$WORKDIR" GG_RUNS="$RUNS" "$TO" "${TIMEOUT_MIN}m" claude "${ARGS[@]}" < "$RUNS/$KEY.prompt.md" 2>> "$LOGS/$KEY.err" \
       > >(python3 "$TEAM_DIR/tools/streamlog.py" "$LOGS/$KEY.log" "$RUNS/$KEY.result.json") )
   local RC=$?
   if [ -n "${GG_API_PORT:-}" ]; then
