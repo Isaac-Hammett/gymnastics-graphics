@@ -1,0 +1,35 @@
+{
+  "events": [],
+  "updates": [],
+  "start": {
+    "ok": true,
+    "compId": "ecac-2026-agent-test",
+    "sessionId": "3mwftyC216",
+    "logPath": "/Users/juliacosmiano/code/gymnastics-graphics-worktrees/ISA2-308/server/logs/virtius-poll-ecac-2026-agent-test-1790561846795.jsonl"
+  },
+  "snapshot": {
+    "compId": "ecac-2026-agent-test",
+    "running": true,
+    "lastError": {
+      "message": "fetch failed",
+      "at": 1790561857241
+    },
+    "state": {
+      "stateVersion": 0,
+      "updatedAt": null,
+      "hasSnapshot": false,
+      "meetStatus": null,
+      "events": {},
+      "teamTotals": {},
+      "standings": [],
+      "rotation": null,
+      "signals": {},
+      "freshness": {
+        "lastPollT": null,
+        "lastChangeT": null,
+        "unchangedPolls": 0
+      }
+    },
+    "recentEvents": []
+  }
+}
