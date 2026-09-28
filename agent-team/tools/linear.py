@@ -354,6 +354,8 @@ def label(ident: str, name: str, remove=False):
         gql("mutation($id:String!,$input:IssueUpdateInput!){ issueUpdate(id:$id,input:$input){ success } }",
             {"id": uuid_of(ident), "input": inp})
     except LinearError as e:
+        if remove and "not on issue" in str(e).lower():
+            return  # already absent: removal is idempotent (approve always removes `reviewed`, often not there)
         if "LabelIds" not in str(e):
             raise
         # older API shape: send the full label set
