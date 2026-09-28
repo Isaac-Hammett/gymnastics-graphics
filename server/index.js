@@ -4925,6 +4925,13 @@ io.on('connection', async (socket) => {
     if (typeof ack === 'function') ack({ ok: true });
   });
 
+  socket.on('xavier:dismiss', (payload, maybeAck) => {
+    const ack = typeof payload === 'function' ? payload : maybeAck;
+    const compId = (payload && typeof payload === 'object' && payload.compId) || clientCompId;
+    const ok = !!getXavier(compId)?.dismiss(payload?.recommendationId);
+    if (typeof ack === 'function') ack({ ok });
+  });
+
   socket.on('xavier:get', (payload, maybeAck) => {
     const ack = typeof payload === 'function' ? payload : maybeAck;
     const compId = (payload && typeof payload === 'object' && payload.compId) || clientCompId;
