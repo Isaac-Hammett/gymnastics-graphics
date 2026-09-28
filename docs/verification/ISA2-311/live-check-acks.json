@@ -1,0 +1,70 @@
+[
+  {
+    "step": "inject rejected for real comp",
+    "result": {
+      "ok": false,
+      "error": "inject_not_allowed_for_competition"
+    }
+  },
+  {
+    "step": "inject snapshot+greenLight",
+    "result": {
+      "ok": true,
+      "ingested": 2,
+      "events": [
+        [
+          "greenLight",
+          0.9
+        ]
+      ]
+    }
+  },
+  {
+    "step": "routineStatus",
+    "result": "in_progress"
+  },
+  {
+    "step": "cut to Cam PH (away from FLOOR) during routine",
+    "result": {
+      "ok": false,
+      "actionId": "scene:Cam PH",
+      "error": "guardrail",
+      "guardrail": {
+        "rule": "noCutDuringRoutine",
+        "reason": "G2 on FLOOR is in progress (confidence 0.90); cutting away is not allowed"
+      }
+    }
+  },
+  {
+    "step": "cut to Cam FX (event camera) during routine",
+    "result": {
+      "ok": true,
+      "actionId": "scene:Cam FX",
+      "error": null,
+      "guardrail": null
+    }
+  },
+  {
+    "step": "inject score posted",
+    "result": {
+      "ok": true,
+      "events": [
+        "scorePosted",
+        "rotationChanged"
+      ]
+    }
+  },
+  {
+    "step": "routineStatus",
+    "result": "scored"
+  },
+  {
+    "step": "cut to Cam PH after scored",
+    "result": {
+      "ok": true,
+      "actionId": "scene:Cam PH",
+      "error": null,
+      "guardrail": null
+    }
+  }
+]

@@ -50,6 +50,7 @@ import {
   resolveDb,
 } from './graphicPayload.js';
 import { Guardrails, isXavierSender } from './guardrails.js';
+import { createRoutineStateProvider } from './routineState.js';
 
 /** Action kinds the bus understands. */
 export const ACTION_KINDS = {
@@ -1060,6 +1061,10 @@ export function getOrCreateActionBus(compId, options = {}) {
     ? options.guardrailRules
     : new Guardrails({ compId, firebase: options.firebase });
   const bus = new ActionBus({ ...options, compId, guardrailRules });
+  // Routine state for noCutDuringRoutine comes from the competition's state
+  // service (ISA2-311); looked up per call, cleared when the bus is disposed.
+  guardrailRules?.setRoutineStateProvider?.(createRoutineStateProvider(compId, () =>
+    (bus._catalog?.actions || []).filter(a => a.kind === ACTION_KINDS.SCENE).map(a => a.params?.sceneName)));
   bus.startObserving();
   actionBuses.set(compId, bus);
   return bus;
@@ -1087,6 +1092,7 @@ export function disposeActionBus(compId) {
   const bus = actionBuses.get(compId);
   if (!bus) return;
   bus.shutdown();
+  bus.guardrailRules?.setRoutineStateProvider?.(null);
   actionBuses.delete(compId);
   console.log(`[ActionBus] Disposed bus for competition: ${compId} (remaining buses: ${actionBuses.size})`);
 }
