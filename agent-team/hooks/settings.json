@@ -9,6 +9,15 @@
             "command": "bash /Users/juliacosmiano/code/gymnastics-graphics/agent-team/hooks/guard.sh"
           }
         ]
+      },
+      {
+        "matcher": "Edit|Write|MultiEdit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /Users/juliacosmiano/code/gymnastics-graphics/agent-team/hooks/guard_paths.sh"
+          }
+        ]
       }
     ]
   }

@@ -64,7 +64,7 @@ Two things that used to be candidates for their own boxes are folded in with hon
 
 | System | Layer | Status | Sport coupling | What it does |
 |---|---|---|---|---|
-| [Coordinator server](#coordinator-server) | Platform | **Proven** | Generic | The one Node process every surface talks to; hosts every server-side system. Action bus (ISA2-272) and manual-path routing (ISA2-281) for graphics and scenes. Wake path is dead. |
+| [Coordinator server](#coordinator-server) | Platform | **Proven** | Generic | The one Node process every surface talks to; hosts every server-side system. Action bus (ISA2-272) with guardrails (ISA2-273); competition state service (ISA2-274) feeding typed events. Wake path is dead. |
 | [VM pool](#vm-pool) | Platform | **Built** | Generic | EC2 and custom OBS VMs, assigned to competitions. Health monitor never wired. |
 | [Auth](#auth) | Platform | **Partial** | Generic | Firebase login in the browser only. The server and the database are unauthenticated. |
 | [Alerts](#alerts) | Platform | **Partial** | Generic | Complete service and panel; nothing ever raises an alert. |
@@ -313,9 +313,9 @@ One entry per system. Each links to its full survey entry under `docs/system-map
 
 **Layer:** Platform and infrastructure · **Status: Proven** · **Sport coupling: Generic**
 
-One Node process (`server/index.js`, 8,730 lines) that every producer surface talks to. It holds the Firebase Admin credential, fans state out over Socket.io rooms, and proxies control to per-competition OBS VMs. The same code runs as the central coordinator (`COORDINATOR_MODE=true`, PM2 name `coordinator`) and standalone on each OBS VM (PM2 name `virtius-server`); the mode flag only gates auto-shutdown and a status string, so a standalone VM boots the whole coordinator API too.
+One Node process (`server/index.js`, 8,730 lines) that every producer surface talks to. It holds the Firebase Admin credential, fans state out over Socket.io rooms, and proxies control to per-competition OBS VMs. Each competition runs an action bus (one command path for scene and graphic actions with acks), guardrails (four enforcement rules: minShotHoldMs, noCutDuringRoutine, noGraphicStacking, cameraMustHaveSignal), and a competition state service (polls Virtius or a recorded log, reduces it to typed events athleteUp/greenLight/routineEnded/scorePosted/scoreCorrected/rotationChanged/teamTotalChanged with confidence and evidence). The same code runs as the central coordinator (`COORDINATOR_MODE=true`, PM2 name `coordinator`) and standalone on each OBS VM (PM2 name `virtius-server`); the mode flag only gates auto-shutdown and a status string, so a standalone VM boots the whole coordinator API too.
 
-- **Where:** `server/index.js` (82 HTTP routes, 117 socket handlers, 124 emitted event names, plus 65 OBS routes mounted from `server/routes/obs.js`), `server/lib/autoShutdown.js`, `server/lib/selfStop.js`, `server/ecosystem.config.js`, `show-controller/src/hooks/useCoordinator.js`, `CoordinatorGate.jsx`, `SystemOfflinePage.jsx`.
+- **Where:** `server/index.js` (82 HTTP routes, 117 socket handlers, 124 emitted event names, plus 65 OBS routes mounted from `server/routes/obs.js`), `server/lib/autoShutdown.js`, `server/lib/selfStop.js`, `server/lib/actionBus.js`, `server/lib/guardrails.js`, `server/lib/competitionState/*.js`, `server/ecosystem.config.js`, `show-controller/src/hooks/useCoordinator.js`, `CoordinatorGate.jsx`, `SystemOfflinePage.jsx`.
 - **Owns in Firebase:** `coordinator/shutdownHistory/{pushId}`.
 - **Talks to:** Firebase Admin SDK, AWS EC2 (self-stop, status), PM2, nginx.
 - **Depends on:** nothing above it. Hosts every other server-side system by direct import.

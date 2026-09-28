@@ -31,6 +31,7 @@ import { isXavierSender } from './lib/guardrails.js';
 import { getOrCreateActionBus, actionBusHandle, disposeActionBus, releaseActionBusIfIdle } from './lib/actionBus.js';
 import { onceValue } from './lib/firebaseRead.js';
 import { getOrCreateCompetitionState, getCompetitionState, LiveVirtiusSource } from './lib/competitionState/index.js';
+import { getOrCreateXavier, getXavier, JevProvider } from './lib/xavier/index.js';
 import { DEFAULT_PRESETS } from './lib/obsAudioManager.js';
 import { encryptStreamKey, decryptStreamKey, isEncryptedKey } from './lib/obsStreamManager.js';
 import { mapEditorSegmentsToEngine, validateEngineSegments, diffSegments, detectDuplicateIds, deduplicateSegmentsById } from './lib/segmentMapper.js';
@@ -4898,6 +4899,46 @@ io.on('connection', async (socket) => {
     const compId = (payload && typeof payload === 'object' && payload.compId) || clientCompId;
     getCompetitionState(compId)?.stop();
     if (typeof ack === 'function') ack({ ok: true });
+  });
+
+  // Xavier decision service (ISA2-275). Registered synchronously (BUG-021).
+  // Asks Jev three typed questions per state change; emits 'xavier:recommendations'
+  // and 'xavier:status' to the competition room. Without TYPESAFE_API_KEY it
+  // shows no recommendations and status says why; nothing else is affected.
+  socket.on('xavier:start', (payload, maybeAck) => {
+    const ack = typeof payload === 'function' ? payload : maybeAck;
+    const compId = (payload && typeof payload === 'object' && payload.compId) || clientCompId;
+    if (!compId) { if (typeof ack === 'function') ack({ ok: false, error: 'no_comp_id' }); return; }
+    const svc = getOrCreateXavier(compId, {
+      io,
+      competitionState: getOrCreateCompetitionState(compId, { io }),
+      provider: new JevProvider(),
+      getActions: async () => (await getActionBusForComp(compId).buildCatalog()).actions || []
+    });
+    svc.start();
+    if (typeof ack === 'function') ack({ ok: true, ...svc.getSnapshot() });
+  });
+
+  socket.on('xavier:stop', (payload, maybeAck) => {
+    const ack = typeof payload === 'function' ? payload : maybeAck;
+    const compId = (payload && typeof payload === 'object' && payload.compId) || clientCompId;
+    getXavier(compId)?.stop();
+    if (typeof ack === 'function') ack({ ok: true });
+  });
+
+  socket.on('xavier:dismiss', (payload, maybeAck) => {
+    const ack = typeof payload === 'function' ? payload : maybeAck;
+    const compId = (payload && typeof payload === 'object' && payload.compId) || clientCompId;
+    const ok = !!getXavier(compId)?.dismiss(payload?.recommendationId);
+    if (typeof ack === 'function') ack({ ok });
+  });
+
+  socket.on('xavier:get', (payload, maybeAck) => {
+    const ack = typeof payload === 'function' ? payload : maybeAck;
+    const compId = (payload && typeof payload === 'object' && payload.compId) || clientCompId;
+    const snap = getXavier(compId)?.getSnapshot() || { compId, running: false, status: { ok: true, reason: null }, last: null };
+    socket.emit('xavier:snapshot', snap);
+    if (typeof ack === 'function') ack(snap);
   });
 
   // Send the catalog of actions available for this competition.
