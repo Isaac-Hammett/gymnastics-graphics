@@ -2134,7 +2134,8 @@ app.get('/api/competitions/index', async (req, res) => {
       index[compId] = {
         eventName: config.eventName || null,
         meetDate: config.meetDate || null,
-        gender: config.gender || null
+        gender: config.gender || null,
+        venue: config.venue || null
       };
     }
 

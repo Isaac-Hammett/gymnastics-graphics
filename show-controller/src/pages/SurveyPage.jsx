@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { db, ref, get, push } from '../lib/firebase';
+import { SERVER_URL } from '../lib/serverUrl';
 import { CheckCircleIcon, CalendarIcon } from '@heroicons/react/24/solid';
 
 /**
@@ -38,24 +39,20 @@ export default function SurveyPage() {
   async function loadUpcomingCompetitions() {
     try {
       setLoading(true);
-      const compsSnapshot = await get(ref(db, 'competitions'));
-      if (!compsSnapshot.exists()) {
-        setLoading(false);
-        return;
-      }
-
-      const allComps = compsSnapshot.val();
+      const indexRes = await fetch(`${SERVER_URL}/api/competitions/index`);
+      if (!indexRes.ok) throw new Error(`competitions index ${indexRes.status}`);
+      const allComps = await indexRes.json();
       const now = new Date();
       const upcoming = Object.entries(allComps)
         .filter(([_, comp]) => {
-          const meetDate = comp.config?.meetDate ? new Date(comp.config.meetDate) : null;
+          const meetDate = comp.meetDate ? new Date(comp.meetDate) : null;
           return meetDate && meetDate > now;
         })
         .map(([compId, comp]) => ({
           compId,
-          eventName: comp.config?.eventName || 'Unnamed Event',
-          meetDate: comp.config?.meetDate || '',
-          venue: comp.config?.venue || '',
+          eventName: comp.eventName || 'Unnamed Event',
+          meetDate: comp.meetDate || '',
+          venue: comp.venue || '',
         }))
         .sort((a, b) => new Date(a.meetDate) - new Date(b.meetDate));
 

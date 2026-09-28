@@ -75,7 +75,13 @@ test('public booking and survey page paths are unchanged', () => {
   assert.equal(canWrite('competitions/c1/commentary/t1', null), true);
 });
 
-test('known limitation: whole-tree read of competitions needs auth', () => {
+test('whole-tree read of competitions needs auth; public pages use /api/competitions/index instead', () => {
   assert.equal(canRead('competitions', null), false);
   assert.equal(canRead('competitions', user), true);
+  // BookingPage and SurveyPage must not read the whole tree signed-out (it would include shakespeare/dossiers).
+  for (const f of ['BookingPage.jsx', 'SurveyPage.jsx']) {
+    const src = readFileSync(path.join(root, 'show-controller', 'src', 'pages', f), 'utf8');
+    assert.ok(!/get\(ref\(db, 'competitions'\)\)/.test(src), `${f} reads whole competitions tree`);
+    assert.ok(src.includes('/api/competitions/index'), `${f} uses the coordinator index`);
+  }
 });
