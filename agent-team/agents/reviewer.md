@@ -17,6 +17,7 @@ Skip any ticket already labeled `needs-isaac` or `hold`: it is waiting on Isaac,
 3. **Only Isaac can decide:** spending money, relaunching or changing production, pushing `main`, deleting data, contacting people, on-air design, marking a system Proven, anything touching a real competition's data. Escalate.
 4. **Fixable gaps:**
    - Missing `model:` label: add it (`linear.py label <T> model:sonnet`, or `model:opus` for cross-cutting or foundation work).
+   - Docs tickets that describe code behavior or touch more than one file (system map + inventory + overview) get `model:sonnet`, even if proposed as haiku: on 2026-09-27 one such Haiku ticket took four fix rounds. Swap the label (`label <T> model:haiku --remove`, then `label <T> model:sonnet`). Haiku stays for one-file mechanical edits.
    - Missing `role:` label: add the obvious one (`role:server`, `role:frontend`, `role:graphics`, `role:data`, `role:docs`).
    - Touches the test VM or its OBS (scene switching, playback, anything via `obsConnectionManager`): add `vm` (`linear.py label <T> vm`). The dispatcher runs `vm` tickets one at a time.
    - Then continue to 5.
