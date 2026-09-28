@@ -64,7 +64,7 @@ Two things that used to be candidates for their own boxes are folded in with hon
 
 | System | Layer | Status | Sport coupling | What it does |
 |---|---|---|---|---|
-| [Coordinator server](#coordinator-server) | Platform | **Proven** | Generic | The one Node process every surface talks to; hosts every server-side system. Wake path is dead. |
+| [Coordinator server](#coordinator-server) | Platform | **Proven** | Generic | The one Node process every surface talks to; hosts every server-side system. Action bus (ISA2-272) and manual-path routing (ISA2-281) for graphics and scenes. Wake path is dead. |
 | [VM pool](#vm-pool) | Platform | **Built** | Generic | EC2 and custom OBS VMs, assigned to competitions. Health monitor never wired. |
 | [Auth](#auth) | Platform | **Partial** | Generic | Firebase login in the browser only. The server and the database are unauthenticated. |
 | [Alerts](#alerts) | Platform | **Partial** | Generic | Complete service and panel; nothing ever raises an alert. |
@@ -74,7 +74,7 @@ Two things that used to be candidates for their own boxes are folded in with hon
 | [Camera management](#camera-management) | Show production | **Partial** | Sport-parameterized | SRT camera health and fallback. Never ran against real cameras; fallback has no caller. |
 | [Production checklist](#production-checklist) | Show production | **Proven** | Gymnastics-bound | 75-item pre-flight list, 14 auto-verified. Used the morning of a real meet. |
 | [Clip playout](#clip-playout) | Show production | **Partial** | Gymnastics-bound | Autonomous playout of third-party clips. Deployed for WCGNIC; did not run the meet. LIVE mode unreachable. |
-| [Graphics rendering](#graphics-rendering) | Graphics | **Proven** | Gymnastics-bound | `output.html`, 29 overlays, and the new stage engine; 55 registered graphics. Stage engine is Built, not yet Proven. |
+| [Graphics rendering](#graphics-rendering) | Graphics | **Proven** | Gymnastics-bound | `output.html`, 29 overlays, and the new stage engine; 55 registered graphics. Stage engine is Built, not yet Proven. Recording package loader (ISA2-294) for recorded playback. |
 | [Themes](#themes) | Graphics | **Proven** | Sport-parameterized | Per-meet branding with per-graphic overrides. 13 real themes. |
 | [Sponsors](#sponsors) | Graphics | **Proven** | Sport-parameterized | Team and event sponsor logos in three graphics. Cycle-timing controls are a no-op. |
 | [Who to Watch](#who-to-watch) | Graphics | **Partial** | Sport-parameterized | Title cards plus video package played from a rundown segment. No evidence of live use. |
