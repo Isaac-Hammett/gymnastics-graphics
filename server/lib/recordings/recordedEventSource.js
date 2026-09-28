@@ -106,6 +106,8 @@ function applyToSnapshot(snapshot, entry) {
     if (g.final_score === score) return false;
     g.final_score = score;
     runningTotal(team);
+    // Marked logs (ISA2-297) carry the running team total on the score line itself.
+    if (entry.teamTotal != null && entry.teamTotal !== '') team.final_score = fmt(Number(entry.teamTotal));
     return true;
   }
   if (entry.type === 'teamTotal') {
@@ -233,6 +235,13 @@ export class RecordedEventSource extends EventEmitter {
       ? logToInputs(this._log, { template: this._template, pollIntervalMs: this.pollIntervalMs, offsetMs, endMs: this.endMs })
       : [...this._raw].map(e => ({ ...e, t: e.t + offsetMs })).sort((a, b) => a.t - b.t);
     this._checkpoints = null;
+  }
+
+  /** Swap in a new events.jsonl log (marking mode) and rebuild state at the clock's position. */
+  setLog(log) {
+    this._log = log;
+    this._build(this.offsetMs);
+    if (this.clock) this.seek(this.clock.now());
   }
 
   /** Change the log-to-video offset and rebuild state at the clock's position. */

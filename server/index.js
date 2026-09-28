@@ -47,7 +47,9 @@ import { discoverAlumni } from './lib/talentDiscoveryService.js';
 import { fetchClips } from './lib/clipService.js';
 import { loadRecordingPackage } from './lib/recordings/recordingPackage.js';
 import { buildRecordedScenes, applyLayout as applyRecordedLayout, DEFAULT_RECORDING, RECORDED_SOURCE_NAME } from './scripts/buildRecordedScenes.js';
-import { loadRecordedShow, getRecordedShow } from './lib/recordings/recordedShow.js';
+import { loadRecordedShow, getRecordedShow, removeRecordedShow } from './lib/recordings/recordedShow.js';
+import { listRecordings, loadEvents as loadRecordingEvents } from './lib/recordings/recordingPackage.js';
+import { getMarkState, appendMark, undoLastMark, startMeasuredLog } from './lib/recordings/markLog.js';
 import { PlayoutEngine, getPlayoutEngine as getPlayoutEngineFromModule, removePlayoutEngine as removePlayoutEngineFromModule, PLAYOUT_MODE, CLIP_STATUS } from './lib/playoutEngine.js';
 import { getScoringService, removeScoringService, getAllScoringServices } from './lib/scoringIngestionService.js';
 
@@ -5157,6 +5159,41 @@ io.on('connection', async (socket) => {
       return { tMs: Number(opts.tMs) || 0 };
     });
   });
+
+  // ── Recorded-source panel (ISA2-297) ───────────────────────────────────
+  // recorded:list -> meets to pick from; recorded:unload -> back to Live;
+  // recorded:marks / recorded:mark / recorded:unmark / recorded:marks-fresh are
+  // marking mode: they append to (or trim) recordings/<name>/events.jsonl and
+  // replay the new log on the loaded show. Marks broadcast as 'recorded:marks'.
+  socket.on('recorded:list', (payload, maybeAck) => {
+    const ack = typeof payload === 'function' ? payload : maybeAck;
+    if (typeof ack === 'function') ack({ ok: true, recordings: listRecordings() });
+  });
+
+  socket.on('recorded:unload', (payload, maybeAck) => {
+    const ack = typeof payload === 'function' ? payload : maybeAck;
+    const opts = (typeof payload === 'object' && payload) || {};
+    removeRecordedShow(opts.compId || clientCompId);
+    if (typeof ack === 'function') ack({ ok: true });
+  });
+
+  const markingCall = (payload, maybeAck, work) => recordedClockCall(payload, maybeAck, async (show, opts) => {
+    const out = await work(show, opts) || {};
+    show.pkg.events = loadRecordingEvents(show.recording);
+    show.source.setLog(show.pkg.events);
+    const marks = getMarkState(show.recording);
+    io.to(`competition:${show.compId}`).emit('recorded:marks', { compId: show.compId, ...marks });
+    return { ...out, marks, ...show.clock.status() };
+  });
+  socket.on('recorded:marks', (payload, maybeAck) => recordedClockCall(payload, maybeAck, (show) => ({ marks: getMarkState(show.recording) })));
+  socket.on('recorded:mark', (payload, maybeAck) => markingCall(payload, maybeAck, (show, opts) => ({
+    mark: appendMark(show.recording, {
+      kind: opts.kind, event: opts.event,
+      tVideoMs: opts.tVideoMs ?? show.clock.now() - (show.source.offsetMs || 0)
+    })
+  })));
+  socket.on('recorded:unmark', (payload, maybeAck) => markingCall(payload, maybeAck, (show) => ({ undone: undoLastMark(show.recording) })));
+  socket.on('recorded:marks-fresh', (payload, maybeAck) => markingCall(payload, maybeAck, (show) => { startMeasuredLog(show.recording); }));
 
   // Client identifies themselves
   socket.on('identify', ({ role, name }) => {

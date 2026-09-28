@@ -21,6 +21,11 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const RECORDINGS_ROOT = path.join(__dirname, '../../../recordings');
 
+/** Absolute path of a recording's directory. */
+export function recordingDir(name) {
+  return path.join(RECORDINGS_ROOT, name);
+}
+
 /**
  * List available recording names (subdirectories of recordings/).
  * @returns {string[]}
