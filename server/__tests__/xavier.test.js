@@ -268,3 +268,29 @@ describe('JevProvider timeout config (ISA2-320)', () => {
     }
   });
 });
+
+describe('JevProvider call cap (ISA2-323)', () => {
+  it('stops sending after callCap HTTP requests, retries included', async () => {
+    let sent = 0;
+    const fetchImpl = async () => { sent++; return { ok: true, status: 200, json: async () => ({ answers: {}, model: 'm' }) }; };
+    const p = new JevProvider({ apiKey: 'k', fetchImpl, callCap: 2 });
+    await p.evaluate({ state: {}, questions: {} });
+    await p.evaluate({ state: {}, questions: {} });
+    await assert.rejects(() => p.evaluate({ state: {}, questions: {} }), { code: 'call_cap' });
+    assert.equal(sent, 2);
+    assert.equal(p.calls, 2);
+  });
+});
+
+describe('JevProvider connect-timeout retry (ISA2-323)', () => {
+  it('retries UND_ERR_CONNECT_TIMEOUT, counting each attempt', async () => {
+    let n = 0;
+    const fetchImpl = async () => {
+      if (++n < 3) throw Object.assign(new TypeError('fetch failed'), { cause: { code: 'UND_ERR_CONNECT_TIMEOUT' } });
+      return { ok: true, status: 200, json: async () => ({ answers: {}, model: 'm' }) };
+    };
+    const p = new JevProvider({ apiKey: 'k', fetchImpl, sleepFn: async () => {} });
+    await p.evaluate({ state: {}, questions: {} });
+    assert.equal(p.calls, 3);
+  });
+});

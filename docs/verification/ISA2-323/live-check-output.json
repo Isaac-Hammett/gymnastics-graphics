@@ -1,0 +1,158 @@
+{
+  "startMs": 2072000,
+  "durationSec": 420,
+  "steps": [
+    {
+      "step": "recorded:load",
+      "result": {
+        "ok": true,
+        "compId": "ecac-2026-agent-test",
+        "recording": "ecac-2026",
+        "positionMs": 2072000,
+        "durationMs": 8735022,
+        "playing": false,
+        "rate": 1,
+        "layout": {
+          "layout": "3x2",
+          "fromMs": 2072000
+        },
+        "mediaOffsetMs": 0,
+        "sourceOffsetsMs": [
+          0
+        ],
+        "obsConnected": true,
+        "obsCursorMs": 2072233,
+        "driftMs": 233,
+        "lastError": null
+      }
+    },
+    {
+      "step": "xavier:setMode auto",
+      "result": {
+        "ok": true,
+        "mode": "auto",
+        "thresholds": {
+          "scene": 0.92,
+          "graphic": 0.8
+        }
+      }
+    },
+    {
+      "step": "recorded:play",
+      "result": {
+        "ok": true,
+        "compId": "ecac-2026-agent-test",
+        "recording": "ecac-2026",
+        "positionMs": 2072000,
+        "durationMs": 8735022,
+        "playing": true,
+        "rate": 1,
+        "layout": {
+          "layout": "3x2",
+          "fromMs": 2072000
+        },
+        "mediaOffsetMs": 0,
+        "sourceOffsetsMs": [
+          0
+        ],
+        "obsConnected": true,
+        "obsCursorMs": 2072233,
+        "driftMs": 233,
+        "lastError": null
+      }
+    },
+    {
+      "step": "manual cut",
+      "result": {
+        "pendingBefore": null,
+        "cut": {
+          "ok": true,
+          "error": null
+        },
+        "cooldownUntil": 1790576253916,
+        "pendingAfter": null,
+        "autoDuringCooldown": null,
+        "at": 1790576244221,
+        "autoAfterCutWithin10s": 0
+      }
+    },
+    {
+      "step": "recorded:status",
+      "result": {
+        "ok": true,
+        "compId": "ecac-2026-agent-test",
+        "recording": "ecac-2026",
+        "positionMs": 2492526,
+        "durationMs": 8735022,
+        "playing": true,
+        "rate": 1,
+        "layout": {
+          "layout": "3x2",
+          "fromMs": 2072000
+        },
+        "mediaOffsetMs": 0,
+        "sourceOffsetsMs": [
+          0
+        ],
+        "obsConnected": true,
+        "obsCursorMs": 2490900,
+        "driftMs": 302,
+        "lastError": null
+      }
+    }
+  ],
+  "summary": {
+    "recommendations": 1,
+    "latencyMs": {
+      "n": 1,
+      "min": 4449,
+      "p50": 4449,
+      "p90": 4449,
+      "max": 4449
+    },
+    "autoOutcomes": {},
+    "statusChanges": 1
+  },
+  "recommendations": [
+    {
+      "at": 1790576007218,
+      "trigger": null,
+      "latencyMs": 4449,
+      "model": "jev-1.13.0",
+      "hold": 0.28,
+      "top": [
+        {
+          "id": "scene:Cam PH",
+          "p": 0.28
+        },
+        {
+          "id": "graphic:rotation-slate-auto",
+          "p": 0.06999999999999999
+        },
+        {
+          "id": "graphic:now-competing",
+          "p": 0.060000000000000005
+        }
+      ]
+    }
+  ],
+  "auto": [],
+  "executed": [
+    {
+      "actionId": "scene:Cam FX",
+      "sender": "producer",
+      "ok": true,
+      "guardrail": null,
+      "at": 1790576243915
+    }
+  ],
+  "statuses": [
+    {
+      "at": 1790576070669,
+      "compId": "ecac-2026-agent-test",
+      "ok": false,
+      "reason": "unreachable",
+      "message": "Jev request failed: fetch failed (UND_ERR_CONNECT_TIMEOUT)"
+    }
+  ]
+}

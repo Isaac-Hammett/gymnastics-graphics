@@ -19,6 +19,7 @@ export class JevProvider extends DecisionProvider {
     maxRetries = 3,
     baseDelayMs = 200,
     timeoutMs = Number(process.env.XAVIER_JEV_TIMEOUT_MS) || 5000,
+    callCap = Number(process.env.XAVIER_JEV_CALL_CAP) || 0,
     sleepFn = sleep,
     now = Date.now
   } = {}) {
@@ -30,6 +31,8 @@ export class JevProvider extends DecisionProvider {
     this.maxRetries = maxRetries;
     this.baseDelayMs = baseDelayMs;
     this.timeoutMs = timeoutMs;
+    this.callCap = callCap; // 0 = no cap; counts every HTTP request, retries included
+    this.calls = 0;
     this._sleep = sleepFn;
     this._now = now;
   }
@@ -40,6 +43,8 @@ export class JevProvider extends DecisionProvider {
     const started = this._now();
 
     for (let attempt = 0; ; attempt++) {
+      if (this.callCap && this.calls >= this.callCap) throw new DecisionError('call_cap', `Jev call cap of ${this.callCap} reached`);
+      this.calls++;
       const ctrl = new AbortController();
       const timer = setTimeout(() => ctrl.abort(), this.timeoutMs);
       let res;
@@ -51,6 +56,11 @@ export class JevProvider extends DecisionProvider {
           signal: ctrl.signal
         });
       } catch (err) {
+        // A connect timeout never reached Jev: retry it like a 429 (each attempt still counts against callCap).
+        if (err?.cause?.code === 'UND_ERR_CONNECT_TIMEOUT' && attempt < this.maxRetries) {
+          await this._sleep(this.baseDelayMs * 2 ** attempt);
+          continue;
+        }
         throw new DecisionError(err?.name === 'AbortError' ? 'timeout' : 'unreachable', `Jev request failed: ${err.message}${err.cause?.code ? ` (${err.cause.code})` : ''}`);
       } finally {
         clearTimeout(timer);
