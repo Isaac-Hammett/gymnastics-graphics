@@ -1,14 +1,12 @@
 name: Deploy Coordinator
 
-# Triggers when pushing to main AND changes are in server/ directory
+# Manual only for now (Actions tab > Deploy Coordinator > Run workflow). Automatic deploy on push was turned
+# off on 2026-09-28: main carries auth changes (ISA2-330/331/332) that must go live together with the SPA and
+# database rules, not on every push. Turn the push trigger back on once deploys are routine again:
+#   push:
+#     branches: [main]
+#     paths: ['server/**', '.github/workflows/deploy-coordinator.yml']
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'server/**'
-      - '.github/workflows/deploy-coordinator.yml'
-
-  # Allow manual trigger from GitHub UI
   workflow_dispatch:
 
 jobs:
@@ -20,7 +18,7 @@ jobs:
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: 44.193.31.120
+          host: 23.23.177.33
           username: ubuntu
           key: ${{ secrets.COORDINATOR_SSH_KEY }}
           port: 22
@@ -38,11 +36,13 @@ jobs:
             npm install --production --silent
 
             echo "=== Restarting coordinator ==="
-            pm2 restart coordinator --update-env
+            # No --update-env: the coordinator's GOOGLE_APPLICATION_CREDENTIALS lives in PM2's saved env, and this
+            # SSH session does not have it.
+            pm2 restart coordinator
 
             echo "=== Verifying deployment ==="
             sleep 3
-            curl -s http://localhost:3001/api/status | head -c 200
+            curl -s http://localhost:3003/api/coordinator/status | head -c 200
 
             echo ""
             echo "=== Deployment complete ==="
@@ -51,5 +51,5 @@ jobs:
         run: |
           echo "## Deployment Complete" >> $GITHUB_STEP_SUMMARY
           echo "Coordinator VM updated at $(date -u)" >> $GITHUB_STEP_SUMMARY
-          echo "- Host: 44.193.31.120" >> $GITHUB_STEP_SUMMARY
+          echo "- Host: 23.23.177.33" >> $GITHUB_STEP_SUMMARY
           echo "- Branch: main" >> $GITHUB_STEP_SUMMARY
