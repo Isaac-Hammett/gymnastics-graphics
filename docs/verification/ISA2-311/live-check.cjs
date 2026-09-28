@@ -1,0 +1,22 @@
+const C='ecac-2026-agent-test';
+const io=require('socket.io-client')('http://127.0.0.1:3114',{query:{compId:C}});
+const call=(ev,p)=>new Promise(r=>io.emit(ev,p,r));
+const gy=(id,o,s)=>({gymnast_id:id,full_name:'G'+id,order:o,final_score:s});
+const snap=(s1,s2)=>({meet:{teams:[{tricode:'AAA',name:'Team A',events:[{event_name:'FLOOR',rotation:1,gymnasts:[gy(1,1,s1),gy(2,2,s2)]}]}]}});
+const st=async()=>{const s=await call('competitionState:get',{compId:C});return s.state?.events?.FLOOR?.teams?.AAA?.routineStatus};
+const out=[];const log=(k,v)=>{out.push({step:k,result:v});};
+io.on('connect',async()=>{
+  await new Promise(r=>setTimeout(r,5000));
+  log('inject rejected for real comp', await call('competitionState:inject',{compId:'ecac-2026',input:{snapshot:snap('9.0',null)}}));
+  const r1=await call('competitionState:inject',{compId:C,inputs:[{snapshot:snap('9.0',null)},{signal:{type:'greenLight',event:'FLOOR',team:'AAA',source:'synthetic'}}]});
+  log('inject snapshot+greenLight', {ok:r1.ok,ingested:r1.ingested,events:r1.events.map(e=>[e.type,e.confidence])});
+  log('routineStatus', await st());
+  log('cut to Cam PH (away from FLOOR) during routine', await call('action:execute',{compId:C,actionId:'scene:Cam PH',sender:'producer'}));
+  log('cut to Cam FX (event camera) during routine', await call('action:execute',{compId:C,actionId:'scene:Cam FX',sender:'producer'}));
+  const r2=await call('competitionState:inject',{compId:C,input:{snapshot:snap('9.0','9.2')}});
+  log('inject score posted', {ok:r2.ok,events:r2.events.map(e=>e.type)});
+  log('routineStatus', await st());
+  await new Promise(r=>setTimeout(r,3500));
+  log('cut to Cam PH after scored', await call('action:execute',{compId:C,actionId:'scene:Cam PH',sender:'producer'}));
+  console.log(JSON.stringify(out,null,2));process.exit();
+});

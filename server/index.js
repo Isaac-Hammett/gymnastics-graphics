@@ -31,6 +31,7 @@ import { isXavierSender } from './lib/guardrails.js';
 import { getOrCreateActionBus, actionBusHandle, disposeActionBus, releaseActionBusIfIdle } from './lib/actionBus.js';
 import { onceValue } from './lib/firebaseRead.js';
 import { getOrCreateCompetitionState, getCompetitionState, LiveVirtiusSource } from './lib/competitionState/index.js';
+import { injectInputs, devInjectAllowedComps } from './lib/competitionState/devInject.js';
 import { getOrCreateXavier, getXavier, JevProvider } from './lib/xavier/index.js';
 import { DEFAULT_PRESETS } from './lib/obsAudioManager.js';
 import { encryptStreamKey, decryptStreamKey, isEncryptedKey } from './lib/obsStreamManager.js';
@@ -4891,6 +4892,18 @@ io.on('connection', async (socket) => {
       console.error(`[CompetitionState:${compId}] start failed:`, error.message);
       reply({ ok: false, error: error.message });
     }
+  });
+
+  // Dev/test only (ISA2-314): feed a snapshot or signal into the state service.
+  // Refused unless compId is on the test allowlist (see devInject.js).
+  socket.on('competitionState:inject', (payload, maybeAck) => {
+    const ack = typeof payload === 'function' ? payload : maybeAck;
+    const opts = (payload && typeof payload === 'object') ? payload : {};
+    const compId = opts.compId || clientCompId;
+    const reply = (r) => { if (typeof ack === 'function') ack(r); };
+    if (!compId) return reply({ ok: false, error: 'no_comp_id' });
+    if (!devInjectAllowedComps().includes(compId)) return reply({ ok: false, error: 'inject_not_allowed_for_competition' });
+    reply(injectInputs(getOrCreateCompetitionState(compId, { io }), { ...opts, compId }));
   });
 
   socket.on('competitionState:stop', (payload, maybeAck) => {
