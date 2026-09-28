@@ -48,8 +48,11 @@ describe('recordingPackage', () => {
     }
   });
 
-  it('returns an empty array for events.jsonl before Step 7d writes it', () => {
-    assert.deepEqual(loadEvents(RECORDING), []);
+  it('loads events.jsonl (the ISA2-296 rebuilt log) and returns [] for a recording without one', () => {
+    const events = loadEvents(RECORDING);
+    assert.equal(events[0].type, 'meta');
+    assert.ok(events.some(e => e.type === 'scorePosted' && Number.isFinite(e.tVideoMs)));
+    assert.deepEqual(loadEvents('does-not-exist'), []);
   });
 
   it('returns null for an unknown recording', () => {
