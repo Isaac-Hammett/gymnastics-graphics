@@ -37,3 +37,26 @@ export function injectInputs(svc, payload, now = Date.now()) {
   });
   return { ok: true, ingested: list.length, events };
 }
+
+/** The injection socket event is only registered when ALLOW_STATE_INJECTION=1 (ISA2-317). Off in production. */
+export function stateInjectionEnabled(env = process.env) {
+  return env.ALLOW_STATE_INJECTION === '1';
+}
+
+/**
+ * Register the `competitionState:inject` socket event, only when the env flag is set.
+ * @returns {boolean} whether the handler was registered
+ */
+export function registerStateInjection(socket, { clientCompId, getService }, env = process.env) {
+  if (!stateInjectionEnabled(env)) return false;
+  socket.on('competitionState:inject', (payload, maybeAck) => {
+    const ack = typeof payload === 'function' ? payload : maybeAck;
+    const opts = (payload && typeof payload === 'object') ? payload : {};
+    const compId = opts.compId || clientCompId;
+    const reply = (r) => { if (typeof ack === 'function') ack(r); };
+    if (!compId) return reply({ ok: false, error: 'no_comp_id' });
+    if (!devInjectAllowedComps(env).includes(compId)) return reply({ ok: false, error: 'inject_not_allowed_for_competition' });
+    reply(injectInputs(getService(compId), { ...opts, compId }));
+  });
+  return true;
+}
