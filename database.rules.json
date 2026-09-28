@@ -1,0 +1,48 @@
+{
+  "rules": {
+    "competitions": {
+      ".read": "auth != null",
+      "$compId": {
+        ".write": "auth != null",
+        "shakespeare": {
+          ".read": "auth != null",
+          ".write": "auth != null"
+        },
+        "dossiers": {
+          ".read": "auth != null",
+          ".write": "auth != null"
+        },
+        "$other": {
+          ".read": true,
+          ".write": true
+        }
+      }
+    },
+    "bookingTokens": {
+      "$token": {
+        ".read": true,
+        ".write": true
+      }
+    },
+    "surveyResponses": {
+      "$year": {
+        ".read": "auth != null",
+        ".write": true
+      }
+    },
+    "talentRoster": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      "$talentId": {
+        ".read": true,
+        "interested": {
+          ".write": true
+        }
+      }
+    },
+    "$other": {
+      ".read": true,
+      ".write": true
+    }
+  }
+}

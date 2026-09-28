@@ -153,6 +153,17 @@ tar -czf /tmp/claude/stage.tar.gz stage/
 # Should show stage engine skeleton preview, NOT the React SPA
 ```
 
+### Deploy Realtime Database Rules (Isaac only)
+
+Rules live in `database.rules.json` (pointed at by `firebase.json`). Agents never deploy them.
+
+1. Export the current rules from the Firebase console (Realtime Database > Rules) and diff against `database.rules.json`. The file's baseline was inferred from `DEPLOYMENT.md` and the public pages' code, not from the console, so reconcile any difference first.
+2. `firebase deploy --only database` (needs `firebase login` and the project id via `--project`).
+3. Verify signed-out: `curl https://<db>.firebaseio.com/competitions/<compId>/shakespeare.json` returns "Permission denied"; `.../currentGraphic.json` still returns data.
+4. Dry-run test without the emulator: `cd server && node --test __tests__/databaseRules.test.js`.
+
+Known effect: `competitions` whole-tree reads now require sign-in (a grant there would cascade to `shakespeare` and `dossiers`). `/book/:token` and `/survey/:year` list upcoming meets with such a read, so that list will fail for signed-out visitors until those pages read from a public index or a coordinator endpoint instead.
+
 ### Deployment Checklist
 - [ ] React SPA deployed (`show-controller/dist/`)
 - [ ] `output.html` deployed (from project root)
