@@ -22,7 +22,13 @@
  *
  * The rundown engine (sender 'rundown'), the ProducerView scene buttons, and
  * GraphicsControl's send/clear (ISA2-281) all run through `execute` too, so
- * guardrails see every command whoever sends it. Still off the bus: playout
+ * guardrails see every command whoever sends it.
+ *  - **Guardrails (ISA2-273).** The rules in guardrails.js run before every
+ *    command and are enforced for every sender. A refusal acks
+ *    `{ok: false, error: 'guardrail', guardrail: {rule, reason}}`, touches
+ *    neither OBS nor Firebase, and is broadcast as `action:refused`. A human
+ *    command with `force: true` runs anyway and the override is logged;
+ *    Xavier senders can never force. Still off the bus: playout
  * and Who to Watch scene switches, and GraphicsControl's rotation-slate,
  * event-summary, and custom-graphic sends.
  *
@@ -37,6 +43,7 @@ import {
   getGraphicsRegistry,
   resolveDb,
 } from './graphicPayload.js';
+import { Guardrails, isXavierSender } from './guardrails.js';
 
 /** Action kinds the bus understands. */
 export const ACTION_KINDS = {
@@ -118,6 +125,8 @@ export class ActionBus extends EventEmitter {
    * @param {Object} [options.io] - Socket.io server, for room broadcasts
    * @param {Object} [options.obsConnectionManager] - Per-competition OBS connections
    * @param {Function[]} [options.guardrails] - Guardrail predicates (see addGuardrail)
+   * @param {Guardrails} [options.guardrailRules] - The competition's rule set
+   *   (guardrails.js); getOrCreateActionBus supplies one by default
    * @param {number} [options.obsCallTimeoutMs]
    * @param {number} [options.sceneConfirmTimeoutMs]
    * @param {number} [options.firebaseTimeoutMs]
@@ -139,6 +148,7 @@ export class ActionBus extends EventEmitter {
     this.firebaseTimeoutMs = options.firebaseTimeoutMs ?? DEFAULT_FIREBASE_TIMEOUT_MS;
 
     this._guardrails = [...(options.guardrails || [])];
+    this.guardrailRules = options.guardrailRules || null;
 
     /** @type {{actions: Object[], byId: Map<string, Object>}|null} */
     this._catalog = null;
@@ -152,6 +162,9 @@ export class ActionBus extends EventEmitter {
     // Recent bus writes, used to tell a bus action from a human one.
     this._recentSceneWrite = null;   // { sceneName, at }
     this._recentGraphicWrite = null; // { graphicId, at }
+
+    // When the program scene last changed (bus or human), for minShotHoldMs.
+    this._lastProgramChangeAt = null;
 
     this._observing = false;
     this._onObsEvent = null;
@@ -183,10 +196,13 @@ export class ActionBus extends EventEmitter {
   }
 
   /**
-   * @returns {{rule: string, reason: string}|null} The first guardrail that blocks.
+   * Run the predicate guardrails, then the competition's rule set.
+   * @returns {Promise<Array<{rule: string, reason: string}>>} Every denial when
+   *   `force` is set (for the override log), otherwise at most the first.
    * @private
    */
-  _checkGuardrails(context) {
+  async _checkGuardrails(context, { force = false } = {}) {
+    const denials = [];
     for (const guardrail of this._guardrails) {
       let verdict = null;
       try {
@@ -196,13 +212,37 @@ export class ActionBus extends EventEmitter {
         continue;
       }
       if (verdict) {
-        return {
+        denials.push({
           rule: verdict.rule || 'guardrail',
           reason: verdict.reason || 'Blocked by guardrail',
-        };
+        });
+        if (!force) return denials;
       }
     }
-    return null;
+
+    if (this.guardrailRules) {
+      try {
+        const verdict = await this.guardrailRules.check(context.action, {
+          sender: context.sender,
+          force,
+          observed: context.observed,
+          lastProgramChangeAt: this._lastProgramChangeAt,
+          obsCall: this._obsCallHelper(),
+        });
+        if (!verdict.allow) denials.push({ rule: verdict.rule, reason: verdict.reason });
+        denials.push(...verdict.overridden);
+      } catch (error) {
+        console.warn(`${this.logPrefix} Guardrail rules threw, treating as allow: ${error.message}`);
+      }
+    }
+    return denials;
+  }
+
+  /** A bounded `obs.call`, or null when OBS is not connected. @private */
+  _obsCallHelper() {
+    const obs = this._getObsConnection();
+    if (!obs) return null;
+    return (name, args) => withTimeout(obs.call(name, args), this.obsCallTimeoutMs, ACTION_ERRORS.OBS_TIMEOUT);
   }
 
   // ---------------------------------------------------------------------------
@@ -345,13 +385,19 @@ export class ActionBus extends EventEmitter {
    *   The socket path never sets this for Xavier.
    * @param {boolean} [request.includeDetails] - Add `details` (including the
    *   graphic payload) to the returned ack, for in-process callers.
+   * @param {boolean} [request.force] - The producer's override: run even if
+   *   guardrails deny it, and log the rules it overrode. Ignored for Xavier senders.
    * @returns {Promise<{ok: boolean, actionId: string, error: string|null, guardrail: Object|null}>}
    */
   async execute({
     actionId, sender = 'unknown', recommendationId = null,
-    params = {}, uncatalogued = false, includeDetails = false,
+    params = {}, uncatalogued = false, includeDetails = false, force = false,
   } = {}) {
     const ackFn = (fields) => this._ack({ ...fields, includeDetails });
+    if (force && isXavierSender(sender)) {
+      console.warn(`${this.logPrefix} Ignoring force from ${sender}: Xavier can never override a guardrail`);
+      force = false;
+    }
 
     if (!actionId) {
       return ackFn({ actionId: null, sender, recommendationId, ok: false, error: ACTION_ERRORS.NO_ACTION_ID });
@@ -378,18 +424,26 @@ export class ActionBus extends EventEmitter {
       return ackFn({ actionId, sender, recommendationId, ok: false, error: ACTION_ERRORS.UNKNOWN_ACTION });
     }
 
-    const guardrail = this._checkGuardrails({
+    const denials = await this._checkGuardrails({
       action,
       sender,
       recommendationId,
       observed: this.getObserved(),
-    });
-    if (guardrail) {
-      console.log(`${this.logPrefix} Guardrail "${guardrail.rule}" blocked ${actionId} from ${sender}`);
+    }, { force: Boolean(force) });
+    let guardrailOverride = null;
+    if (denials.length > 0 && !force) {
+      const guardrail = denials[0];
+      console.log(`${this.logPrefix} Guardrail "${guardrail.rule}" refused ${actionId} from ${sender}: ${guardrail.reason}`);
       return ackFn({
         actionId, sender, recommendationId, ok: false,
         error: ACTION_ERRORS.GUARDRAIL, guardrail, kind: action.kind,
       });
+    }
+    if (denials.length > 0) {
+      guardrailOverride = denials;
+      console.log(`${this.logPrefix} OVERRIDE: ${sender} forced ${actionId} past ` +
+        denials.map(d => `${d.rule} (${d.reason})`).join('; '));
+      this.emit('guardrailOverride', { actionId, sender, recommendationId, overridden: denials, at: Date.now() });
     }
 
     let result;
@@ -401,7 +455,10 @@ export class ActionBus extends EventEmitter {
       result = { ok: false, error: ACTION_ERRORS.UNKNOWN_ACTION };
     }
 
-    return ackFn({ actionId, sender, recommendationId, kind: action.kind, ...result });
+    return ackFn({
+      actionId, sender, recommendationId, kind: action.kind, ...result,
+      ...(guardrailOverride ? { guardrailOverride } : {}),
+    });
   }
 
   /**
@@ -456,6 +513,7 @@ export class ActionBus extends EventEmitter {
     if (!confirmed) {
       return { ok: false, error: ACTION_ERRORS.NOT_CONFIRMED, confirmed: false, sceneName };
     }
+    this._lastProgramChangeAt = Date.now();
     return { ok: true, error: null, confirmed: true, sceneName };
   }
 
@@ -619,13 +677,14 @@ export class ActionBus extends EventEmitter {
    */
   _ack({
     actionId, sender, recommendationId, ok, error = null, guardrail = null, kind = null,
-    includeDetails = false, ...details
+    includeDetails = false, guardrailOverride = null, ...details
   }) {
     const ack = {
       ok,
       actionId,
       error: error || null,
       guardrail: guardrail || null,
+      ...(guardrailOverride ? { guardrailOverride } : {}),
     };
 
     const record = {
@@ -638,10 +697,14 @@ export class ActionBus extends EventEmitter {
     };
 
     this.emit('executed', record);
+    if (error === ACTION_ERRORS.GUARDRAIL) this.emit('refused', record);
     if (this.io) {
       // `payload` is large and already on its way to output.html via Firebase.
       const { payload, ...broadcast } = record;
-      this.io.to(`competition:${this.compId}`).emit('action:executed', broadcast);
+      const room = this.io.to(`competition:${this.compId}`);
+      room.emit('action:executed', broadcast);
+      // So Producer View can say why a click did nothing.
+      if (error === ACTION_ERRORS.GUARDRAIL) room.emit('action:refused', broadcast);
     }
 
     // In-process callers (the rundown engine) need the payload and message.
@@ -658,6 +721,7 @@ export class ActionBus extends EventEmitter {
   startObserving() {
     if (this._observing) return;
     this._observing = true;
+    this.guardrailRules?.start?.();
 
     if (this.obsConnectionManager?.on) {
       this._onObsEvent = ({ compId, eventName, data }) => {
@@ -699,6 +763,7 @@ export class ActionBus extends EventEmitter {
     }
     this._graphicRef = null;
     this._graphicListener = null;
+    this.guardrailRules?.stop?.();
 
     this._observing = false;
   }
@@ -714,7 +779,10 @@ export class ActionBus extends EventEmitter {
     );
     const observation = { kind, ...fields, at, source: fromBus ? 'bus' : 'human' };
 
-    if (kind === 'scene') this._observed.programScene = observation;
+    if (kind === 'scene') {
+      this._observed.programScene = observation;
+      this._lastProgramChangeAt = at;
+    }
     if (kind === 'graphic') this._observed.currentGraphic = observation;
 
     this.emit('observed', observation);
@@ -880,7 +948,11 @@ export function getOrCreateActionBus(compId, options = {}) {
   if (existing) return existing;
 
   console.log(`[ActionBus] Creating bus for competition: ${compId}`);
-  const bus = new ActionBus({ ...options, compId });
+  // Guardrails are on for every live bus unless the caller passes its own (or null).
+  const guardrailRules = options.guardrailRules !== undefined
+    ? options.guardrailRules
+    : new Guardrails({ compId, firebase: options.firebase });
+  const bus = new ActionBus({ ...options, compId, guardrailRules });
   bus.startObserving();
   actionBuses.set(compId, bus);
   return bus;
