@@ -64,7 +64,7 @@ Two things that used to be candidates for their own boxes are folded in with hon
 
 | System | Layer | Status | Sport coupling | What it does |
 |---|---|---|---|---|
-| [Coordinator server](#coordinator-server) | Platform | **Proven** | Generic | The one Node process every surface talks to; hosts every server-side system. Action bus (ISA2-272) with guardrails (ISA2-273); competition state service (ISA2-274) feeding typed events. Wake path is dead. |
+| [Coordinator server](#coordinator-server) | Platform | **Proven** | Generic | The one Node process every surface talks to; hosts every server-side system. Action bus (ISA2-272) with guardrails (ISA2-273); competition state service (ISA2-274) feeding typed events; Jev decision service (ISA2-275, TypeSafe, Suggest mode only, never run with a real key). Wake path is dead. |
 | [VM pool](#vm-pool) | Platform | **Built** | Generic | EC2 and custom OBS VMs, assigned to competitions. Health monitor never wired. |
 | [Auth](#auth) | Platform | **Partial** | Generic | Firebase login in the browser only. The server and the database are unauthenticated. |
 | [Alerts](#alerts) | Platform | **Partial** | Generic | Complete service and panel; nothing ever raises an alert. |
@@ -283,7 +283,7 @@ Producer View is the product. The systems above are its features. Talent View is
 |---|---|---|---|
 | **Home page** | `/` (`/hub`, `/dashboard`, `/select` redirect here) | Competition list with readiness badges (VM, RTN stats, commentary, scoring feed), create/edit modal with Virtius import and theme picker, VM assign/release, pre-production alerts, links to every management tool and admin page | Partial |
 | **Competition workspace** | `/:compId/*` | The per-meet shell: resolves config and socket URL, mounts the Show and OBS providers, one nested tab: `producer`, `talent`, `rundown`, `obs-manager`, `checklist`, `commentary`, `camera-setup`, `graphics` | Partial |
-| **Producer View** | `/:compId/producer` | Rundown transport and now/next, scene and camera override, audio cue, Web Graphics panel, alerts and theme errors, scoring feed and score bug, the full clip-playout panel stack, VM credentials, AI talking points | Proven |
+| **Producer View** | `/:compId/producer` | Rundown transport and now/next, scene and camera override, audio cue, Web Graphics panel, alerts and theme errors, scoring feed and score bug, the full clip-playout panel stack, VM credentials, AI talking points, Jev recommendation widget (take, dismiss, Off/Suggest toggle; ISA2-276, Built, never shown with a real key) | Proven |
 | **Talent View** | `/:compId/talent` (no login required) | On-camera banner, current segment and script, next segment, large previous/pause/next transport, quick-action graphics, read-only run of show, clip NOW / NEXT with flag-moment | Partial |
 | **Settings** | `/settings` | One thing: bulk import of the annual commentator survey CSV into the talent roster | Partial |
 
