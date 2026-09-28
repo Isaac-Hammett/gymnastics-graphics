@@ -26,7 +26,7 @@ Title starts with a verb. Body: **Question this answers** · **Fills:** (system-
 - Dedupe against board.json by Fills and by title words before creating. Name near-duplicates you skipped in your summary.
 - Create with `python3 agent-team/tools/linear.py create --title "..." --desc-file <file> --role <role> --model <alias> [--project "<name>"] [--blocked-by A,B] [--blocks C]`. It lands in Backlog labeled `proposed`.
 - At most 12 proposals per run. Prefer the milestone in progress.
-- If `TRACKING_TICKET` is set in `agent-team/.env`, post a summary comment there (`linear.py comment <id> --file ...`): created ids, hygiene findings, near-duplicates skipped. Notify only through that comment.
+- If Run facts give a tracking ticket id (never guess one; `.env` is not readable from your run), post a summary comment there (`linear.py comment <id> --file ...`): created ids, hygiene findings, near-duplicates skipped. Notify only through that comment.
 
 ## Answer file
 Line 1 `ANSWER:`. Line 2 `Proposed: N`. Then one line per created id, then hygiene findings.

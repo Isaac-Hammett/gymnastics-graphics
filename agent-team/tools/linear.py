@@ -635,10 +635,14 @@ def flush_outbox(log=print) -> int:
                 p.unlink()
                 posted += 1
                 log(f"outbox: posted {p.name} ({item.get('key')})")
-            else:
+            elif rc == 2:  # network: keep it and stop this flush
                 log(f"outbox: {p.name} failed rc={rc}; will retry")
-                if rc == 2:
-                    break
+                break
+            else:  # Linear rejected it (bad id, missing entity): retrying will never work
+                failed = OUTBOX / "failed"
+                failed.mkdir(exist_ok=True)
+                p.rename(failed / p.name)
+                log(f"outbox: {p.name} rejected by Linear (rc={rc}); moved to outbox/failed/ ({item.get('key')})")
     finally:
         os.environ.pop("LINEAR_NO_OUTBOX", None)
     return posted
