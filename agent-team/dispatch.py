@@ -357,8 +357,9 @@ def finalize(key: str, by_id: dict, state: dict):
             state["planner_due"] = False
             state["planner_new_ids"] = []
         else:
-            if "escalat" in ans.lower():
-                notify("Reviewer escalated something; look for needs-isaac")
+            m = re.search(r"Escalated:\s*(\d+)", ans)
+            if m and int(m.group(1)) > 0:
+                notify(f"Reviewer escalated {m.group(1)} ticket(s); look for needs-isaac")
             state["last_reviewer_run"] = iso()
         if not DRY:
             exit_file(key).unlink()

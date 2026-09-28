@@ -28,7 +28,8 @@ import { getOBSStateSync } from './lib/obsStateSync.js';
 import { setupOBSRoutes } from './routes/obs.js';
 import { getOBSConnectionManager } from './lib/obsConnectionManager.js';
 import { isXavierSender } from './lib/guardrails.js';
-import { getOrCreateActionBus } from './lib/actionBus.js';
+import { getOrCreateActionBus, actionBusHandle, disposeActionBus, releaseActionBusIfIdle } from './lib/actionBus.js';
+import { onceValue } from './lib/firebaseRead.js';
 import { getOrCreateCompetitionState, getCompetitionState, LiveVirtiusSource } from './lib/competitionState/index.js';
 import { DEFAULT_PRESETS } from './lib/obsAudioManager.js';
 import { encryptStreamKey, decryptStreamKey, isEncryptedKey } from './lib/obsStreamManager.js';
@@ -414,13 +415,19 @@ function getOrCreateEngine(compId, obsConnectionManager, firebase, socketIo) {
   console.log(`[Timesheet:${compId}] Firebase instance: ${firebase ? 'provided' : 'NOT PROVIDED'}`);
   console.log(`[Timesheet:${compId}] OBS Connection Manager: ${obsConnectionManager ? 'provided' : 'NOT PROVIDED'}`);
 
+  // Scene switches and graphic fires go through the per-competition action bus
+  // (ISA2-281). The handle resolves the live bus per call, so the bus can be
+  // disposed when the room empties without stranding this engine (ISA2-302).
+  const busOptions = { firebase, io: socketIo, obsConnectionManager };
+  getOrCreateActionBus(compId, busOptions);
+  const busHandle = actionBusHandle(compId, busOptions);
+
   const engine = new TimesheetEngine({
     compId,
     obsConnectionManager,
     firebase,
     io: socketIo,
-    // Scene switches and graphic fires go through the per-competition action bus (ISA2-281)
-    actionBus: getOrCreateActionBus(compId, { firebase, io: socketIo, obsConnectionManager }),
+    actionBus: busHandle,
     showConfig: { segments: [] } // Start with empty config - segments loaded via loadRundown
   });
 
@@ -878,16 +885,19 @@ function getOrCreateEngine(compId, obsConnectionManager, firebase, socketIo) {
     };
     whoToWatchSequencers.set(compId, sequencer);
 
-    // Write a graphic to Firebase currentGraphic
+    // Write a graphic to currentGraphic through the action bus (ISA2-302), so
+    // guardrails and observation see Who to Watch steps like any rundown fire.
     async function writeGraphic(graphicObj) {
       if (!firebase || cancelled) return;
-      try {
-        await firebase.ref(`competitions/${compId}/currentGraphic`).set({
-          ...graphicObj,
-          timestamp: Date.now()
-        });
-      } catch (err) {
-        console.error(`[WTW:${compId}] Failed to write currentGraphic:`, err.message);
+      const graphicId = graphicObj.graphicId || graphicObj.graphic;
+      const ack = await busHandle.execute({
+        actionId: `graphic:${graphicId}`,
+        sender: 'rundown',
+        params: graphicId === 'clear' ? {} : { payload: graphicObj },
+        uncatalogued: true
+      });
+      if (!ack.ok) {
+        console.error(`[WTW:${compId}] Failed to write currentGraphic ${graphicId}:`, ack.guardrail?.reason || ack.error);
       }
     }
 
@@ -1011,6 +1021,9 @@ function removeEngine(compId) {
 
   // Clean up Playout Engine
   removePlayoutEngine(compId);
+
+  // Release the action bus's OBS and currentGraphic listeners (ISA2-302)
+  disposeActionBus(compId);
 }
 
 // ============================================
@@ -5113,7 +5126,7 @@ io.on('connection', async (socket) => {
             const admin = await import('firebase-admin');
             const database = admin.default.database();
             const templateRef = database.ref(`templates/obs/${templateId}`);
-            const snapshot = await templateRef.once('value');
+            const snapshot = await onceValue(templateRef);
             const template = snapshot.val();
 
             if (template && template.scenes && template.scenes.length > 0) {
@@ -5143,7 +5156,7 @@ io.on('connection', async (socket) => {
               // Store scene name in templateScenes list in Firebase for proper categorization
               try {
                 const templateScenesRef = database.ref(`competitions/${clientCompId}/obs/templateScenes`);
-                const templateScenesSnapshot = await templateScenesRef.once('value');
+                const templateScenesSnapshot = await onceValue(templateScenesRef);
                 let templateScenes = templateScenesSnapshot.val() || [];
                 if (!Array.isArray(templateScenes)) {
                   templateScenes = [];
@@ -5209,7 +5222,7 @@ io.on('connection', async (socket) => {
         const db = productionConfigService.getDb();
         if (db) {
           const templateScenesRef = db.ref(`competitions/${clientCompId}/obs/templateScenes`);
-          const templateScenesSnapshot = await templateScenesRef.once('value');
+          const templateScenesSnapshot = await onceValue(templateScenesRef);
           let templateScenes = templateScenesSnapshot.val() || [];
           if (Array.isArray(templateScenes) && templateScenes.includes(sceneName)) {
             templateScenes = templateScenes.filter(s => s !== sceneName);
@@ -6051,7 +6064,7 @@ io.on('connection', async (socket) => {
       // 2. If not default, load from Firebase
       if (!preset && productionConfigService.isAvailable()) {
         const db = productionConfigService.getDb();
-        const snapshot = await db.ref(`competitions/${clientCompId}/obs/presets/${presetId}`).once('value');
+        const snapshot = await onceValue(db.ref(`competitions/${clientCompId}/obs/presets/${presetId}`));
         preset = snapshot.val();
       }
 
@@ -6128,7 +6141,7 @@ io.on('connection', async (socket) => {
       let userPresets = [];
       if (productionConfigService.isAvailable()) {
         const db = productionConfigService.getDb();
-        const snapshot = await db.ref(`competitions/${clientCompId}/obs/presets`).once('value');
+        const snapshot = await onceValue(db.ref(`competitions/${clientCompId}/obs/presets`));
         const presetsData = snapshot.val();
         if (presetsData) {
           userPresets = Object.entries(presetsData).map(([id, preset]) => ({
@@ -6729,7 +6742,7 @@ io.on('connection', async (socket) => {
 
       // Get the template to verify it exists
       const templateRef = database.ref(`templates/obs/${templateId}`);
-      const templateSnapshot = await templateRef.once('value');
+      const templateSnapshot = await onceValue(templateRef);
       const template = templateSnapshot.val();
 
       if (!template) {
@@ -6739,7 +6752,7 @@ io.on('connection', async (socket) => {
 
       // Clear this default from any other templates for the same meet types
       const allTemplatesRef = database.ref('templates/obs');
-      const allTemplatesSnapshot = await allTemplatesRef.once('value');
+      const allTemplatesSnapshot = await onceValue(allTemplatesRef);
       const allTemplates = allTemplatesSnapshot.val() || {};
 
       for (const [otherTemplateId, otherTemplate] of Object.entries(allTemplates)) {
@@ -6807,7 +6820,7 @@ io.on('connection', async (socket) => {
 
       const database = productionConfigService.getDb();
       const templateRef = database.ref(`templates/obs/${templateId}`);
-      const templateSnapshot = await templateRef.once('value');
+      const templateSnapshot = await onceValue(templateRef);
       const template = templateSnapshot.val();
 
       if (!template) {
@@ -6856,7 +6869,7 @@ io.on('connection', async (socket) => {
 
       const database = productionConfigService.getDb();
       const templatesRef = database.ref('templates/obs');
-      const templatesSnapshot = await templatesRef.once('value');
+      const templatesSnapshot = await onceValue(templatesRef);
       const templates = templatesSnapshot.val() || {};
 
       // Find templates that are default for this meet type
@@ -7110,7 +7123,7 @@ io.on('connection', async (socket) => {
 
     try {
       const db = productionConfigService.getDb();
-      const snapshot = await db.ref(`competitions/${clientCompId}/obs/streamConfig`).once('value');
+      const snapshot = await onceValue(db.ref(`competitions/${clientCompId}/obs/streamConfig`));
       const config = snapshot.val();
 
       if (!config || !config.streamKeyEncrypted) {
@@ -7519,7 +7532,7 @@ io.on('connection', async (socket) => {
 
       // Fetch segments from Firebase
       const segmentsPath = `competitions/${targetCompId}/rundown/segments`;
-      const snapshot = await db.ref(segmentsPath).once('value');
+      const snapshot = await onceValue(db.ref(segmentsPath));
       const segmentsData = snapshot.val();
 
       if (!segmentsData) {
@@ -7821,7 +7834,7 @@ io.on('connection', async (socket) => {
       }
 
       // Read competition config
-      const configSnapshot = await db.ref(`competitions/${targetCompId}/config`).once('value');
+      const configSnapshot = await onceValue(db.ref(`competitions/${targetCompId}/config`));
       const config = configSnapshot.val();
       if (!config) {
         socket.emit('rtnStatsResult', { success: false, compId: targetCompId, error: 'Competition config not found' });
@@ -7835,7 +7848,7 @@ io.on('connection', async (socket) => {
       // Read composite team config (Phase 9)
       let compositeTeams = null;
       try {
-        const compositeSnapshot = await db.ref(`competitions/${targetCompId}/compositeTeams`).once('value');
+        const compositeSnapshot = await onceValue(db.ref(`competitions/${targetCompId}/compositeTeams`));
         compositeTeams = compositeSnapshot.val();
       } catch (err) {
         // Non-fatal
@@ -7873,8 +7886,8 @@ io.on('connection', async (socket) => {
         let league = 'ncaa';
         try {
           const [rtnIdSnapshot, leagueSnapshot] = await Promise.all([
-            db.ref(`teamsDatabase/teams/${key}/rtnId`).once('value'),
-            db.ref(`teamsDatabase/teams/${key}/league`).once('value'),
+            onceValue(db.ref(`teamsDatabase/teams/${key}/rtnId`)),
+            onceValue(db.ref(`teamsDatabase/teams/${key}/league`)),
           ]);
           rtnId = rtnIdSnapshot.val();
           league = leagueSnapshot.val() || 'ncaa';
@@ -8669,6 +8682,17 @@ io.on('connection', async (socket) => {
 
     showState.connectedClients = showState.connectedClients.filter(c => c.id !== socket.id);
     broadcastState();
+
+    // Last client out of the competition room: release its action bus, unless
+    // a rundown is still running through it (ISA2-302). The socket has already
+    // left its rooms by the time 'disconnect' fires.
+    if (clientCompId && clientCompId !== 'local') {
+      const clientsRemaining = io.sockets.adapter.rooms.get(`competition:${clientCompId}`)?.size || 0;
+      const busy = Boolean(getEngine(clientCompId)?.isRunning);
+      if (releaseActionBusIfIdle(clientCompId, { clientsRemaining, busy })) {
+        console.log(`[ActionBus] Last client left competition:${clientCompId}; bus disposed`);
+      }
+    }
   });
 });
 

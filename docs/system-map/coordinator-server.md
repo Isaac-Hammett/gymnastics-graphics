@@ -46,7 +46,7 @@
 
 **Writers on the action bus (ISA2-281, 2026-09-27):** timesheetEngine `_applyTransitionAndSwitchScene`, `_triggerGraphic`, `overrideScene`, `overrideCamera`, index.js `overrideScene`, `switchScene`, and GraphicsControl `sendGraphic`/`clearGraphic` (as `action:execute` with `params.manual`). See ISA2-281 answer for the routing and the new `buildManualGraphicPayload` function.
 
-**Still off the bus:** playout engine, Who-to-Watch sequencer, rotation slate, event summary, custom graphic sends, OBS `createScene` temporary switch.
+**Still off the bus:** playout engine (clip scene switches) and the OBS `createScene` temporary switch. Who-to-Watch steps, rotation slate, auto slate, event summary, now-competing, and custom graphic sends moved onto it in ISA2-302 (prebuilt payloads ride in `params.payload`, trusted senders only); custom graphics are catalogued as `graphic:custom-{key}`. A competition's bus is disposed when its last client leaves and no rundown is running, and on engine teardown; socket-path Firebase reads are bounded by `onceValue` (`server/lib/firebaseRead.js`, 6 s).
 
 **Socket events:**
 `emits:` action:catalog, action:executed (to `competition:{compId}`), connected, shutdownPending, shutdownCancelled, shutdownExecuting, serverShuttingDown, stateUpdate, vmPoolStatus, cameraHealth, cameraStatusChanged (124 distinct emit names total across index.js)
