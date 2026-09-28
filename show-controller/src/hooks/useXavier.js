@@ -18,6 +18,7 @@ export default function useXavier(socket, compId) {
   const [recommendations, setRecommendations] = useState([]);
   const [results, setResults] = useState({});
   const [control, setControl] = useState(null);
+  const [autoRan, setAutoRan] = useState({});
 
   useEffect(() => {
     if (!socket || !compId) return undefined;
@@ -35,6 +36,11 @@ export default function useXavier(socket, compId) {
       if (!mine(payload)) return;
       setRecommendations(payload.recommendations || []);
       setResults({});
+      setAutoRan({});
+    };
+    const onAuto = (d) => {
+      if (!mine(d) || d.outcome !== 'auto' || !d.recommendationId) return;
+      setAutoRan(prev => ({ ...prev, [d.recommendationId]: true }));
     };
     const onStatus = (s) => { if (mine(s)) setStatus({ ok: s.ok, reason: s.reason, message: s.message }); };
     const onDismissed = (d) => {
@@ -46,6 +52,7 @@ export default function useXavier(socket, compId) {
     socket.on('xavier:status', onStatus);
     socket.on('xavier:dismissed', onDismissed);
     socket.on('xavier:control', onControl);
+    socket.on('xavier:auto', onAuto);
     const ask = () => socket.emit('xavier:get', { compId });
     if (socket.connected) ask();
     socket.on('connect', ask);
@@ -55,6 +62,7 @@ export default function useXavier(socket, compId) {
       socket.off('xavier:status', onStatus);
       socket.off('xavier:dismissed', onDismissed);
       socket.off('xavier:control', onControl);
+      socket.off('xavier:auto', onAuto);
       socket.off('connect', ask);
     };
   }, [socket, compId]);
@@ -91,6 +99,10 @@ export default function useXavier(socket, compId) {
     socket.emit('xavier:dismiss', { compId, recommendationId: rec.recommendationId });
   }, [socket, compId]);
 
+  // Ran by Xavier itself: this session's xavier:auto events, plus the control's recent log (covers a reload).
+  const ranIds = { ...autoRan };
+  (control?.recent || []).forEach(r => { if (r.outcome === 'auto' && r.recommendationId) ranIds[r.recommendationId] = true; });
+
   const mode = control?.mode || (running ? 'suggest' : 'off');
-  return { running, mode, control, status, recommendations, results, setMode, take, dismiss };
+  return { running, mode, control, status, recommendations, results, ranIds, setMode, take, dismiss };
 }
