@@ -30,6 +30,7 @@ import { getOBSConnectionManager } from './lib/obsConnectionManager.js';
 import { isXavierSender } from './lib/guardrails.js';
 import { getOrCreateActionBus, actionBusHandle, disposeActionBus, releaseActionBusIfIdle } from './lib/actionBus.js';
 import { onceValue } from './lib/firebaseRead.js';
+import { attachSocketIdentity, createTalentAssignmentLookup } from './lib/socketIdentity.js';
 import { getOrCreateCompetitionState, getCompetitionState, LiveVirtiusSource } from './lib/competitionState/index.js';
 import { registerStateInjection, stateInjectionEnabled, devInjectAllowedComps } from './lib/competitionState/devInject.js';
 import { getOrCreateXavier, getXavier, getOrCreateXavierControl, getXavierControl, getOrCreateXavierLog, JevProvider } from './lib/xavier/index.js';
@@ -4726,11 +4727,24 @@ async function broadcastOBSState(compId, obsConnManager, io) {
   }
 }
 
+const socketIdentityDeps = {
+  verifyIdToken: (token) => productionConfigService.verifyIdToken(token),
+  hasConfirmedAssignment: createTalentAssignmentLookup(() => productionConfigService.getDb()),
+};
+
 // Socket.io connection handling
 io.on('connection', async (socket) => {
   // Extract compId from connection query (sent by frontend)
   const clientCompId = socket.handshake.query.compId;
   console.log(`Client connected: ${socket.id} for competition: ${clientCompId || 'none'}`);
+
+  // Identity (ISA2-331): socket.data.role is 'anonymous' now and resolves in
+  // the background. Never awaited, so handlers below still register first.
+  attachSocketIdentity(socket, socketIdentityDeps).then((role) => {
+    if (role !== 'anonymous') console.log(`[Socket] ${socket.id} identified as ${role}`);
+  }).catch((identityError) => {
+    console.warn(`[Socket] Identity resolution failed for ${socket.id}: ${identityError.message}`);
+  });
 
   // Track activity on every socket event using socket.io middleware
   socket.use((packet, next) => {

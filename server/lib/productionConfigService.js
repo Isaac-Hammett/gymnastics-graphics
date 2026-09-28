@@ -71,6 +71,19 @@ function getDb() {
 }
 
 /**
+ * Verify a Firebase ID token with the Admin SDK (socket identity, ISA2-331).
+ * Rejects when the token is invalid or Firebase Admin is unavailable.
+ * @param {string} token
+ * @returns {Promise<Object>} the decoded token ({ uid, email, ... })
+ */
+async function verifyIdToken(token) {
+  if (!getDb()) {
+    throw new Error('Firebase Admin is not initialized');
+  }
+  return admin.auth().verifyIdToken(token);
+}
+
+/**
  * Check if Firebase is available
  */
 function isAvailable() {
@@ -435,6 +448,7 @@ const productionConfigService = {
   initialize: initializeFirebase,
   isAvailable,
   getDb,
+  verifyIdToken,
 
   // Production config
   getProductionConfig,
@@ -458,6 +472,9 @@ const productionConfigService = {
   // History
   getHistory,
   appendHistory,
+
+  // Auth
+  verifyIdToken,
 
   // Utilities
   clearProductionData,
