@@ -1,0 +1,15 @@
+build-scenes {"ok":true,"actions":[],"scenes":["Multi View","Cam FX","Cam PH","Cam SR","Cam VT","Cam PB","Cam HB"]}
+load {"ok":true,"compId":"ecac-2026-agent-test","recording":"ecac-2026","positionMs":0,"durationMs":8735022,"playing":false,"rate":1,"layout":{"layout":"other","fromMs":0},"mediaOffsetMs":0,"sourceOffsetsMs":[0],"obsConnected":true,"obsCursorMs":33,"driftMs":33,"lastError":null}
+seek 40:00 {"ok":true,"compId":"ecac-2026-agent-test","recording":"ecac-2026","positionMs":2400000,"durationMs":8735022,"playing":false,"rate":1,"layout":{"layout":"3x2","fromMs":2072000},"mediaOffsetMs":0,"sourceOffsetsMs":[0],"obsConnected":true,"obsCursorMs":2400100,"driftMs":100,"lastError":null} (10128 ms incl. keyframe catch-up)
+exec {"ok":true,"actionId":"scene:Multi View","error":null,"guardrail":null}
+status {"ok":true,"compId":"ecac-2026-agent-test","recording":"ecac-2026","positionMs":2400000,"durationMs":8735022,"playing":false,"rate":1,"layout":{"layout":"3x2","fromMs":2072000},"mediaOffsetMs":0,"sourceOffsetsMs":[0],"obsConnected":true,"obsCursorMs":2400100,"driftMs":100,"lastError":null}
+OBS cursor vs 40:00 (ms): 100
+screenshot scene: Multi View
+rotation {"current":2,"total":6,"isFinal":false,"byes":[]}
+standings 1. NAVY 67.250 | 2. ARMY 66.950 | 3. GRN 65.750 | 4. W&M 63.350 | 5. SIM 63.000 | 6. SPR 60.800
+up FLOOR SPR: Evan Reichert (in_progress, confirmed=true, conf=0.9)
+up HORSE NAVY: Jonah Soltz (in_progress, confirmed=true, conf=0.9)
+up RINGS W&M: Evan Wilkins (in_progress, confirmed=true, conf=0.9)
+up VAULT SIM: Milo Staley (in_progress, confirmed=true, conf=0.9)
+up PBARS ARMY: Cash Johnston (in_progress, confirmed=true, conf=0.9)
+up BAR GRN: Donovan Diviney (in_progress, confirmed=true, conf=0.9)

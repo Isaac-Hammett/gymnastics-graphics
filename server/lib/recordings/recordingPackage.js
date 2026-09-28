@@ -3,13 +3,14 @@
  *
  * Loads a recorded-source package for a meet: the layout timeline (meta.json),
  * the final Virtius results export (virtius-final.json), and any recorded
- * playout events (events.jsonl, empty until Step 7d writes to it).
+ * timestamped meet log (events.jsonl; ISA2-296 replays it on the show clock).
  *
  * Layout on disk, per recording (e.g. recordings/ecac-2026/):
  *   program.mp4        — source video (not read here; local-only, gitignored)
  *   meta.json           — { width, height, fps, durationMs, layoutTimeline }
  *   virtius-final.json  — { meet: { ... event_results, teams } }
- *   events.jsonl        — newline-delimited playout events (optional, Step 7d+)
+ *   events.jsonl        — { tVideoMs, type, event, team, athlete, score } per line (optional;
+ *                         ECAC's is rebuilt by lib/recordings/rebuildEventLog.js)
  */
 
 import fs from 'fs';
@@ -56,7 +57,7 @@ export function loadVirtiusFinal(name) {
 
 /**
  * Load a recording's playout events log (events.jsonl), one JSON object per line.
- * Returns an empty array if the file doesn't exist yet (it's written starting Step 7d).
+ * Returns an empty array if the file doesn't exist.
  * @param {string} name — recording directory name
  * @returns {Object[]}
  */

@@ -1,0 +1,1635 @@
+{
+  "compId": "ecac-2026-agent-test",
+  "running": true,
+  "lastError": null,
+  "state": {
+    "stateVersion": 56,
+    "updatedAt": 2300500,
+    "hasSnapshot": true,
+    "meetStatus": null,
+    "events": {
+      "FLOOR": {
+        "name": "FLOOR",
+        "code": "FX",
+        "rotation": 1,
+        "teams": {
+          "NAVY": {
+            "routineStatus": "idle",
+            "athleteUp": null,
+            "lastScore": {
+              "athleteId": "8217",
+              "name": "Brian Solomon",
+              "score": "13.050"
+            },
+            "lineup": [
+              {
+                "id": "8216",
+                "name": "Daniel Gurevich",
+                "order": 1,
+                "score": "13.350",
+                "type": 1
+              },
+              {
+                "id": "8218",
+                "name": "Benjamin Thurlow Lam",
+                "order": 2,
+                "score": "13.650",
+                "type": 1
+              },
+              {
+                "id": "7986",
+                "name": "Colby Prince",
+                "order": 3,
+                "score": "13.650",
+                "type": 1
+              },
+              {
+                "id": "7989",
+                "name": "Danilo Viciana",
+                "order": 4,
+                "score": "13.800",
+                "type": 1
+              },
+              {
+                "id": "8425",
+                "name": "Jonah Soltz",
+                "order": 5,
+                "score": "12.850",
+                "type": 0
+              },
+              {
+                "id": "8217",
+                "name": "Brian Solomon",
+                "order": 6,
+                "score": "13.050",
+                "type": 0
+              }
+            ],
+            "bye": false
+          },
+          "W&M": {
+            "routineStatus": "idle",
+            "athleteUp": null,
+            "lastScore": null,
+            "lineup": [
+              {
+                "id": "8296",
+                "name": "Michael Weiner",
+                "order": 1,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "8106",
+                "name": "Evan Wilkins",
+                "order": 2,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "8108",
+                "name": "Niko Greenly",
+                "order": 3,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "8295",
+                "name": "Luke Tully",
+                "order": 4,
+                "score": null,
+                "type": 1
+              }
+            ],
+            "bye": false
+          },
+          "SIM": {
+            "routineStatus": "idle",
+            "athleteUp": null,
+            "lastScore": null,
+            "lineup": [
+              {
+                "id": "8497",
+                "name": "Garrett Alexander",
+                "order": 1,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "8498",
+                "name": "Noah Doiron",
+                "order": 2,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "8096",
+                "name": "Jake Smith",
+                "order": 3,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "8300",
+                "name": "Braxton Jones",
+                "order": 4,
+                "score": null,
+                "type": 1
+              }
+            ],
+            "bye": false
+          },
+          "ARMY": {
+            "routineStatus": "idle",
+            "athleteUp": null,
+            "lastScore": null,
+            "lineup": [
+              {
+                "id": "8228",
+                "name": "Jaden Blank",
+                "order": 1,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "8233",
+                "name": "Max Rubin",
+                "order": 2,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "8231",
+                "name": "Nick Lester",
+                "order": 3,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "8467",
+                "name": "Thomas Morrow",
+                "order": 4,
+                "score": null,
+                "type": 1
+              }
+            ],
+            "bye": false
+          },
+          "GRN": {
+            "routineStatus": "idle",
+            "athleteUp": null,
+            "lastScore": null,
+            "lineup": [
+              {
+                "id": "8431",
+                "name": "Andrew Ricard",
+                "order": 1,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "8430",
+                "name": "Kyler Hinson",
+                "order": 2,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "7969",
+                "name": "Ethan Poole",
+                "order": 3,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "8207",
+                "name": "Jaxon Clapper",
+                "order": 4,
+                "score": null,
+                "type": 1
+              }
+            ],
+            "bye": false
+          },
+          "SPR": {
+            "routineStatus": "in_progress",
+            "athleteUp": {
+              "id": "8223",
+              "name": "Evan Reichert",
+              "team": "SPR",
+              "order": 2,
+              "confidence": 0.9,
+              "evidence": [
+                {
+                  "kind": "recorded-log-greenLight",
+                  "t": 2300500
+                }
+              ],
+              "confirmed": true
+            },
+            "lastScore": {
+              "athleteId": "8449",
+              "name": "Carl Jacob Soederqvist",
+              "score": "13.650"
+            },
+            "lineup": [
+              {
+                "id": "8449",
+                "name": "Carl Jacob Soederqvist",
+                "order": 1,
+                "score": "13.650",
+                "type": 1
+              },
+              {
+                "id": "8223",
+                "name": "Evan Reichert",
+                "order": 2,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "8441",
+                "name": "Michael Dalton",
+                "order": 3,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "8008",
+                "name": "Owen Carney",
+                "order": 4,
+                "score": null,
+                "type": 1
+              }
+            ],
+            "bye": false
+          }
+        }
+      },
+      "HORSE": {
+        "name": "HORSE",
+        "code": "PH",
+        "rotation": 2,
+        "teams": {
+          "NAVY": {
+            "routineStatus": "in_progress",
+            "athleteUp": {
+              "id": "8425",
+              "name": "Jonah Soltz",
+              "team": "NAVY",
+              "order": 2,
+              "confidence": 0.9,
+              "evidence": [
+                {
+                  "kind": "recorded-log-greenLight",
+                  "t": 2300500
+                }
+              ],
+              "confirmed": true
+            },
+            "lastScore": {
+              "athleteId": "8541",
+              "name": "Kody Tokunaga",
+              "score": "12.800"
+            },
+            "lineup": [
+              {
+                "id": "8541",
+                "name": "Kody Tokunaga",
+                "order": 1,
+                "score": "12.800",
+                "type": 1
+              },
+              {
+                "id": "8425",
+                "name": "Jonah Soltz",
+                "order": 2,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "8216",
+                "name": "Daniel Gurevich",
+                "order": 3,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "8217",
+                "name": "Brian Solomon",
+                "order": 4,
+                "score": null,
+                "type": 1
+              }
+            ],
+            "bye": false
+          },
+          "W&M": {
+            "routineStatus": "idle",
+            "athleteUp": null,
+            "lastScore": {
+              "athleteId": "8295",
+              "name": "Luke Tully",
+              "score": "12.200"
+            },
+            "lineup": [
+              {
+                "id": "7901",
+                "name": "Ricky Pizem",
+                "order": 1,
+                "score": "12.550",
+                "type": 1
+              },
+              {
+                "id": "8105",
+                "name": "Jared Noyman",
+                "order": 2,
+                "score": "12.000",
+                "type": 1
+              },
+              {
+                "id": "7751",
+                "name": "Sam Smith",
+                "order": 3,
+                "score": "12.400",
+                "type": 1
+              },
+              {
+                "id": "8107",
+                "name": "Gavin Zborowski",
+                "order": 4,
+                "score": "13.450",
+                "type": 1
+              },
+              {
+                "id": "8295",
+                "name": "Luke Tully",
+                "order": 5,
+                "score": "12.200",
+                "type": 0
+              }
+            ],
+            "bye": false
+          },
+          "SIM": {
+            "routineStatus": "idle",
+            "athleteUp": null,
+            "lastScore": null,
+            "lineup": [
+              {
+                "id": "8094",
+                "name": "Tristan Shorey",
+                "order": 1,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "7961",
+                "name": "Milo Staley",
+                "order": 2,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "8087",
+                "name": "William Bacus",
+                "order": 3,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "8497",
+                "name": "Garrett Alexander",
+                "order": 4,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "8498",
+                "name": "Noah Doiron",
+                "order": 5,
+                "score": null,
+                "type": 0
+              }
+            ],
+            "bye": false
+          },
+          "ARMY": {
+            "routineStatus": "idle",
+            "athleteUp": null,
+            "lastScore": null,
+            "lineup": [
+              {
+                "id": "8257",
+                "name": "Ben Aguilar",
+                "order": 1,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "8230",
+                "name": "Noah Duran",
+                "order": 2,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "8260",
+                "name": "Jake Prabhakaran",
+                "order": 3,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "7849",
+                "name": "Maddox Pabellon",
+                "order": 4,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "8228",
+                "name": "Jaden Blank",
+                "order": 5,
+                "score": null,
+                "type": 0
+              }
+            ],
+            "bye": false
+          },
+          "GRN": {
+            "routineStatus": "idle",
+            "athleteUp": null,
+            "lastScore": null,
+            "lineup": [
+              {
+                "id": "7979",
+                "name": "Jacob Foster",
+                "order": 1,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "8208",
+                "name": "Andres Esquivel-Garza",
+                "order": 2,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "8430",
+                "name": "Kyler Hinson",
+                "order": 3,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "8212",
+                "name": "Matthew Roth",
+                "order": 4,
+                "score": null,
+                "type": 1
+              }
+            ],
+            "bye": false
+          },
+          "SPR": {
+            "routineStatus": "idle",
+            "athleteUp": null,
+            "lastScore": null,
+            "lineup": [
+              {
+                "id": "8449",
+                "name": "Carl Jacob Soederqvist",
+                "order": 1,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "8223",
+                "name": "Evan Reichert",
+                "order": 2,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "8442",
+                "name": "Devon Felsenstein",
+                "order": 3,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "8219",
+                "name": "Peyton Cramer",
+                "order": 4,
+                "score": null,
+                "type": 1
+              }
+            ],
+            "bye": false
+          }
+        }
+      },
+      "RINGS": {
+        "name": "RINGS",
+        "code": "SR",
+        "rotation": 3,
+        "teams": {
+          "NAVY": {
+            "routineStatus": "idle",
+            "athleteUp": null,
+            "lastScore": null,
+            "lineup": [
+              {
+                "id": "8425",
+                "name": "Jonah Soltz",
+                "order": 1,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "7987",
+                "name": "Aaron Stein",
+                "order": 2,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "7983",
+                "name": "Garrett Lawless",
+                "order": 3,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "8217",
+                "name": "Brian Solomon",
+                "order": 4,
+                "score": null,
+                "type": 1
+              }
+            ],
+            "bye": false
+          },
+          "W&M": {
+            "routineStatus": "in_progress",
+            "athleteUp": {
+              "id": "8106",
+              "name": "Evan Wilkins",
+              "team": "W&M",
+              "order": 2,
+              "confidence": 0.9,
+              "evidence": [
+                {
+                  "kind": "recorded-log-greenLight",
+                  "t": 2300500
+                }
+              ],
+              "confirmed": true
+            },
+            "lastScore": {
+              "athleteId": "7748",
+              "name": "Jonathan Irwin",
+              "score": "12.950"
+            },
+            "lineup": [
+              {
+                "id": "7748",
+                "name": "Jonathan Irwin",
+                "order": 1,
+                "score": "12.950",
+                "type": 1
+              },
+              {
+                "id": "8106",
+                "name": "Evan Wilkins",
+                "order": 2,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "8295",
+                "name": "Luke Tully",
+                "order": 3,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "8107",
+                "name": "Gavin Zborowski",
+                "order": 4,
+                "score": null,
+                "type": 1
+              }
+            ],
+            "bye": false
+          },
+          "SIM": {
+            "routineStatus": "idle",
+            "athleteUp": null,
+            "lastScore": {
+              "athleteId": "8092",
+              "name": "Brian Rollison",
+              "score": "13.650"
+            },
+            "lineup": [
+              {
+                "id": "8498",
+                "name": "Noah Doiron",
+                "order": 1,
+                "score": "11.750",
+                "type": 1
+              },
+              {
+                "id": "8501",
+                "name": "Oskar Silverman",
+                "order": 2,
+                "score": "12.300",
+                "type": 1
+              },
+              {
+                "id": "8297",
+                "name": "Alex Campbell",
+                "order": 3,
+                "score": "12.400",
+                "type": 1
+              },
+              {
+                "id": "8092",
+                "name": "Brian Rollison",
+                "order": 4,
+                "score": "13.650",
+                "type": 1
+              }
+            ],
+            "bye": false
+          },
+          "ARMY": {
+            "routineStatus": "idle",
+            "athleteUp": null,
+            "lastScore": null,
+            "lineup": [
+              {
+                "id": "8260",
+                "name": "Jake Prabhakaran",
+                "order": 1,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "8259",
+                "name": "Cash Johnston",
+                "order": 2,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "8230",
+                "name": "Noah Duran",
+                "order": 3,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "8228",
+                "name": "Jaden Blank",
+                "order": 4,
+                "score": null,
+                "type": 1
+              }
+            ],
+            "bye": false
+          },
+          "GRN": {
+            "routineStatus": "idle",
+            "athleteUp": null,
+            "lastScore": null,
+            "lineup": [
+              {
+                "id": "7974",
+                "name": "Elijah Cruz",
+                "order": 1,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "7978",
+                "name": "Ricky Mays",
+                "order": 2,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "7969",
+                "name": "Ethan Poole",
+                "order": 3,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "8211",
+                "name": "Sergey Popov",
+                "order": 4,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "8430",
+                "name": "Kyler Hinson",
+                "order": 5,
+                "score": null,
+                "type": 0
+              }
+            ],
+            "bye": false
+          },
+          "SPR": {
+            "routineStatus": "idle",
+            "athleteUp": null,
+            "lastScore": null,
+            "lineup": [
+              {
+                "id": "8012",
+                "name": "Will Wilson",
+                "order": 1,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "8654",
+                "name": "Brian Delf",
+                "order": 2,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "8013",
+                "name": "Gustavin Suess",
+                "order": 3,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "8447",
+                "name": "Blaise Rousseau",
+                "order": 4,
+                "score": null,
+                "type": 1
+              }
+            ],
+            "bye": false
+          }
+        }
+      },
+      "VAULT": {
+        "name": "VAULT",
+        "code": "VT",
+        "rotation": 4,
+        "teams": {
+          "NAVY": {
+            "routineStatus": "idle",
+            "athleteUp": null,
+            "lastScore": null,
+            "lineup": [
+              {
+                "id": "8216",
+                "name": "Daniel Gurevich",
+                "order": 1,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "8425",
+                "name": "Jonah Soltz",
+                "order": 2,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "8217",
+                "name": "Brian Solomon",
+                "order": 3,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "7985",
+                "name": "Matthew Petros",
+                "order": 4,
+                "score": null,
+                "type": 1
+              }
+            ],
+            "bye": false
+          },
+          "W&M": {
+            "routineStatus": "idle",
+            "athleteUp": null,
+            "lastScore": null,
+            "lineup": [
+              {
+                "id": "7902",
+                "name": "Evan Sikra",
+                "order": 1,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "7901",
+                "name": "Ricky Pizem",
+                "order": 2,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "8108",
+                "name": "Niko Greenly",
+                "order": 3,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "8295",
+                "name": "Luke Tully",
+                "order": 4,
+                "score": null,
+                "type": 1
+              }
+            ],
+            "bye": false
+          },
+          "SIM": {
+            "routineStatus": "in_progress",
+            "athleteUp": {
+              "id": "7961",
+              "name": "Milo Staley",
+              "team": "SIM",
+              "order": 2,
+              "confidence": 0.9,
+              "evidence": [
+                {
+                  "kind": "recorded-log-greenLight",
+                  "t": 2300500
+                }
+              ],
+              "confirmed": true
+            },
+            "lastScore": {
+              "athleteId": "8498",
+              "name": "Noah Doiron",
+              "score": "12.900"
+            },
+            "lineup": [
+              {
+                "id": "8498",
+                "name": "Noah Doiron",
+                "order": 1,
+                "score": "12.900",
+                "type": 1
+              },
+              {
+                "id": "7961",
+                "name": "Milo Staley",
+                "order": 2,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "8096",
+                "name": "Jake Smith",
+                "order": 3,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "8300",
+                "name": "Braxton Jones",
+                "order": 4,
+                "score": null,
+                "type": 1
+              }
+            ],
+            "bye": false
+          },
+          "ARMY": {
+            "routineStatus": "idle",
+            "athleteUp": null,
+            "lastScore": {
+              "athleteId": "8231",
+              "name": "Nick Lester",
+              "score": "13.900"
+            },
+            "lineup": [
+              {
+                "id": "8228",
+                "name": "Jaden Blank",
+                "order": 1,
+                "score": "13.550",
+                "type": 1
+              },
+              {
+                "id": "8466",
+                "name": "Felipe Junqueira",
+                "order": 2,
+                "score": "13.150",
+                "type": 1
+              },
+              {
+                "id": "7849",
+                "name": "Maddox Pabellon",
+                "order": 3,
+                "score": "13.450",
+                "type": 1
+              },
+              {
+                "id": "8231",
+                "name": "Nick Lester",
+                "order": 4,
+                "score": "13.900",
+                "type": 1
+              }
+            ],
+            "bye": false
+          },
+          "GRN": {
+            "routineStatus": "idle",
+            "athleteUp": null,
+            "lastScore": null,
+            "lineup": [
+              {
+                "id": "7977",
+                "name": "Michael Avery",
+                "order": 1,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "8430",
+                "name": "Kyler Hinson",
+                "order": 2,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "8207",
+                "name": "Jaxon Clapper",
+                "order": 3,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "7978",
+                "name": "Ricky Mays",
+                "order": 4,
+                "score": null,
+                "type": 1
+              }
+            ],
+            "bye": false
+          },
+          "SPR": {
+            "routineStatus": "idle",
+            "athleteUp": null,
+            "lastScore": null,
+            "lineup": [
+              {
+                "id": "8008",
+                "name": "Owen Carney",
+                "order": 1,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "8441",
+                "name": "Michael Dalton",
+                "order": 2,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "8445",
+                "name": "Kaleb Palacio",
+                "order": 3,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "8223",
+                "name": "Evan Reichert",
+                "order": 4,
+                "score": null,
+                "type": 1
+              }
+            ],
+            "bye": false
+          }
+        }
+      },
+      "PBARS": {
+        "name": "PBARS",
+        "code": "PB",
+        "rotation": 5,
+        "teams": {
+          "NAVY": {
+            "routineStatus": "idle",
+            "athleteUp": null,
+            "lastScore": null,
+            "lineup": [
+              {
+                "id": "8425",
+                "name": "Jonah Soltz",
+                "order": 1,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "7989",
+                "name": "Danilo Viciana",
+                "order": 2,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "8217",
+                "name": "Brian Solomon",
+                "order": 3,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "7985",
+                "name": "Matthew Petros",
+                "order": 4,
+                "score": null,
+                "type": 1
+              }
+            ],
+            "bye": false
+          },
+          "W&M": {
+            "routineStatus": "idle",
+            "athleteUp": null,
+            "lastScore": null,
+            "lineup": [
+              {
+                "id": "8509",
+                "name": "Nicholas Kosarikov",
+                "order": 1,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "8106",
+                "name": "Evan Wilkins",
+                "order": 2,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "8108",
+                "name": "Niko Greenly",
+                "order": 3,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "8295",
+                "name": "Luke Tully",
+                "order": 4,
+                "score": null,
+                "type": 1
+              }
+            ],
+            "bye": false
+          },
+          "SIM": {
+            "routineStatus": "idle",
+            "athleteUp": null,
+            "lastScore": null,
+            "lineup": [
+              {
+                "id": "8297",
+                "name": "Alex Campbell",
+                "order": 1,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "8097",
+                "name": "Paul Tiedemann",
+                "order": 2,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "8094",
+                "name": "Tristan Shorey",
+                "order": 3,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "8500",
+                "name": "Kenny Rabe",
+                "order": 4,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "8498",
+                "name": "Noah Doiron",
+                "order": 5,
+                "score": null,
+                "type": 0
+              }
+            ],
+            "bye": false
+          },
+          "ARMY": {
+            "routineStatus": "in_progress",
+            "athleteUp": {
+              "id": "8259",
+              "name": "Cash Johnston",
+              "team": "ARMY",
+              "order": 2,
+              "confidence": 0.9,
+              "evidence": [
+                {
+                  "kind": "recorded-log-greenLight",
+                  "t": 2300500
+                }
+              ],
+              "confirmed": true
+            },
+            "lastScore": {
+              "athleteId": "8228",
+              "name": "Jaden Blank",
+              "score": "12.900"
+            },
+            "lineup": [
+              {
+                "id": "8228",
+                "name": "Jaden Blank",
+                "order": 1,
+                "score": "12.900",
+                "type": 1
+              },
+              {
+                "id": "8259",
+                "name": "Cash Johnston",
+                "order": 2,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "8230",
+                "name": "Noah Duran",
+                "order": 3,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "8231",
+                "name": "Nick Lester",
+                "order": 4,
+                "score": null,
+                "type": 1
+              }
+            ],
+            "bye": false
+          },
+          "GRN": {
+            "routineStatus": "idle",
+            "athleteUp": null,
+            "lastScore": {
+              "athleteId": "8207",
+              "name": "Jaxon Clapper",
+              "score": "13.850"
+            },
+            "lineup": [
+              {
+                "id": "8430",
+                "name": "Kyler Hinson",
+                "order": 1,
+                "score": "13.450",
+                "type": 1
+              },
+              {
+                "id": "7977",
+                "name": "Michael Avery",
+                "order": 2,
+                "score": "13.200",
+                "type": 1
+              },
+              {
+                "id": "8211",
+                "name": "Sergey Popov",
+                "order": 3,
+                "score": "13.150",
+                "type": 1
+              },
+              {
+                "id": "8207",
+                "name": "Jaxon Clapper",
+                "order": 4,
+                "score": "13.850",
+                "type": 1
+              }
+            ],
+            "bye": false
+          },
+          "SPR": {
+            "routineStatus": "idle",
+            "athleteUp": null,
+            "lastScore": null,
+            "lineup": [
+              {
+                "id": "8440",
+                "name": "Skyler Cook",
+                "order": 1,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "8654",
+                "name": "Brian Delf",
+                "order": 2,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "8447",
+                "name": "Blaise Rousseau",
+                "order": 3,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "8449",
+                "name": "Carl Jacob Soederqvist",
+                "order": 4,
+                "score": null,
+                "type": 1
+              }
+            ],
+            "bye": false
+          }
+        }
+      },
+      "BAR": {
+        "name": "BAR",
+        "code": "HB",
+        "rotation": 6,
+        "teams": {
+          "NAVY": {
+            "routineStatus": "idle",
+            "athleteUp": null,
+            "lastScore": null,
+            "lineup": [
+              {
+                "id": "8425",
+                "name": "Jonah Soltz",
+                "order": 1,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "8536",
+                "name": "Sean Armstrong",
+                "order": 2,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "7985",
+                "name": "Matthew Petros",
+                "order": 3,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "8426",
+                "name": "Boone Washburn",
+                "order": 4,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "8217",
+                "name": "Brian Solomon",
+                "order": 5,
+                "score": null,
+                "type": 0
+              }
+            ],
+            "bye": false
+          },
+          "W&M": {
+            "routineStatus": "idle",
+            "athleteUp": null,
+            "lastScore": null,
+            "lineup": [
+              {
+                "id": "7902",
+                "name": "Evan Sikra",
+                "order": 1,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "8106",
+                "name": "Evan Wilkins",
+                "order": 2,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "7901",
+                "name": "Ricky Pizem",
+                "order": 3,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "8295",
+                "name": "Luke Tully",
+                "order": 4,
+                "score": null,
+                "type": 1
+              }
+            ],
+            "bye": false
+          },
+          "SIM": {
+            "routineStatus": "idle",
+            "athleteUp": null,
+            "lastScore": null,
+            "lineup": [
+              {
+                "id": "7961",
+                "name": "Milo Staley",
+                "order": 1,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "8092",
+                "name": "Brian Rollison",
+                "order": 2,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "8096",
+                "name": "Jake Smith",
+                "order": 3,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "8097",
+                "name": "Paul Tiedemann",
+                "order": 4,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "8498",
+                "name": "Noah Doiron",
+                "order": 5,
+                "score": null,
+                "type": 0
+              }
+            ],
+            "bye": false
+          },
+          "ARMY": {
+            "routineStatus": "idle",
+            "athleteUp": null,
+            "lastScore": null,
+            "lineup": [
+              {
+                "id": "8260",
+                "name": "Jake Prabhakaran",
+                "order": 1,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "8228",
+                "name": "Jaden Blank",
+                "order": 2,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "8259",
+                "name": "Cash Johnston",
+                "order": 3,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "8232",
+                "name": "Tyson Phelps",
+                "order": 4,
+                "score": null,
+                "type": 1
+              }
+            ],
+            "bye": false
+          },
+          "GRN": {
+            "routineStatus": "in_progress",
+            "athleteUp": {
+              "id": "7970",
+              "name": "Donovan Diviney",
+              "team": "GRN",
+              "order": 2,
+              "confidence": 0.9,
+              "evidence": [
+                {
+                  "kind": "recorded-log-greenLight",
+                  "t": 2300500
+                }
+              ],
+              "confirmed": true
+            },
+            "lastScore": {
+              "athleteId": "7977",
+              "name": "Michael Avery",
+              "score": "12.100"
+            },
+            "lineup": [
+              {
+                "id": "7977",
+                "name": "Michael Avery",
+                "order": 1,
+                "score": "12.100",
+                "type": 1
+              },
+              {
+                "id": "7970",
+                "name": "Donovan Diviney",
+                "order": 2,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "8430",
+                "name": "Kyler Hinson",
+                "order": 3,
+                "score": null,
+                "type": 1
+              },
+              {
+                "id": "7979",
+                "name": "Jacob Foster",
+                "order": 4,
+                "score": null,
+                "type": 1
+              }
+            ],
+            "bye": false
+          },
+          "SPR": {
+            "routineStatus": "idle",
+            "athleteUp": null,
+            "lastScore": {
+              "athleteId": "8008",
+              "name": "Owen Carney",
+              "score": "11.250"
+            },
+            "lineup": [
+              {
+                "id": "8449",
+                "name": "Carl Jacob Soederqvist",
+                "order": 1,
+                "score": "11.700",
+                "type": 1
+              },
+              {
+                "id": "8440",
+                "name": "Skyler Cook",
+                "order": 2,
+                "score": "12.050",
+                "type": 1
+              },
+              {
+                "id": "8445",
+                "name": "Kaleb Palacio",
+                "order": 3,
+                "score": "12.150",
+                "type": 1
+              },
+              {
+                "id": "8008",
+                "name": "Owen Carney",
+                "order": 4,
+                "score": "11.250",
+                "type": 1
+              }
+            ],
+            "bye": false
+          }
+        }
+      }
+    },
+    "teamTotals": {
+      "NAVY": {
+        "name": "Navy",
+        "total": "67.250",
+        "totalNum": 67.25
+      },
+      "W&M": {
+        "name": "William & Mary",
+        "total": "63.350",
+        "totalNum": 63.35
+      },
+      "SIM": {
+        "name": "Simpson",
+        "total": "63.000",
+        "totalNum": 63
+      },
+      "ARMY": {
+        "name": "Army",
+        "total": "66.950",
+        "totalNum": 66.95
+      },
+      "GRN": {
+        "name": "Greenville",
+        "total": "65.750",
+        "totalNum": 65.75
+      },
+      "SPR": {
+        "name": "Springfield",
+        "total": "60.800",
+        "totalNum": 60.8
+      }
+    },
+    "standings": [
+      {
+        "rank": 1,
+        "team": "NAVY",
+        "name": "Navy",
+        "total": "67.250"
+      },
+      {
+        "rank": 2,
+        "team": "ARMY",
+        "name": "Army",
+        "total": "66.950"
+      },
+      {
+        "rank": 3,
+        "team": "GRN",
+        "name": "Greenville",
+        "total": "65.750"
+      },
+      {
+        "rank": 4,
+        "team": "W&M",
+        "name": "William & Mary",
+        "total": "63.350"
+      },
+      {
+        "rank": 5,
+        "team": "SIM",
+        "name": "Simpson",
+        "total": "63.000"
+      },
+      {
+        "rank": 6,
+        "team": "SPR",
+        "name": "Springfield",
+        "total": "60.800"
+      }
+    ],
+    "rotation": {
+      "current": 2,
+      "total": 6,
+      "isFinal": false,
+      "byes": []
+    },
+    "signals": {
+      "greenLight": {
+        "source": "recorded-log",
+        "type": "greenLight",
+        "event": "FLOOR",
+        "team": "SPR",
+        "athlete": {
+          "id": "8223",
+          "name": "Evan Reichert"
+        },
+        "t": 2300500
+      }
+    },
+    "freshness": {
+      "lastPollT": 2400000,
+      "lastChangeT": 0,
+      "unchangedPolls": 160
+    }
+  },
+  "recentEvents": []
+}
