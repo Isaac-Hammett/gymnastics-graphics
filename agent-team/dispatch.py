@@ -245,7 +245,14 @@ def branch_ahead(t: str, i) -> bool:
     if not branch:
         return False
     r = sh(["git", "rev-list", "--count", f"{main_branch()}..{branch}"], cwd=ROOT)
-    return r.returncode == 0 and r.stdout.strip().isdigit() and int(r.stdout.strip()) > 0
+    if r.returncode == 0 and r.stdout.strip().isdigit() and int(r.stdout.strip()) > 0:
+        return True
+    # The work can already be on main: another ticket merged this branch into its own (ISA2-314 carried
+    # ISA2-311's commits, 2026-09-27). Commits stamped with this ticket on the branch and on main count.
+    stamped = sh(["git", "log", "--format=%H", f"--grep=^Ticket: {t}$", branch], cwd=ROOT).stdout.split()
+    if not stamped:
+        return False
+    return sh(["git", "merge-base", "--is-ancestor", stamped[0], main_branch()], cwd=ROOT).returncode == 0
 
 
 def merge_ticket(t: str, branch: str):
