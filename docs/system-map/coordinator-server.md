@@ -15,6 +15,7 @@
 **Key files:**
 - `server/index.js` (8,730 lines) — the whole process: imports 30+ libs, Express+Socket.io setup, 82 routes, 117 socket handlers, `httpServer.listen` at 8699
 - `server/lib/actionBus.js` (ISA2-272, 2026-09-27) — per-competition action bus: one command path for scene and graphic actions with stable IDs. **Built** (unit-tested, socket path smoke-checked on local dev; not yet exercised against a VM's OBS)
+- `server/lib/competitionState/` (ISA2-274, 2026-09-27) — competition state service: Virtius polls (or a recorded log) → pure reducer → typed events with `{confidence, evidence[]}` (athleteUp, greenLight, routineEnded, scorePosted, scoreCorrected, rotationChanged, teamTotalChanged). Sockets: `competitionState:start|stop|get` in; `competitionState:event` and `competitionState:update` out to `competition:{compId}`. Does not touch `scoringIngestionService`'s Firebase output. **Built** (unit-tested; live poll of the ECAC session checked on local dev)
 - `server/lib/graphicPayload.js` (ISA2-272, 2026-09-27) — the `currentGraphic` payload builder, extracted from `timesheetEngine._triggerGraphic`; also owns the `stage/graphics-registry.json` load and `getGraphicById`
 - `server/lib/autoShutdown.js` (450) — idle timer, 30 s cancellable shutdown, Firebase audit; `enabled` gated on `COORDINATOR_MODE`
 - `server/lib/selfStop.js` (446) — IMDSv2 instance-id lookup + `StopInstancesCommand` on self

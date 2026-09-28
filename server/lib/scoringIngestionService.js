@@ -92,6 +92,40 @@ const WOMENS_APPARATUS = ['VT', 'UB', 'BB', 'FX'];
 // ============================================================================
 
 /**
+ * Fetch a Virtius session JSON with a timeout. Shared with the competition
+ * state service (ISA2-274) so both poll the same way.
+ * @param {string} sessionId - Virtius session ID
+ * @param {Object} [options]
+ * @param {Function} [options.fetchImpl] - fetch override (tests)
+ * @param {number} [options.timeoutMs]
+ * @returns {Promise<Object>} Virtius API response
+ * @throws {Error} On network error, non-2xx, or timeout
+ */
+export async function fetchVirtiusSession(sessionId, { fetchImpl = fetch, timeoutMs = API_TIMEOUT_MS } = {}) {
+  const url = `${VIRTIUS_API_BASE}/session/${sessionId}/json`;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetchImpl(url, {
+      signal: controller.signal,
+      headers: { 'Accept': 'application/json' }
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    return await response.json();
+  } catch (error) {
+    if (error.name === 'AbortError') {
+      throw new Error(`API timeout after ${timeoutMs}ms`);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+/**
  * ScoringIngestionService - Fetches Virtius data and writes to Firebase
  *
  * Events emitted:
@@ -215,38 +249,10 @@ export class ScoringIngestionService extends EventEmitter {
    * @throws {Error} On network error or timeout
    */
   async _fetchVirtiusData(sessionId) {
-    const url = `${VIRTIUS_API_BASE}/session/${sessionId}/json`;
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
-
-    try {
-      this._log('fetch', `Fetching Virtius data from ${url}`);
-
-      const response = await fetch(url, {
-        signal: controller.signal,
-        headers: {
-          'Accept': 'application/json'
-        }
-      });
-
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      this._log('fetch', `Received ${JSON.stringify(data).length} bytes`);
-      return data;
-
-    } catch (error) {
-      clearTimeout(timeoutId);
-
-      if (error.name === 'AbortError') {
-        throw new Error(`API timeout after ${API_TIMEOUT_MS}ms`);
-      }
-      throw error;
-    }
+    this._log('fetch', `Fetching Virtius data from ${VIRTIUS_API_BASE}/session/${sessionId}/json`);
+    const data = await fetchVirtiusSession(sessionId);
+    this._log('fetch', `Received ${JSON.stringify(data).length} bytes`);
+    return data;
   }
 
   // ============================================================================
