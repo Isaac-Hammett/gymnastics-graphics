@@ -10,10 +10,10 @@
       "layout": "other",
       "tiles": {},
       "tickerRect": null,
-      "note": "Pre-show card, team march-in, and early rotations where the director cuts between single-cam and partial (2 or 5 tile) splits as events start/finish one at a time. No fixed event-to-tile mapping holds here, so tileFor() returns null for this window."
+      "note": "Stream-starting card (0:00-10:21), title card, team march-in and warm-up single cams before the first stable grid at 17:18. No event-to-tile mapping holds, so tileFor() returns null."
     },
     {
-      "fromMs": 2400000,
+      "fromMs": 1038000,
       "layout": "3x2",
       "tiles": {
         "FLOOR": {
@@ -58,10 +58,207 @@
         "y": 630,
         "w": 1280,
         "h": 90
-      }
+      },
+      "note": "Stable 3x2 Olympic-order grid (FLOOR HORSE RINGS / VAULT PBARS BAR); seams measured at x~579-582 and ~970-973, y~332-334 in every block. Rotation 1."
     },
     {
-      "fromMs": 4800000,
+      "fromMs": 1432000,
+      "layout": "5-tile",
+      "tiles": {},
+      "tickerRect": {
+        "x": 0,
+        "y": 630,
+        "w": 1280,
+        "h": 90
+      },
+      "note": "5-tile grid: one event dropped and the remaining five re-flowed (wide top-left tile), so the event-to-tile mapping is not the Olympic order. Boxes are not modeled, tileFor() returns null."
+    },
+    {
+      "fromMs": 1736000,
+      "layout": "2-panel",
+      "tiles": {},
+      "tickerRect": {
+        "x": 0,
+        "y": 630,
+        "w": 1280,
+        "h": 90
+      },
+      "note": "2-panel cutaway on a white Virtius background (two events side by side). Boxes are not modeled, tileFor() returns null."
+    },
+    {
+      "fromMs": 1860000,
+      "layout": "single-cam",
+      "tiles": {},
+      "tickerRect": {
+        "x": 0,
+        "y": 630,
+        "w": 1280,
+        "h": 90
+      },
+      "note": "Single camera full screen (director cut) with the score ticker. tileFor() returns null."
+    },
+    {
+      "fromMs": 1974000,
+      "layout": "leaderboard",
+      "tiles": {},
+      "tickerRect": null,
+      "note": "Full-screen Virtius leaderboard (no ticker). tileFor() returns null."
+    },
+    {
+      "fromMs": 2072000,
+      "layout": "3x2",
+      "tiles": {
+        "FLOOR": {
+          "x": 0,
+          "y": 0,
+          "w": 582,
+          "h": 332
+        },
+        "HORSE": {
+          "x": 582,
+          "y": 0,
+          "w": 388,
+          "h": 332
+        },
+        "RINGS": {
+          "x": 970,
+          "y": 0,
+          "w": 310,
+          "h": 332
+        },
+        "VAULT": {
+          "x": 0,
+          "y": 332,
+          "w": 582,
+          "h": 298
+        },
+        "PBARS": {
+          "x": 582,
+          "y": 332,
+          "w": 388,
+          "h": 298
+        },
+        "BAR": {
+          "x": 970,
+          "y": 332,
+          "w": 310,
+          "h": 298
+        }
+      },
+      "tickerRect": {
+        "x": 0,
+        "y": 630,
+        "w": 1280,
+        "h": 90
+      },
+      "note": "Stable 3x2 Olympic-order grid (FLOOR HORSE RINGS / VAULT PBARS BAR); seams measured at x~579-582 and ~970-973, y~332-334 in every block. Rotation 2."
+    },
+    {
+      "fromMs": 2643000,
+      "layout": "5-tile",
+      "tiles": {},
+      "tickerRect": {
+        "x": 0,
+        "y": 630,
+        "w": 1280,
+        "h": 90
+      },
+      "note": "5-tile grid: one event dropped and the remaining five re-flowed (wide top-left tile), so the event-to-tile mapping is not the Olympic order. Boxes are not modeled, tileFor() returns null."
+    },
+    {
+      "fromMs": 2741000,
+      "layout": "2-panel",
+      "tiles": {},
+      "tickerRect": {
+        "x": 0,
+        "y": 630,
+        "w": 1280,
+        "h": 90
+      },
+      "note": "2-panel cutaway on a white Virtius background (two events side by side). Boxes are not modeled, tileFor() returns null."
+    },
+    {
+      "fromMs": 2876000,
+      "layout": "single-cam",
+      "tiles": {},
+      "tickerRect": {
+        "x": 0,
+        "y": 630,
+        "w": 1280,
+        "h": 90
+      },
+      "note": "Single camera full screen (director cut) with the score ticker. tileFor() returns null."
+    },
+    {
+      "fromMs": 2966000,
+      "layout": "leaderboard",
+      "tiles": {},
+      "tickerRect": null,
+      "note": "Full-screen Virtius leaderboard (no ticker). tileFor() returns null."
+    },
+    {
+      "fromMs": 3230000,
+      "layout": "3x2",
+      "tiles": {
+        "FLOOR": {
+          "x": 0,
+          "y": 0,
+          "w": 582,
+          "h": 332
+        },
+        "HORSE": {
+          "x": 582,
+          "y": 0,
+          "w": 388,
+          "h": 332
+        },
+        "RINGS": {
+          "x": 970,
+          "y": 0,
+          "w": 310,
+          "h": 332
+        },
+        "VAULT": {
+          "x": 0,
+          "y": 332,
+          "w": 582,
+          "h": 298
+        },
+        "PBARS": {
+          "x": 582,
+          "y": 332,
+          "w": 388,
+          "h": 298
+        },
+        "BAR": {
+          "x": 970,
+          "y": 332,
+          "w": 310,
+          "h": 298
+        }
+      },
+      "tickerRect": {
+        "x": 0,
+        "y": 630,
+        "w": 1280,
+        "h": 90
+      },
+      "note": "Stable 3x2 Olympic-order grid (FLOOR HORSE RINGS / VAULT PBARS BAR); seams measured at x~579-582 and ~970-973, y~332-334 in every block. Rotation 3."
+    },
+    {
+      "fromMs": 3651000,
+      "layout": "5-tile",
+      "tiles": {},
+      "tickerRect": {
+        "x": 0,
+        "y": 630,
+        "w": 1280,
+        "h": 90
+      },
+      "note": "5-tile grid: one event dropped and the remaining five re-flowed (wide top-left tile), so the event-to-tile mapping is not the Olympic order. Boxes are not modeled, tileFor() returns null."
+    },
+    {
+      "fromMs": 3829000,
       "layout": "2x2",
       "tiles": {
         "FLOOR": {
@@ -94,7 +291,446 @@
         "y": 630,
         "w": 1280,
         "h": 90
-      }
+      },
+      "note": "Stable 2x2 grid with the other two events dropped; seams at x~638-642 and y~348 in every block. FLOOR, PBARS, RINGS, BAR."
+    },
+    {
+      "fromMs": 3942000,
+      "layout": "2-panel",
+      "tiles": {},
+      "tickerRect": {
+        "x": 0,
+        "y": 630,
+        "w": 1280,
+        "h": 90
+      },
+      "note": "2-panel cutaway on a white Virtius background (two events side by side). Boxes are not modeled, tileFor() returns null."
+    },
+    {
+      "fromMs": 3954000,
+      "layout": "5-tile",
+      "tiles": {},
+      "tickerRect": {
+        "x": 0,
+        "y": 630,
+        "w": 1280,
+        "h": 90
+      },
+      "note": "5-tile grid: one event dropped and the remaining five re-flowed (wide top-left tile), so the event-to-tile mapping is not the Olympic order. Boxes are not modeled, tileFor() returns null."
+    },
+    {
+      "fromMs": 3998000,
+      "layout": "leaderboard",
+      "tiles": {},
+      "tickerRect": null,
+      "note": "Full-screen Virtius leaderboard (no ticker). tileFor() returns null."
+    },
+    {
+      "fromMs": 4222000,
+      "layout": "3x2",
+      "tiles": {
+        "FLOOR": {
+          "x": 0,
+          "y": 0,
+          "w": 582,
+          "h": 332
+        },
+        "HORSE": {
+          "x": 582,
+          "y": 0,
+          "w": 388,
+          "h": 332
+        },
+        "RINGS": {
+          "x": 970,
+          "y": 0,
+          "w": 310,
+          "h": 332
+        },
+        "VAULT": {
+          "x": 0,
+          "y": 332,
+          "w": 582,
+          "h": 298
+        },
+        "PBARS": {
+          "x": 582,
+          "y": 332,
+          "w": 388,
+          "h": 298
+        },
+        "BAR": {
+          "x": 970,
+          "y": 332,
+          "w": 310,
+          "h": 298
+        }
+      },
+      "tickerRect": {
+        "x": 0,
+        "y": 630,
+        "w": 1280,
+        "h": 90
+      },
+      "note": "Stable 3x2 Olympic-order grid (FLOOR HORSE RINGS / VAULT PBARS BAR); seams measured at x~579-582 and ~970-973, y~332-334 in every block. Rotation 4."
+    },
+    {
+      "fromMs": 4686000,
+      "layout": "5-tile",
+      "tiles": {},
+      "tickerRect": {
+        "x": 0,
+        "y": 630,
+        "w": 1280,
+        "h": 90
+      },
+      "note": "5-tile grid: one event dropped and the remaining five re-flowed (wide top-left tile), so the event-to-tile mapping is not the Olympic order. Boxes are not modeled, tileFor() returns null."
+    },
+    {
+      "fromMs": 4769000,
+      "layout": "2x2",
+      "tiles": {
+        "FLOOR": {
+          "x": 28,
+          "y": 8,
+          "w": 610,
+          "h": 337
+        },
+        "PBARS": {
+          "x": 642,
+          "y": 8,
+          "w": 610,
+          "h": 337
+        },
+        "RINGS": {
+          "x": 28,
+          "y": 349,
+          "w": 610,
+          "h": 279
+        },
+        "BAR": {
+          "x": 642,
+          "y": 349,
+          "w": 610,
+          "h": 279
+        }
+      },
+      "tickerRect": {
+        "x": 0,
+        "y": 630,
+        "w": 1280,
+        "h": 90
+      },
+      "note": "Stable 2x2 grid with the other two events dropped; seams at x~638-642 and y~348 in every block. FLOOR, PBARS, RINGS, BAR (verified in ISA2-294)."
+    },
+    {
+      "fromMs": 4854000,
+      "layout": "2-panel",
+      "tiles": {},
+      "tickerRect": {
+        "x": 0,
+        "y": 630,
+        "w": 1280,
+        "h": 90
+      },
+      "note": "2-panel cutaway on a white Virtius background (two events side by side). Boxes are not modeled, tileFor() returns null."
+    },
+    {
+      "fromMs": 4917000,
+      "layout": "single-cam",
+      "tiles": {},
+      "tickerRect": {
+        "x": 0,
+        "y": 630,
+        "w": 1280,
+        "h": 90
+      },
+      "note": "Single camera full screen (director cut) with the score ticker. tileFor() returns null."
+    },
+    {
+      "fromMs": 5072000,
+      "layout": "leaderboard",
+      "tiles": {},
+      "tickerRect": null,
+      "note": "Full-screen Virtius leaderboard (no ticker). tileFor() returns null."
+    },
+    {
+      "fromMs": 5240000,
+      "layout": "5-tile",
+      "tiles": {},
+      "tickerRect": {
+        "x": 0,
+        "y": 630,
+        "w": 1280,
+        "h": 90
+      },
+      "note": "5-tile grid: one event dropped and the remaining five re-flowed (wide top-left tile), so the event-to-tile mapping is not the Olympic order. Boxes are not modeled, tileFor() returns null."
+    },
+    {
+      "fromMs": 5255000,
+      "layout": "3x2",
+      "tiles": {
+        "FLOOR": {
+          "x": 0,
+          "y": 0,
+          "w": 582,
+          "h": 332
+        },
+        "HORSE": {
+          "x": 582,
+          "y": 0,
+          "w": 388,
+          "h": 332
+        },
+        "RINGS": {
+          "x": 970,
+          "y": 0,
+          "w": 310,
+          "h": 332
+        },
+        "VAULT": {
+          "x": 0,
+          "y": 332,
+          "w": 582,
+          "h": 298
+        },
+        "PBARS": {
+          "x": 582,
+          "y": 332,
+          "w": 388,
+          "h": 298
+        },
+        "BAR": {
+          "x": 970,
+          "y": 332,
+          "w": 310,
+          "h": 298
+        }
+      },
+      "tickerRect": {
+        "x": 0,
+        "y": 630,
+        "w": 1280,
+        "h": 90
+      },
+      "note": "Stable 3x2 Olympic-order grid (FLOOR HORSE RINGS / VAULT PBARS BAR); seams measured at x~579-582 and ~970-973, y~332-334 in every block. Rotation 5."
+    },
+    {
+      "fromMs": 5673000,
+      "layout": "5-tile",
+      "tiles": {},
+      "tickerRect": {
+        "x": 0,
+        "y": 630,
+        "w": 1280,
+        "h": 90
+      },
+      "note": "5-tile grid: one event dropped and the remaining five re-flowed (wide top-left tile), so the event-to-tile mapping is not the Olympic order. Boxes are not modeled, tileFor() returns null."
+    },
+    {
+      "fromMs": 5952000,
+      "layout": "2-panel",
+      "tiles": {},
+      "tickerRect": {
+        "x": 0,
+        "y": 630,
+        "w": 1280,
+        "h": 90
+      },
+      "note": "2-panel cutaway on a white Virtius background (two events side by side). Boxes are not modeled, tileFor() returns null."
+    },
+    {
+      "fromMs": 6057000,
+      "layout": "single-cam",
+      "tiles": {},
+      "tickerRect": {
+        "x": 0,
+        "y": 630,
+        "w": 1280,
+        "h": 90
+      },
+      "note": "Single camera full screen (director cut) with the score ticker. tileFor() returns null."
+    },
+    {
+      "fromMs": 6072000,
+      "layout": "2-panel",
+      "tiles": {},
+      "tickerRect": {
+        "x": 0,
+        "y": 630,
+        "w": 1280,
+        "h": 90
+      },
+      "note": "2-panel cutaway on a white Virtius background (two events side by side). Boxes are not modeled, tileFor() returns null."
+    },
+    {
+      "fromMs": 6123000,
+      "layout": "single-cam",
+      "tiles": {},
+      "tickerRect": {
+        "x": 0,
+        "y": 630,
+        "w": 1280,
+        "h": 90
+      },
+      "note": "Single camera full screen (director cut) with the score ticker. tileFor() returns null."
+    },
+    {
+      "fromMs": 6145000,
+      "layout": "leaderboard",
+      "tiles": {},
+      "tickerRect": null,
+      "note": "Full-screen Virtius leaderboard (no ticker). tileFor() returns null."
+    },
+    {
+      "fromMs": 6318000,
+      "layout": "3x2",
+      "tiles": {
+        "FLOOR": {
+          "x": 0,
+          "y": 0,
+          "w": 582,
+          "h": 332
+        },
+        "HORSE": {
+          "x": 582,
+          "y": 0,
+          "w": 388,
+          "h": 332
+        },
+        "RINGS": {
+          "x": 970,
+          "y": 0,
+          "w": 310,
+          "h": 332
+        },
+        "VAULT": {
+          "x": 0,
+          "y": 332,
+          "w": 582,
+          "h": 298
+        },
+        "PBARS": {
+          "x": 582,
+          "y": 332,
+          "w": 388,
+          "h": 298
+        },
+        "BAR": {
+          "x": 970,
+          "y": 332,
+          "w": 310,
+          "h": 298
+        }
+      },
+      "tickerRect": {
+        "x": 0,
+        "y": 630,
+        "w": 1280,
+        "h": 90
+      },
+      "note": "Stable 3x2 Olympic-order grid (FLOOR HORSE RINGS / VAULT PBARS BAR); seams measured at x~579-582 and ~970-973, y~332-334 in every block. Rotation 6."
+    },
+    {
+      "fromMs": 6766000,
+      "layout": "5-tile",
+      "tiles": {},
+      "tickerRect": {
+        "x": 0,
+        "y": 630,
+        "w": 1280,
+        "h": 90
+      },
+      "note": "5-tile grid: one event dropped and the remaining five re-flowed (wide top-left tile), so the event-to-tile mapping is not the Olympic order. Boxes are not modeled, tileFor() returns null."
+    },
+    {
+      "fromMs": 6906000,
+      "layout": "2x2",
+      "tiles": {
+        "FLOOR": {
+          "x": 28,
+          "y": 8,
+          "w": 610,
+          "h": 337
+        },
+        "HORSE": {
+          "x": 642,
+          "y": 8,
+          "w": 610,
+          "h": 337
+        },
+        "RINGS": {
+          "x": 28,
+          "y": 349,
+          "w": 610,
+          "h": 279
+        },
+        "BAR": {
+          "x": 642,
+          "y": 349,
+          "w": 610,
+          "h": 279
+        }
+      },
+      "tickerRect": {
+        "x": 0,
+        "y": 630,
+        "w": 1280,
+        "h": 90
+      },
+      "note": "Stable 2x2 grid with the other two events dropped; seams at x~638-642 and y~348 in every block. FLOOR, HORSE, RINGS, BAR: pommel horse sits top-right here where earlier 2x2 blocks show PBARS."
+    },
+    {
+      "fromMs": 7015000,
+      "layout": "2-panel",
+      "tiles": {},
+      "tickerRect": {
+        "x": 0,
+        "y": 630,
+        "w": 1280,
+        "h": 90
+      },
+      "note": "2-panel cutaway on a white Virtius background (two events side by side). Boxes are not modeled, tileFor() returns null."
+    },
+    {
+      "fromMs": 7048000,
+      "layout": "single-cam",
+      "tiles": {},
+      "tickerRect": {
+        "x": 0,
+        "y": 630,
+        "w": 1280,
+        "h": 90
+      },
+      "note": "Single camera full screen (director cut) with the score ticker. tileFor() returns null."
+    },
+    {
+      "fromMs": 7165000,
+      "layout": "leaderboard",
+      "tiles": {},
+      "tickerRect": null,
+      "note": "Full-screen Virtius leaderboard (no ticker). tileFor() returns null."
+    },
+    {
+      "fromMs": 7413000,
+      "layout": "leaderboard",
+      "tiles": {},
+      "tickerRect": null,
+      "note": "Full-screen final standings table (FX PH SR VT PB HB Total, 6 teams). tileFor() returns null."
+    },
+    {
+      "fromMs": 7538000,
+      "layout": "single-cam",
+      "tiles": {},
+      "tickerRect": null,
+      "note": "Empty-floor single camera while the podium is set up, no ticker. tileFor() returns null."
+    },
+    {
+      "fromMs": 7700000,
+      "layout": "ceremony",
+      "tiles": {},
+      "tickerRect": null,
+      "note": "Trophy ceremony: single camera on the podium to the end of the recording (2:08:20-2:25:35), no ticker. tileFor() returns null."
     }
   ]
 }
