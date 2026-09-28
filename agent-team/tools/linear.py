@@ -495,6 +495,17 @@ def render(i: dict) -> str:
         "",
         i.get("description") or "(no description)",
     ]
+    # Comments carry decisions made after the ticket was written (Isaac's approvals, spend caps, reviewer notes).
+    # Runs cannot reach Linear, so they only see what is rendered here. Skip the dispatcher's own status lines.
+    notes = [c for c in i.get("comments", [])
+             if not (c.get("body") or "").lstrip().startswith(("Dispatcher:", "Heartbeat:"))]
+    if notes:
+        lines += ["", "## Comments (oldest first; later ones override the description)"]
+        for c in notes[-12:]:
+            body = (c.get("body") or "").strip()
+            if len(body) > 2500:
+                body = body[:2500] + " …(truncated)"
+            lines += ["", f"**{c.get('user') or '?'}, {(c.get('createdAt') or '')[:16]}:**", body]
     return "\n".join(lines)
 
 
