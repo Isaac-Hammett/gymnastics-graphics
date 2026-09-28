@@ -25,6 +25,7 @@ import BookingPage from './pages/BookingPage';
 import SurveyPage from './pages/SurveyPage';
 import SettingsPage from './pages/SettingsPage';
 import LoginPage from './pages/LoginPage';
+import TalentSignInPage from './pages/TalentSignInPage';
 
 // CRM Components
 import CommandPalette from './components/crm/CommandPalette';
@@ -115,6 +116,7 @@ function App() {
 
         {/* Public pages (no auth required) - MUST be before /:compId */}
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/talent-sign-in" element={<TalentSignInPage />} />
         <Route path="/book/:token" element={<BookingPage />} />
         <Route path="/survey/:year" element={<SurveyPage />} />
 

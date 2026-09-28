@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getDatabase, ref, set, get, update, remove, onValue, push, onDisconnect } from 'firebase/database';
-import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth';
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, sendSignInLinkToEmail, isSignInWithEmailLink, signInWithEmailLink } from 'firebase/auth';
 
 const firebaseConfig = {
   apiKey: "AIzaSyCh0aZUvKl6Qvqsva3hvOgJJlleP1OwcTY",
@@ -17,4 +17,4 @@ const db = getDatabase(app);
 const auth = getAuth(app);
 
 export { db, ref, set, get, update, remove, onValue, push, onDisconnect };
-export { auth, signInWithEmailAndPassword, signOut, onAuthStateChanged };
+export { auth, signInWithEmailAndPassword, signOut, onAuthStateChanged, sendSignInLinkToEmail, isSignInWithEmailLink, signInWithEmailLink };
