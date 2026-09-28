@@ -79,7 +79,8 @@ start_api() {
   local KEY="${FIREBASE_ADMIN_KEY:-$HOME/.config/firebase/gymnastics-graphics-prod-sa.json}"
   [ -f "$KEY" ] && export GOOGLE_APPLICATION_CREDENTIALS="$KEY"
   export FIREBASE_DATABASE_URL="${FIREBASE_DATABASE_URL:-https://gymnastics-graphics-default-rtdb.firebaseio.com}"
-  ( cd "$WT/server" && PORT="$API_PORT" nohup $(node_bin) index.js >> "$LOGS/devserver-api-$TAG.log" 2>&1 & echo $! > "$RUNS/devserver-api-$TAG.pid" )
+  # Run coordinators accept synthetic competition-state injection (ISA2-317); production never sets this.
+  ( cd "$WT/server" && ALLOW_STATE_INJECTION=1 PORT="$API_PORT" nohup $(node_bin) index.js >> "$LOGS/devserver-api-$TAG.log" 2>&1 & echo $! > "$RUNS/devserver-api-$TAG.pid" )
 }
 
 wait_for() {
