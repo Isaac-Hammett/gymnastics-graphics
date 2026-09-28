@@ -23,12 +23,14 @@ export class CompetitionStateService extends EventEmitter {
    * @param {Object} [options.io] - socket.io server
    * @param {boolean} [options.emitInitial] - emit events for scores already present in the first snapshot
    */
-  constructor({ compId, io = null, emitInitial = false } = {}) {
+  constructor({ compId, io = null, emitInitial = false, config = null, countPerEvent = null } = {}) {
     super();
     if (!compId) throw new Error('compId is required');
     this.compId = compId;
     this._io = io;
     this._emitInitial = emitInitial;
+    this._config = config;
+    this._countPerEvent = countPerEvent;
     this._state = createInitialState();
     this._recent = [];
     this._source = null;
@@ -79,7 +81,7 @@ export class CompetitionStateService extends EventEmitter {
   /** Reduce one input and publish the result. Returns the emitted events. */
   ingest(input) {
     const before = this._state.stateVersion;
-    const { state, events } = reduce(this._state, input, { emitInitial: this._emitInitial });
+    const { state, events } = reduce(this._state, input, { emitInitial: this._emitInitial, config: this._config, countPerEvent: this._countPerEvent });
     this._state = state;
 
     for (const event of events) {
@@ -97,10 +99,20 @@ export class CompetitionStateService extends EventEmitter {
     return events;
   }
 
+  /** Competition config (team{N}Key / team{N}Tricode) used to resolve team keys. */
+  setConfig(config) {
+    this._config = config || null;
+  }
+
   /** State without the reducer's private diff maps. */
   getPublicState() {
-    const { _scores, _totals, _digest, ...pub } = this._state;
+    const { _scores, _details, _lineups, _totals, _digest, ...pub } = this._state;
     return pub;
+  }
+
+  /** The current state (same shape as the competitionState:update payload). */
+  getState() {
+    return this.getPublicState();
   }
 
   getSnapshot() {
@@ -131,6 +143,11 @@ export function getOrCreateCompetitionState(compId, options = {}) {
 
 export function getCompetitionState(compId) {
   return services.get(compId) || null;
+}
+
+/** Current state for a competition, or null when no service exists. */
+export function getState(compId) {
+  return services.get(compId)?.getState() || null;
 }
 
 export function removeCompetitionState(compId) {

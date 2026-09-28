@@ -14,7 +14,7 @@ import { fileURLToPath } from 'url';
 
 import {
   reduce, createInitialState, detectRotation, detectNowCompeting, detectByes,
-  diffScores, normalizeSnapshot, CONFIDENCE, EVENT_TYPES,
+  diffScores, normalizeSnapshot, unitRef, getState, CONFIDENCE, EVENT_TYPES,
   CompetitionStateService, LiveVirtiusSource, RecordedEventSource
 } from '../lib/competitionState/index.js';
 
@@ -295,7 +295,7 @@ describe('signals', () => {
   });
 
   it('every emitted type is a known typed event', () => {
-    assert.deepEqual([...EVENT_TYPES].sort(), ['athleteUp', 'greenLight', 'rotationChanged', 'routineEnded', 'scoreCorrected', 'scorePosted', 'teamTotalChanged']);
+    assert.deepEqual([...EVENT_TYPES].sort(), ['athleteUp', 'greenLight', 'lineupPosted', 'rotationChanged', 'routineEnded', 'scoreCorrected', 'scorePosted', 'teamTotalChanged']);
   });
 });
 
@@ -374,5 +374,140 @@ describe('CompetitionStateService', () => {
     assert.ok(snapshot.recentEvents.length > 0);
     assert.equal(snapshot.state._scores, undefined);
     assert.ok(snapshot.state.stateVersion >= 3);
+  });
+});
+
+describe('Shakespeare requirements (ISA2-333)', () => {
+  const CONFIG = {
+    team1Key: 'navy-mens', team1Tricode: 'NAVY', team2Key: 'william-mary-mens', team2Tricode: 'W&M',
+    team3Key: 'simpson-mens', team4Key: 'army-mens', team5Key: 'greenville-mens', team5Tricode: 'GRN',
+    team6Key: 'springfield-mens'
+  };
+
+  function run(input, opts = {}) {
+    const svc = new CompetitionStateService({ compId: 'c2', ...opts });
+    const seen = [];
+    svc.on('event', (e) => seen.push(e));
+    svc.ingest({ t: 0, snapshot: maskedEcac(0) });
+    svc.ingest({ t: 1000, snapshot: input });
+    return { svc, seen };
+  }
+
+  it('team keys come from config.team{N}Key (tricode first, team_order fallback)', () => {
+    const { normalizeSnapshot: norm } = { normalizeSnapshot };
+    const teams = norm(ECAC, CONFIG).teams;
+    const byKey = Object.fromEntries(teams.map(t => [t.key, t.teamKey]));
+    assert.equal(byKey.NAVY, 'navy-mens');
+    assert.equal(byKey.GRN, 'greenville-mens');
+    assert.equal(byKey.SIM, 'simpson-mens'); // no tricode in config: matched by team_order 3
+    assert.equal(byKey.SPR, 'springfield-mens');
+  });
+
+  it('reducer: unit ids and lineup roles for rotation six', () => {
+    const teams = normalizeSnapshot(ECAC, CONFIG).teams;
+    const grn = teams.find(t => t.key === 'GRN').events.find(e => e.name === 'VAULT');
+    assert.equal(grn.rotation, 6);
+    const rows = grn.gymnasts.map(g => [g.name.split(' ')[1], unitRef(teams.find(t => t.key === 'GRN'), grn, g), g.lineupRole]);
+    assert.deepEqual(rows.map(r => [r[0], r[1].order, r[2]]),
+      [['Avery', 1, 'lineup'], ['Hinson', 2, 'lineup'], ['Clapper', 3, 'lineup'], ['Mays', 4, 'lineup']]);
+    assert.deepEqual(rows[0][1], { id: 'u:6:VT:greenville-mens:1', rotation: 6, locus: 'VT', teamKey: 'greenville-mens', order: 1 });
+
+    const navy = teams.find(t => t.key === 'NAVY');
+    const bar = navy.events.find(e => e.name === 'BAR');
+    const solomon = bar.gymnasts.find(g => g.name === 'Brian Solomon');
+    assert.equal(solomon.order, 5);
+    assert.equal(solomon.lineupRole, 'individual');
+    assert.equal(solomon.nameKey, 'brian solomon');
+    assert.equal(solomon.gymnastId, '8' + solomon.gymnastId.slice(1));
+    assert.equal(unitRef(navy, bar, solomon).id, 'u:6:HB:navy-mens:5');
+  });
+
+  it('every event carries t and a monotonically increasing stateVersion; emitter matches the room broadcast', () => {
+    const sent = [];
+    const io = { to: () => ({ emit: (name, p) => { if (name === 'competitionState:event') sent.push(p); } }) };
+    const svc = new CompetitionStateService({ compId: 'c3', io, config: CONFIG });
+    const seen = [];
+    svc.on('event', (e) => seen.push(e));
+    const src = new RecordedEventSource({
+      entries: [
+        { t: 0, snapshot: maskedEcac(0) },
+        { t: 15000, snapshot: maskedEcac(1, { rotationsUpTo: 1 }) },
+        { t: 30000, snapshot: maskedEcac(2, { rotationsUpTo: 1 }) },
+        { t: 40000, signal: { type: 'greenLight', event: 'FLOOR', team: 'NAVY' } }
+      ],
+      clock: { now: () => 1e9 }
+    });
+    svc.attach(src);
+    src.drain();
+    assert.ok(seen.length > 0);
+    assert.ok(seen.every(e => typeof e.t === 'number' && Number.isInteger(e.stateVersion)));
+    const versions = seen.map(e => e.stateVersion);
+    assert.deepEqual(versions, [...versions].sort((a, b) => a - b));
+    assert.deepEqual(sent.map(({ compId, ...e }) => e), seen);
+    assert.equal(svc.getState().stateVersion, svc.getSnapshot().state.stateVersion);
+    assert.equal(getState('nope'), null);
+  });
+
+  it('emitter also delivers events from LiveVirtiusSource', async () => {
+    const svc = new CompetitionStateService({ compId: 'c4', config: CONFIG });
+    const seen = [];
+    svc.on('event', (e) => seen.push(e));
+    const snaps = [maskedEcac(0), maskedEcac(1, { rotationsUpTo: 1 })];
+    let i = 0;
+    const src = new LiveVirtiusSource({ sessionId: 's', fetchSession: async () => snaps[i++], now: () => 1000 * i, pollIntervalMs: 1e6 });
+    src.on('input', (inp) => svc.ingest(inp));
+    await src.pollOnce();
+    await src.pollOnce();
+    assert.ok(seen.some(e => e.type === 'scorePosted'));
+    assert.ok(seen.every(e => e.t != null && e.stateVersion != null));
+  });
+
+  it('scorePosted carries d, e, nd, bonus, neutral, judges and the unit; lineupPosted fires on change', () => {
+    const { seen } = run(maskedEcac(1, { rotationsUpTo: 1 }));
+    const p = seen.find(e => e.type === 'scorePosted' && e.athlete.name === 'Daniel Gurevich');
+    assert.equal(p.score, '13.350');
+    assert.equal(p.d, 4.9);
+    assert.equal(p.e, 8.55);
+    assert.equal(p.neutral, 0.1);
+    assert.equal(p.nd, 0.1);
+    assert.equal(p.bonus, 0);
+    assert.equal(p.judges.length, 2);
+    assert.equal(p.unit.locus, 'FX');
+    assert.equal(p.athlete.lineupRole, 'lineup');
+
+    const svc = new CompetitionStateService({ compId: 'c5' });
+    const lineups = [];
+    svc.on('event', (e) => e.type === 'lineupPosted' && lineups.push(e));
+    const s0 = clone(ECAC);
+    s0.meet.teams.forEach(t => t.events.forEach(e => e.gymnasts.forEach(g => { g.final_score = null; })));
+    svc.ingest({ t: 0, snapshot: s0 });
+    assert.equal(lineups.length, 0); // quiet baseline
+    const s1 = clone(s0);
+    s1.meet.teams[0].events[0].gymnasts.pop();
+    svc.ingest({ t: 1, snapshot: s1 });
+    svc.ingest({ t: 2, snapshot: s1 });
+    assert.equal(lineups.length, 1);
+    assert.equal(lineups[0].changed, true);
+    assert.equal(lineups[0].lineup.length, ECAC.meet.teams[0].events[0].gymnasts.length - 1);
+  });
+
+  it('scoreCorrected carries the previous components; teamTotalChanged lists counting units', () => {
+    const a = maskedEcac(1, { rotationsUpTo: 1 });
+    const b = clone(a);
+    b.meet.teams[0].events[0].gymnasts[0].final_score = '13.400';
+    b.meet.teams[0].events[0].gymnasts[0].e_score = '8.600';
+    b.meet.teams[0].final_score = '13.400';
+    const svc = new CompetitionStateService({ compId: 'c6', config: CONFIG });
+    const seen = [];
+    svc.on('event', (e) => seen.push(e));
+    svc.ingest({ t: 0, snapshot: a });
+    svc.ingest({ t: 1, snapshot: b });
+    const c = seen.find(e => e.type === 'scoreCorrected');
+    assert.equal(c.previousScore, '13.350');
+    assert.equal(c.previous.e, 8.55);
+    assert.equal(c.e, 8.6);
+    const tt = seen.find(e => e.type === 'teamTotalChanged' && e.team === 'NAVY');
+    assert.equal(tt.teamKey, 'navy-mens');
+    assert.deepEqual(tt.countingUnits, ['u:1:FX:navy-mens:1']);
   });
 });
