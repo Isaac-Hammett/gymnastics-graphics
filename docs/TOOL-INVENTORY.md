@@ -34,8 +34,11 @@ One Node process hosts every server-side tool and fans state out over sockets. P
 | Idle auto-shutdown (sleep) | Stops its own cloud machine when idle | config file | built |
 | Standalone mode on each OBS machine | Server copy on each OBS VM | config file | built |
 | Deployment and process supervision | Install and supervise both hosts | manual | proven |
+| Action bus (scene and graphic actions) | One path for scene and graphic commands with acks and guardrail checks | socket event | built |
+| Competition state service (typed event stream) | Ingests Virtius or recorded logs, emits confidence-rated events | socket event | built |
+| Guardrails (action enforcement rules) | Four rules refuse risky actions unless forced by a human | config file | built |
 
-Depends on: Firebase Admin credential, AWS EC2, PM2. Gaps: no server auth; wake path dead; no /health. Workbook: prod-live, gfx-delivery.
+Depends on: Firebase Admin credential, AWS EC2, PM2, Virtius API. Gaps: no server auth; wake path dead; no /health; noCutDuringRoutine rule inert without routine state; Producer View doesn't show guardrail refusals. Workbook: prod-live, gfx-delivery.
 
 ### VM pool
 
